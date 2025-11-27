@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function LandingForm() {
+  const router = useRouter();  // ✅ ici c’est bon (à l’intérieur du composant)
+
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +43,35 @@ export function LandingForm() {
         setError("Une erreur est survenue. Réessaie plus tard.");
       } else {
         setDone(true);
+
+        // 1) On lit les choix de participation
+        const invest = !!formData.get("interest_investing");
+        const contrib = !!formData.get("interest_contributing");
+        const amb = !!formData.get("interest_ambassador");
+        const beta = !!formData.get("interest_beta_tester");
+
+        // 2) On construit la liste des pages possibles
+        const selectedPaths: string[] = [];
+        if (invest) selectedPaths.push("/infos/investisseur");
+        if (contrib) selectedPaths.push("/infos/contributeur");
+        if (amb) selectedPaths.push("/infos/ambassadeur");
+        if (beta) selectedPaths.push("/infos/beta-testeur");
+
+        // 3) Redirection
+        if (selectedPaths.length === 1) {
+          // Un seul rôle → page directe
+          router.push(selectedPaths[0]);
+        } else {
+          // Plusieurs rôles ou aucun → page "merci"
+          const params = new URLSearchParams();
+          if (invest) params.append("invest", "1");
+          if (contrib) params.append("contrib", "1");
+          if (amb) params.append("amb", "1");
+          if (beta) params.append("beta", "1");
+
+          router.push(`/merci?${params.toString()}`);
+        }
+
         (e.target as HTMLFormElement).reset();
       }
     } catch (err) {
