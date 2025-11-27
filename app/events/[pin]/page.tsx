@@ -8,6 +8,8 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { EventData } from "@/types/event";
 import { Photo } from "@/types/photo";
+import { EventHeader } from "@/app/components/events/EventHeader";
+
 
 export default function EventPage() {
   const params = useParams();
@@ -275,25 +277,7 @@ export default function EventPage() {
 
         {!loading && event && (
           <>
-            {/* HEADER : nom + PIN */}
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="text-left">
-                <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
-                  Évènement
-                </p>
-                <p className="text-sm md:text-base font-semibold text-slate-50">
-                  {event.name}
-                </p>
-              </div>
-
-              <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1 text-[11px] font-medium text-slate-200 shadow-sm">
-                PIN
-                <span className="ml-1 font-semibold tracking-widest text-teal-400">
-                  {event.pin}
-                </span>
-              </span>
-            </div>
-
+<EventHeader event={event} />
             {/* PARTAGE */}
             {shareUrl && (
               <section className="mt-1 rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-4 flex flex-col md:flex-row items-center md:items-stretch gap-4">
