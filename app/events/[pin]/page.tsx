@@ -1,23 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import QRCode from "react-qr-code";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-
-type EventData = {
-  id: string;
-  name: string;
-  pin: string;
-};
-
-type Photo = {
-  name: string;
-  url: string;
-  path: string;
-};
+import { EventData } from "@/types/event";
+import { Photo } from "@/types/photo";
 
 export default function EventPage() {
   const params = useParams();
@@ -44,6 +34,7 @@ export default function EventPage() {
   const photoCount = photos.length;
   const hasPhotos = photoCount > 0;
 
+  // Récupérer l'origin pour construire le lien de partage
   useEffect(() => {
     if (typeof window !== "undefined") {
       setOrigin(window.location.origin);
@@ -53,7 +44,7 @@ export default function EventPage() {
   const shareUrl =
     origin && event ? `${origin}/events/${event.pin}` : null;
 
-  // --- Charger l'évènement par PIN ---
+  // Charger l'évènement par PIN
   useEffect(() => {
     const fetchEvent = async () => {
       const { data, error } = await supabase
@@ -77,7 +68,7 @@ export default function EventPage() {
     fetchEvent();
   }, [pin]);
 
-  // --- Charger les photos de l'évènement ---
+  // Charger les photos de l'évènement (depuis le bucket "photos")
   const refreshPhotos = async (evt: EventData) => {
     const { data: files, error } = await supabase.storage
       .from("photos")
@@ -108,13 +99,14 @@ export default function EventPage() {
     setPhotos(photosWithUrl);
   };
 
+  // Recharger les photos quand l'évènement est chargé
   useEffect(() => {
     if (event) {
       refreshPhotos(event);
     }
   }, [event]);
 
-  // --- Upload de plusieurs photos ---
+  // Upload de plusieurs photos
   const handleUpload = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -159,7 +151,7 @@ export default function EventPage() {
     e.target.value = "";
   };
 
-  // --- Suppression individuelle ---
+  // Suppression individuelle
   const handleDelete = async (photo: Photo) => {
     if (!event) return;
 
@@ -186,7 +178,7 @@ export default function EventPage() {
     }
   };
 
-  // --- Multi-sélection : toggle ---
+  // Toggle sélection multi
   const toggleSelectPhoto = (path: string) => {
     setSelectedPhotos((prev) =>
       prev.includes(path)
@@ -195,7 +187,7 @@ export default function EventPage() {
     );
   };
 
-  // --- Suppression multiple ---
+  // Suppression multiple
   const handleDeleteSelected = async () => {
     if (!event || selectedPhotos.length === 0) return;
 
@@ -222,14 +214,14 @@ export default function EventPage() {
     }
   };
 
-  // --- Copier le lien ---
+  // Copier le lien
   const handleCopyLink = () => {
     if (!shareUrl) return;
     navigator.clipboard.writeText(shareUrl);
     alert("Lien de l’évènement copié dans le presse-papiers ✅");
   };
 
-  // --- Télécharger toutes les photos en ZIP ---
+  // Télécharger toutes les photos en ZIP
   const handleDownloadAll = async () => {
     if (!event) return;
 
@@ -432,8 +424,7 @@ export default function EventPage() {
                       className="rounded-md bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
                     >
                       Supprimer {selectedPhotos.length} photo
-                      {selectedPhotos.length > 1 ? "s" : ""}
-                      {" sélectionnée"}
+                      {selectedPhotos.length > 1 ? "s" : ""} sélectionnée
                       {selectedPhotos.length > 1 ? "s" : ""}
                     </button>
                   )}
@@ -466,7 +457,7 @@ export default function EventPage() {
                     Aucune photo pour l’instant. Ajoute la première ✨
                   </p>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
                     {photos.map((photo) => {
                       const isSelected = selectedPhotos.includes(
                         photo.path
@@ -475,10 +466,10 @@ export default function EventPage() {
                       return (
                         <div
                           key={photo.path}
-                          className={`relative overflow-hidden rounded-lg border flex flex-col group transition-all ${
+                          className={`group relative flex flex-col rounded-lg border overflow-hidden bg-slate-900/60 transition-all ${
                             isSelected
-                              ? "border-teal-400 bg-slate-900/70"
-                              : "border-slate-800 bg-slate-950/60"
+                              ? "border-teal-400 bg-slate-900"
+                              : "border-slate-700"
                           }`}
                         >
                           {/* Checkbox mode multi */}
