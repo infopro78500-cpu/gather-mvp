@@ -12,6 +12,9 @@ import { EventHeader } from "@/app/components/events/EventHeader";
 
 
 export default function EventPage() {
+  const MAX_FILES = 20;       // max 20 fichiers à la fois
+const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
+
   const params = useParams();
   const pin = params.pin as string;
 
@@ -108,50 +111,71 @@ export default function EventPage() {
     }
   }, [event]);
 
-  // Upload de plusieurs photos
-  const handleUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !event) return;
+// Upload de plusieurs photos
+const handleUpload = async (
+  e: React.ChangeEvent<HTMLInputElement>
+) => {
+  const files = e.target.files;
+  if (!files || files.length === 0 || !event) return;
 
-    setUploading(true);
+  const filesArray = Array.from(files);
 
-    try {
-      const filesArray = Array.from(files);
+  // 1) Limiter le nombre de fichiers
+  if (filesArray.length > MAX_FILES) {
+    alert(`Tu peux envoyer maximum ${MAX_FILES} fichiers à la fois.`);
+    return;
+  }
 
-      await Promise.all(
-        filesArray.map(async (file) => {
-          const cleanName = file.name
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-zA-Z0-9.\-_]/g, "_");
+  // 2) Vérifier type + taille
+  for (const file of filesArray) {
+    const sizeInMb = file.size / (1024 * 1024);
 
-          const filePath = `${event.id}/${Date.now()}_${cleanName}`;
-
-          const { error } = await supabase.storage
-            .from("photos")
-            .upload(filePath, file);
-
-          if (error) throw error;
-        })
-      );
-
-      await refreshPhotos(event);
-
-      alert(
-        filesArray.length > 1
-          ? "Photos ajoutées à l’espace commun ✅"
-          : "Photo ajoutée à l’espace commun ✅"
-      );
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("Erreur lors de l'upload des photos.");
+    if (!file.type.startsWith("image/")) {
+      alert(`Le fichier ${file.name} n'est pas une image.`);
+      return;
     }
 
+    if (sizeInMb > MAX_FILE_SIZE_MB) {
+      alert(`Le fichier ${file.name} dépasse ${MAX_FILE_SIZE_MB} Mo.`);
+      return;
+    }
+  }
+
+  setUploading(true);
+
+  try {
+    await Promise.all(
+      filesArray.map(async (file) => {
+        const cleanName = file.name
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9.\-_]/g, "_");
+
+        const fileExt = cleanName.split(".").pop() || "jpg";
+        const fileName = `${event.id}/${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 8)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("event-photos")
+          .upload(fileName, file);
+
+        if (uploadError) {
+          console.error(uploadError);
+          throw uploadError;
+        }
+      })
+    );
+
+    await refreshPhotos(event);
+  } catch (error) {
+    console.error("Erreur pendant l'upload :", error);
+    alert("Une erreur est survenue pendant l'upload. Réessaie.");
+  } finally {
     setUploading(false);
-    e.target.value = "";
-  };
+  }
+};
+
 
   // Suppression individuelle
   const handleDelete = async (photo: Photo) => {
