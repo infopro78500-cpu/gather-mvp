@@ -52,7 +52,7 @@ export function LandingForm() {
 
         // 2) On construit la liste des pages possibles
         const selectedPaths: string[] = [];
-        if (invest) selectedPaths.push("/infos/investisseur");
+        if (invest) selectedPaths.push("/infos/investisseur-v2");
         if (contrib) selectedPaths.push("/infos/contributeur");
         if (amb) selectedPaths.push("/infos/ambassadeur");
         if (beta) selectedPaths.push("/infos/beta-testeur");
