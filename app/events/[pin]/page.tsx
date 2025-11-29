@@ -226,7 +226,7 @@ const handleUpload = async (
 
     try {
       const { error } = await supabase.storage
-        .from("photos")
+        .from("event-photos")
         .remove(selectedPhotos);
 
       if (error) throw error;
