@@ -190,7 +190,7 @@ const handleUpload = async (
       setDeletingPath(photo.path);
 
       const { error } = await supabase.storage
-        .from("photos")
+        .from("event-photos")
         .remove([photo.path]);
 
       if (error) throw error;
