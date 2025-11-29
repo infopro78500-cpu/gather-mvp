@@ -73,10 +73,10 @@ const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
     fetchEvent();
   }, [pin]);
 
-  // Charger les photos de l'évènement (depuis le bucket "photos")
+  // Charger les photos de l'évènement (depuis le bucket "event-photos")
   const refreshPhotos = async (evt: EventData) => {
     const { data: files, error } = await supabase.storage
-      .from("photos")
+      .from("event-photos")
       .list(evt.id, {
         limit: 200,
         sortBy: { column: "name", order: "asc" },
@@ -91,7 +91,7 @@ const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
       files?.map((file) => {
         const path = `${evt.id}/${file.name}`;
         const { data } = supabase.storage
-          .from("photos")
+          .from("event-photos")
           .getPublicUrl(path);
 
         return {
