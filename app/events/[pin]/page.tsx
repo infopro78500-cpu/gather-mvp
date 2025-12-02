@@ -117,30 +117,35 @@ export default function EventPage() {
       return;
     }
 
-    const photosWithUrl: PhotoItem[] = files
-      .map((file: FileObject | null) => {
-        if (!file) return null;
+const photosWithUrl: PhotoItem[] = files
+  .map((file): PhotoItem | null => {
+    if (!file) return null;
 
-        const path = `${evt.id}/${file.name}`;
-        const filename = file.name || "";
-        const uploaderDeviceId = filename.split("__")[0] || null;
-        const { data: publicData } = supabase.storage
-          .from(BUCKET_NAME)
-          .getPublicUrl(path);
+    const path = `${evt.id}/${file.name}`;
+    const filename = file.name || "";
 
-        if (!publicData) {
-          console.error("URL publique manquante pour", path);
-          return null;
-        }
+    // On extrait le deviceId avant le "__", sinon undefined
+    const uploaderDeviceId = filename.includes("__")
+      ? filename.split("__")[0]
+      : undefined;
 
-        return {
-          name: file.name,
-          path,
-          url: publicData.publicUrl,
-          uploaderDeviceId,
-        } satisfies PhotoItem;
-      })
-      .filter((photo): photo is PhotoItem => photo !== null);
+    const { data: publicData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(path);
+
+    if (!publicData?.publicUrl) {
+      return null;
+    }
+
+    return {
+      name: file.name,
+      path,
+      url: publicData.publicUrl,
+      uploaderDeviceId, // type string | undefined, compatible avec PhotoItem
+    };
+  })
+  .filter((p): p is PhotoItem => p !== null); // on enlève les null proprement
+
 
     setPhotos(photosWithUrl);
   };
