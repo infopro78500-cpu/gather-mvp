@@ -107,10 +107,10 @@ useEffect(() => {
   fetchEvent();
 }, [pin]);
 
-  // Charger les photos de l'évènement (depuis le bucket "photos")
+  // Charger les photos de l'évènement (depuis le bucket "event-photos")
   const refreshPhotos = async (evt: EventData) => {
     const { data: files, error } = await supabase.storage
-      .from("photos")
+      .from(BUCKET_NAME)
       .list(evt.id, {
         limit: 200,
         sortBy: { column: "name", order: "asc" },
@@ -127,7 +127,7 @@ useEffect(() => {
       files?.map((file) => {
         const path = `${evt.id}/${file.name}`;
         const { data } = supabase.storage
-          .from("photos")
+          .from(BUCKET_NAME)
           .getPublicUrl(path);
 
   return {
@@ -257,7 +257,7 @@ const handleDelete = async (photo: PhotoItem) => {
     setDeletingPath(photo.path);
 
       const { error } = await supabase.storage
-        .from("photos")
+        .from(BUCKET_NAME)
         .remove([photo.path]);
 
     console.log("[DELETE] Résultat remove Supabase :", { data, error });
@@ -303,7 +303,7 @@ const handleDelete = async (photo: PhotoItem) => {
 
     try {
       const { error } = await supabase.storage
-        .from("photos")
+        .from(BUCKET_NAME)
         .remove(selectedPhotos);
 
       console.log("Résultat remove multiple Supabase :", { data, error });
