@@ -1,8 +1,12 @@
+import shutil
+from pathlib import Path
+
 import argparse
 from pathlib import Path
 
 from ia_local.encodeur import encoder_images
-from ia_local.recherche import trouver_similaires
+from ia_local.recherche import trouver_similaires, déplacer_doublons
+
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -24,9 +28,12 @@ def _encoder(args: argparse.Namespace) -> None:
     print(f"Embeddings générés et sauvegardés dans '{output_path}'.")
 
 
+from ia_local.recherche import trouver_similaires, déplacer_doublons
+
 def _rechercher(args: argparse.Namespace) -> None:
     embeddings_path = _resolve_path(args.output)
     paires = trouver_similaires(embeddings_path, args.seuil)
+    
     if not paires:
         print("Aucun doublon détecté au-dessus du seuil fourni.")
         return
@@ -35,6 +42,12 @@ def _rechercher(args: argparse.Namespace) -> None:
     for image1, image2, score in paires:
         print(f"- {image1} <> {image2} (similarité : {score:.4f})")
 
+    if args.move:
+        déplacer_doublons(paires)
+
+
+    if args.move:
+        déplacer_doublons(paires)
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -59,6 +72,11 @@ def main() -> None:
         help="Seuil de similarité pour détecter les doublons (par défaut: 0.85).",
     )
     parser.add_argument(
+        "--move",
+        action="store_true",
+        help="Déplacer les doublons détectés dans un dossier séparé.",
+    )
+    parser.add_argument(
         "--encode",
         action="store_true",
         help="Encoder les images et sauvegarder les embeddings.",
@@ -68,6 +86,7 @@ def main() -> None:
         action="store_true",
         help="Rechercher des doublons à partir des embeddings existants.",
     )
+    
 
     args = parser.parse_args()
 
@@ -83,3 +102,13 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+def déplacer_doublons(paires: list[tuple[str, str, float]]) -> None:
+    dossier_doublons = Path("ia_local/data/doublons_detectés")
+    dossier_doublons.mkdir(parents=True, exist_ok=True)
+
+    for _, image2, _ in paires:
+        chemin_image2 = Path(image2)
+        if chemin_image2.exists():
+            destination = dossier_doublons / chemin_image2.name
+            shutil.move(str(chemin_image2), str(destination))
+            print(f"🗂️  Déplacé : {chemin_image2.name} → {destination}")
