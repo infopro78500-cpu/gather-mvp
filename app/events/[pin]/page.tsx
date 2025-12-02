@@ -6,7 +6,6 @@ import { supabase } from "@/lib/supabaseClient";
 import QRCode from "react-qr-code";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { FileObject } from "@supabase/storage-js";
 
 import { EventData } from "@/types/event";
 import { Photo } from "@/types/photo";
@@ -98,56 +97,58 @@ export default function EventPage() {
     }
   }, [pin]);
 
-  const refreshPhotos = async (evt: EventData) => {
-    const { data: files, error: listError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .list(evt.id, {
-        limit: 200,
-        sortBy: { column: "name", order: "asc" },
-      });
+  const refreshPhotos = async (evt: EventData): Promise<void> => {
+    try {
+      const { data: files, error: listError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .list(evt.id, {
+          limit: 200,
+          sortBy: { column: "name", order: "asc" },
+        });
 
-    if (listError) {
-      console.error("Erreur list photos:", listError);
+      if (listError) {
+        console.error("Erreur lors de la récupération des photos", listError);
+        setError("Erreur lors du chargement des photos.");
+        setPhotos([]);
+        return;
+      }
+
+      const safeFiles = files ?? [];
+
+      const photosWithUrl: PhotoItem[] = safeFiles
+        .map((file): PhotoItem | null => {
+          if (!file) return null;
+
+          const path = `${evt.id}/${file.name}`;
+          const filename = file.name || "";
+
+          const uploaderDeviceId = filename.includes("__")
+            ? filename.split("__")[0]
+            : undefined;
+
+          const { data: publicData } = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(path);
+
+          if (!publicData?.publicUrl) {
+            return null;
+          }
+
+          return {
+            name: file.name,
+            path,
+            url: publicData.publicUrl,
+            uploaderDeviceId,
+          };
+        })
+        .filter((p): p is PhotoItem => p !== null);
+
+      setPhotos(photosWithUrl);
+    } catch (err) {
+      console.error("Erreur inattendue lors du chargement des photos", err);
       setError("Erreur lors du chargement des photos.");
-      return;
-    }
-
-    if (!files) {
       setPhotos([]);
-      return;
     }
-
-const photosWithUrl: PhotoItem[] = files
-  .map((file): PhotoItem | null => {
-    if (!file) return null;
-
-    const path = `${evt.id}/${file.name}`;
-    const filename = file.name || "";
-
-    // On extrait le deviceId avant le "__", sinon undefined
-    const uploaderDeviceId = filename.includes("__")
-      ? filename.split("__")[0]
-      : undefined;
-
-    const { data: publicData } = supabase.storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(path);
-
-    if (!publicData?.publicUrl) {
-      return null;
-    }
-
-    return {
-      name: file.name,
-      path,
-      url: publicData.publicUrl,
-      uploaderDeviceId, // type string | undefined, compatible avec PhotoItem
-    };
-  })
-  .filter((p): p is PhotoItem => p !== null); // on enlève les null proprement
-
-
-    setPhotos(photosWithUrl);
   };
 
   useEffect(() => {
@@ -156,13 +157,15 @@ const photosWithUrl: PhotoItem[] = files
     }
   }, [event]);
 
-  const canDeletePhoto = (photo: PhotoItem) => {
+  const canDeletePhoto = (photo: PhotoItem): boolean => {
     if (!deviceId) return false;
     if (isHost) return true;
     return photo.uploaderDeviceId === deviceId;
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
     const files = e.target.files;
     if (!files || files.length === 0 || !event) return;
 
@@ -201,56 +204,60 @@ const photosWithUrl: PhotoItem[] = files
         const filenameOnStorage = `${currentDeviceId}__${Date.now()}-${safeName}`;
         const path = `${event.id}/${filenameOnStorage}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from(BUCKET_NAME)
-          .upload(path, file);
+        try {
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .upload(path, file);
 
-        if (uploadError) {
-          console.error("Erreur upload Supabase :", uploadError);
-          setError("Erreur lors de l’upload d’une photo.");
-          continue;
+          if (uploadError) {
+            console.error("Erreur upload Supabase", uploadError);
+            continue;
+          }
+
+          if (!uploadData) {
+            console.warn("Upload terminé sans données retournées", {
+              path,
+              file: file.name,
+            });
+            continue;
+          }
+
+          const { data: publicData } = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(path);
+
+          if (!publicData?.publicUrl) {
+            console.warn("URL publique manquante après upload", { path });
+            continue;
+          }
+
+          newPhotos.push({
+            name: filenameOnStorage,
+            url: publicData.publicUrl,
+            path,
+            uploaderDeviceId: currentDeviceId,
+          });
+        } catch (err) {
+          console.error("Erreur inattendue lors de l’upload d’un fichier", err);
         }
-
-        if (!uploadData) {
-          setError("Aucune donnée renvoyée lors de l’upload.");
-          continue;
-        }
-
-        const { data: publicData } = supabase.storage
-          .from(BUCKET_NAME)
-          .getPublicUrl(path);
-
-        if (!publicData) {
-          setError("Impossible de récupérer l’URL publique.");
-          continue;
-        }
-
-        newPhotos.push({
-          name: filenameOnStorage,
-          url: publicData.publicUrl,
-          path,
-          uploaderDeviceId: currentDeviceId,
-        });
       }
 
       if (newPhotos.length > 0) {
         setPhotos((prev) => [...prev, ...newPhotos]);
       }
     } finally {
+      if (event) {
+        await refreshPhotos(event);
+      }
       setUploading(false);
       e.target.value = "";
     }
   };
 
-  const handleDelete = async (photo: PhotoItem) => {
-    if (!event || !deviceId) return;
+  const handleDelete = async (photo: PhotoItem): Promise<void> => {
+    if (!event) return;
 
-    const isAllowed =
-      deviceId === event.host_device_id
-        ? true
-        : photo.uploaderDeviceId === deviceId;
-
-    if (!isAllowed) return;
+    if (!canDeletePhoto(photo)) return;
 
     const confirmDelete = window.confirm(
       "Supprimer définitivement cette photo de l'espace commun ?"
@@ -261,25 +268,20 @@ const photosWithUrl: PhotoItem[] = files
     setPhotos((prev) => prev.filter((p) => p.path !== photo.path));
 
     try {
-      const { data: deleteData, error: deleteError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .remove([photo.path]);
+      try {
+        const { error: deleteError } = await supabase.storage
+          .from(BUCKET_NAME)
+          .remove([photo.path]);
 
-      if (deleteError) {
-        console.error(
-          "Erreur Supabase lors de la suppression de la photo :",
-          { path: photo.path, error: deleteError }
-        );
+        if (deleteError) {
+          console.error("Erreur Supabase lors de la suppression", {
+            path: photo.path,
+            error: deleteError,
+          });
+        }
+      } catch (err) {
+        console.error("Erreur inattendue lors de la suppression de la photo", err);
       }
-
-      if (!deleteData) {
-        console.error(
-          "Aucune donnée de suppression retournée par Supabase pour la photo supprimée :",
-          photo.path
-        );
-      }
-    } catch (err) {
-      console.error("Erreur inattendue lors de la suppression de la photo :", err);
     } finally {
       await refreshPhotos(event);
       setDeletingPath(null);
@@ -292,13 +294,12 @@ const photosWithUrl: PhotoItem[] = files
     );
   };
 
-  const handleDeleteSelected = async () => {
-    if (!event || selectedPhotos.length === 0 || !deviceId) return;
+  const handleDeleteSelected = async (): Promise<void> => {
+    if (!event || selectedPhotos.length === 0) return;
 
     const allowedPaths = selectedPhotos.filter((path) => {
-      if (deviceId === event.host_device_id) return true;
-      const uploaderId = path.split("/").pop()?.split("__")[0] || null;
-      return uploaderId === deviceId;
+      const photo = photos.find((p) => p.path === path);
+      return photo ? canDeletePhoto(photo) : false;
     });
 
     if (allowedPaths.length === 0) {
@@ -318,25 +319,20 @@ const photosWithUrl: PhotoItem[] = files
     setMultiDeleteMode(false);
 
     try {
-      const { data: deleteData, error: deleteError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .remove(allowedPaths);
+      try {
+        const { error: deleteError } = await supabase.storage
+          .from(BUCKET_NAME)
+          .remove(allowedPaths);
 
-      if (deleteError) {
-        console.error("Erreur Supabase lors de la suppression multiple :", {
-          paths: allowedPaths,
-          error: deleteError,
-        });
+        if (deleteError) {
+          console.error("Erreur Supabase lors de la suppression multiple", {
+            paths: allowedPaths,
+            error: deleteError,
+          });
+        }
+      } catch (err) {
+        console.error("Erreur inattendue lors de la suppression multiple", err);
       }
-
-      if (!deleteData) {
-        console.error(
-          "Aucune donnée de suppression retournée par Supabase pour la suppression multiple :",
-          allowedPaths
-        );
-      }
-    } catch (err) {
-      console.error("Erreur inattendue lors de la suppression multiple :", err);
     } finally {
       await refreshPhotos(event);
     }
