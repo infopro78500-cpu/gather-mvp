@@ -369,10 +369,13 @@ const handleUpload = async (
     alert("Lien de l’évènement copié dans le presse-papiers ✅");
   };
 
-  const handleDownloadAll = async () => {
+  const downloadPhotos = async (
+    photosToDownload: PhotoItem[],
+    zipLabel: string
+  ): Promise<void> => {
     if (!event) return;
 
-    if (photos.length === 0) {
+    if (photosToDownload.length === 0) {
       alert("Aucune photo à télécharger.");
       return;
     }
@@ -382,7 +385,7 @@ const handleUpload = async (
 
       const zip = new JSZip();
 
-      for (const photo of photos) {
+      for (const photo of photosToDownload) {
         const response = await fetch(photo.url);
         if (!response.ok) {
           console.error("Erreur de téléchargement pour", photo.url);
@@ -397,7 +400,7 @@ const handleUpload = async (
       }
 
       const content = await zip.generateAsync({ type: "blob" });
-      const zipName = `coffre-${event.pin || event.id}.zip`;
+      const zipName = `coffre-${zipLabel}.zip`;
       saveAs(content, zipName);
     } catch (err) {
       console.error("Erreur lors de la création du ZIP :", err);
@@ -405,6 +408,28 @@ const handleUpload = async (
     } finally {
       setDownloading(false);
     }
+  };
+
+  const handleDownloadAll = async () => {
+    await downloadPhotos(photos, event ? event.pin || event.id : "coffre");
+  };
+
+  const handleDownloadSelected = async () => {
+    if (!event) return;
+
+    if (selectedPhotos.length === 0) {
+      alert("Sélectionne au moins une photo pour télécharger.");
+      return;
+    }
+
+    const photosToDownload = photos.filter((photo) =>
+      selectedPhotos.includes(photo.path)
+    );
+
+    await downloadPhotos(
+      photosToDownload,
+      `${event.pin || event.id}-selection`
+    );
   };
 
   return (
@@ -551,7 +576,17 @@ const handleUpload = async (
 
 
                   {multiDeleteMode && selectedPhotos.length > 0 && (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleDownloadSelected}
+                        disabled={downloading}
+                        className="rounded-md bg-slate-800 hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors"
+                      >
+                        {downloading
+                          ? "Préparation du ZIP..."
+                          : "Télécharger la sélection (ZIP)"}
+                      </button>
                       <button
                         type="button"
                         onClick={handleDeleteSelected}
