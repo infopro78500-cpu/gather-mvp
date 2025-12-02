@@ -1,18 +1,11 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useState, FormEvent } from "react";
 import { getDeviceId } from "@/lib/deviceId";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 
 export default function CreateEventPage() {
-  // 🔥 TEST LOGIN ICI
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      console.log("USER =>", data.user);
-    });
-  }, []);
-
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,53 +15,76 @@ export default function CreateEventPage() {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
-const handleSubmit = async (e: FormEvent) => {
-  e.preventDefault();
-  setError(null);
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
 
-  if (!name.trim()) {
-    setError("Donne un nom à ton évènement.");
-    return;
-  }
+    if (!name.trim()) {
+      setError("Donne un nom à ton évènement.");
+      return;
+    }
 
-  const pin = generatePin();
-  setCreating(true);
+    const pin = generatePin();
+    setCreating(true);
 
-  try {
-    const deviceId = await getDeviceId();
-    console.log("DEVICE ID (host) :", deviceId);
+    try {
+      const deviceId = await getDeviceId();
 
-    const { data: authInfo } = await supabase.auth.getUser();
-    const userId = authInfo?.user?.id || null;
+      const { data: authInfo, error: authError } = await supabase.auth.getUser();
 
-    console.log("HOST USER ID :", userId);
+      if (authError) {
+        console.error(authError);
+        setError("Erreur lors de la récupération de l'utilisateur.");
+        setCreating(false);
+        return;
+      }
 
-const { error } = await supabase
-  .from("events")
-  .insert({
-    name: name.trim(),
-    pin,
-    host_device_id: deviceId,
-    host_user_id: userId,
-  });
+      if (!authInfo) {
+        setError("Aucune donnée utilisateur renvoyée.");
+        setCreating(false);
+        return;
+      }
 
-if (error) {
-  console.error(error);
-  setError("Erreur lors de la création de l'évènement.");
-  setCreating(false);
-  return;
-}
+      const userId = authInfo.user?.id || null;
 
-// ici on utilise simplement la variable pin qu'on a déjà
-window.location.href = `/events/${pin}`;
+      if (!userId) {
+        setError("Utilisateur non authentifié.");
+        setCreating(false);
+        return;
+      }
 
-  } catch (err) {
-    console.error(err);
-    setError("Erreur inattendue.");
-  } finally {
-    setCreating(false);
-  }
-};
+      const { data: insertData, error: insertError } = await supabase
+        .from("events")
+        .insert({
+          name: name.trim(),
+          pin,
+          host_device_id: deviceId,
+          host_user_id: userId,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error(insertError);
+        setError("Erreur lors de la création de l'évènement.");
+        setCreating(false);
+        return;
+      }
+
+      if (!insertData) {
+        setError("Aucune donnée reçue lors de la création de l'évènement.");
+        setCreating(false);
+        return;
+      }
+
+      window.location.href = `/events/${pin}`;
+    } catch (err) {
+      console.error(err);
+      setError("Erreur inattendue.");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white px-4">

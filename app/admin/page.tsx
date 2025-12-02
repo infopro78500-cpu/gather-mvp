@@ -20,9 +20,23 @@ export default async function AdminPage() {
 
   if (error) {
     console.error("Erreur Supabase:", error);
+    return (
+      <main className="min-h-screen bg-slate-950 text-slate-50 px-6 py-10 flex justify-center">
+        <p>Erreur lors du chargement des leads.</p>
+      </main>
+    );
   }
 
-  const leads: Lead[] = (data ?? []) as Lead[];
+  if (!data) {
+    console.error("Aucune donnée retournée par Supabase.");
+    return (
+      <main className="min-h-screen bg-slate-950 text-slate-50 px-6 py-10 flex justify-center">
+        <p>Aucune donnée disponible.</p>
+      </main>
+    );
+  }
+
+  const leads: Lead[] = data as Lead[];
 
   const totalLeads = leads.length;
   const investors = leads.filter((l) => l.interest_investing).length;

@@ -8,10 +8,15 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
 
   const handleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    const { data, error } = await supabase.auth.signInWithOtp({ email });
 
     if (error) {
       setMessage("Erreur lors de l'envoi du lien.");
+      return;
+    }
+
+    if (!data) {
+      setMessage("Aucune donnée reçue depuis Supabase.");
       return;
     }
 
