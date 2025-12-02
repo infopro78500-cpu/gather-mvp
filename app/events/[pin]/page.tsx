@@ -46,6 +46,10 @@ export default function EventPage() {
   const [multiDeleteMode, setMultiDeleteMode] = useState(false);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadInfo, setUploadInfo] = useState<{
+    processed: number;
+    total: number;
+  } | null>(null);
 
 
   const photoCount = photos.length;
@@ -189,6 +193,7 @@ const handleUpload = async (
   setUploading(true);
   setError(null);
   setUploadError(null);
+  setUploadInfo({ processed: 0, total: filesArray.length });
 
   try {
     const newPhotos: PhotoItem[] = [];
@@ -246,6 +251,10 @@ const handleUpload = async (
       } catch (err) {
         console.error("Erreur inattendue lors de l’upload d’un fichier", err);
       }
+
+      setUploadInfo((prev) =>
+        prev ? { ...prev, processed: prev.processed + 1 } : null
+      );
     }
 
     if (rejectedFiles.length > 0) {
@@ -264,6 +273,7 @@ const handleUpload = async (
       await refreshPhotos(event);
     }
     setUploading(false);
+    setUploadInfo(null);
     e.target.value = "";
   }
 };
@@ -521,7 +531,9 @@ const handleUpload = async (
 
                   <label className="bg-teal-500 px-4 py-2 rounded-md cursor-pointer text-slate-900 font-semibold hover:bg-teal-400 text-sm shadow-sm">
                     {uploading
-                      ? "Upload en cours..."
+                      ? uploadInfo
+                        ? `Upload : ${uploadInfo.processed}/${uploadInfo.total}`
+                        : "Upload en cours..."
                       : "Ajouter des photos à l’espace commun"}
                     <input
                       type="file"
