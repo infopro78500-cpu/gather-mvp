@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function JoinPage() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [joining, setJoining] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const handleJoin = () => {
+  const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setError(null);
 
     const trimmed = pin.trim();
@@ -17,11 +21,21 @@ export default function JoinPage() {
       return;
     }
 
-    setJoining(true);
+    setLoading(true);
 
-    if (typeof window !== "undefined") {
-      window.location.href = `/events/${trimmed}`;
+    const { data, error: supabaseError } = await supabase
+      .from("events")
+      .select("id")
+      .eq("pin", trimmed)
+      .maybeSingle();
+
+    if (supabaseError || !data) {
+      setError("Aucun coffre trouvé pour ce code. Vérifie le PIN.");
+      setLoading(false);
+      return;
     }
+
+    router.push(`/events/${trimmed}`);
   };
 
   return (
@@ -40,7 +54,7 @@ export default function JoinPage() {
           </p>
         </div>
 
-        <div className="space-y-3">
+        <form className="space-y-3" onSubmit={handleJoin}>
           <div className="space-y-1">
             <label
               htmlFor="pin"
@@ -66,14 +80,13 @@ export default function JoinPage() {
           </div>
 
           <button
-            type="button"
-            onClick={handleJoin}
-            disabled={joining}
+            type="submit"
+            disabled={loading}
             className="mt-2 w-full rounded-md bg-teal-500 py-2 text-sm font-semibold text-slate-950 hover:bg-teal-400 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           >
-            {joining ? "Redirection..." : "Rejoindre le coffre"}
+            {loading ? "Recherche..." : "Rejoindre le coffre"}
           </button>
-        </div>
+        </form>
 
         <div className="pt-2 border-t border-slate-800">
           <p className="text-[11px] text-slate-500">
@@ -85,3 +98,4 @@ export default function JoinPage() {
     </main>
   );
 }
+ 
