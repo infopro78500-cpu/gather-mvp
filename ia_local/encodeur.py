@@ -53,7 +53,7 @@ def encoder_images(dossier_images: str, sortie: str) -> None:
     sortie_path = Path(sortie)
     sortie_path.parent.mkdir(parents=True, exist_ok=True)
     with sortie_path.open("wb") as fichier_sortie:
-        pickle.dump(resultats, fichier_sortie)
+        pickle.dump({"base_dir": str(dossier_path.resolve()), "embeddings": resultats}, fichier_sortie)
 
 
 __all__ = ["encoder_images"]

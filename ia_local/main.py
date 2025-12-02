@@ -1,12 +1,12 @@
-import shutil
-from pathlib import Path
-
 import argparse
 from pathlib import Path
 
 from ia_local.encodeur import encoder_images
-from ia_local.recherche import trouver_similaires, déplacer_doublons
-
+from ia_local.recherche import (
+    déplacer_doublons,
+    enregistrer_doublons_csv,
+    trouver_similaires,
+)
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -18,7 +18,7 @@ def _resolve_path(path_str: str) -> str:
     chemin = Path(path_str)
     if not chemin.is_absolute():
         chemin = _PROJECT_ROOT / chemin
-    return str(chemin)
+    return str(chemin.resolve())
 
 
 def _encoder(args: argparse.Namespace) -> None:
@@ -28,12 +28,10 @@ def _encoder(args: argparse.Namespace) -> None:
     print(f"Embeddings générés et sauvegardés dans '{output_path}'.")
 
 
-from ia_local.recherche import trouver_similaires, déplacer_doublons
-
 def _rechercher(args: argparse.Namespace) -> None:
     embeddings_path = _resolve_path(args.output)
     paires = trouver_similaires(embeddings_path, args.seuil)
-    
+
     if not paires:
         print("Aucun doublon détecté au-dessus du seuil fourni.")
         return
@@ -42,9 +40,10 @@ def _rechercher(args: argparse.Namespace) -> None:
     for image1, image2, score in paires:
         print(f"- {image1} <> {image2} (similarité : {score:.4f})")
 
-    if args.move:
-        déplacer_doublons(paires)
-
+    if args.csv:
+        csv_path = _resolve_path(args.csv)
+        enregistrer_doublons_csv(paires, csv_path)
+        print(f"Liste des doublons sauvegardée dans '{csv_path}'.")
 
     if args.move:
         déplacer_doublons(paires)
@@ -86,6 +85,10 @@ def main() -> None:
         action="store_true",
         help="Rechercher des doublons à partir des embeddings existants.",
     )
+    parser.add_argument(
+        "--csv",
+        help="Enregistrer les doublons détectés dans un fichier CSV (optionnel).",
+    )
     
 
     args = parser.parse_args()
@@ -102,13 +105,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-def déplacer_doublons(paires: list[tuple[str, str, float]]) -> None:
-    dossier_doublons = Path("ia_local/data/doublons_detectés")
-    dossier_doublons.mkdir(parents=True, exist_ok=True)
-
-    for _, image2, _ in paires:
-        chemin_image2 = Path(image2)
-        if chemin_image2.exists():
-            destination = dossier_doublons / chemin_image2.name
-            shutil.move(str(chemin_image2), str(destination))
-            print(f"🗂️  Déplacé : {chemin_image2.name} → {destination}")
