@@ -107,18 +107,14 @@ useEffect(() => {
   fetchEvent();
 }, [pin]);
 
-  // --- REFRESH PHOTOS ---
-
-const refreshPhotos = async (evt: EventData) => {
-  console.log("🔄 refreshPhotos pour event :", evt.id);
-
-  // 1️⃣ On relit les fichiers dans le dossier de l'évènement
-  const { data: files, error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .list(evt.id, {
-      limit: 200,
-      sortBy: { column: "name", order: "asc" },
-    });
+  // Charger les photos de l'évènement (depuis le bucket "photos")
+  const refreshPhotos = async (evt: EventData) => {
+    const { data: files, error } = await supabase.storage
+      .from("photos")
+      .list(evt.id, {
+        limit: 200,
+        sortBy: { column: "name", order: "asc" },
+      });
 
   console.log("📁 Files bruts Supabase :", files, "error :", error);
 
@@ -127,18 +123,12 @@ const refreshPhotos = async (evt: EventData) => {
     return;
   }
 
-  // 2️⃣ On enlève le fichier système `.emptyFolderPlaceholder`
-  const safeFiles = (files ?? []).filter(
-    (file) => file.name !== ".emptyFolderPlaceholder"
-  );
-
-  // 3️⃣ On reconstruit le chemin complet + l’URL publique
-const photosWithUrl: PhotoItem[] = safeFiles.map((file) => {
-  const path = `${evt.id}/${file.name}`;
-
-  const { data } = supabase.storage
-    .from(BUCKET_NAME)
-    .getPublicUrl(path);
+    const photosWithUrl: Photo[] =
+      files?.map((file) => {
+        const path = `${evt.id}/${file.name}`;
+        const { data } = supabase.storage
+          .from("photos")
+          .getPublicUrl(path);
 
   return {
     name: file.name,
@@ -266,11 +256,9 @@ const handleDelete = async (photo: PhotoItem) => {
   try {
     setDeletingPath(photo.path);
 
-    console.log("[DELETE] path envoyé à Supabase =", photo.path);
-
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove([photo.path]);
+      const { error } = await supabase.storage
+        .from("photos")
+        .remove([photo.path]);
 
     console.log("[DELETE] Résultat remove Supabase :", { data, error });
 
@@ -314,8 +302,8 @@ const handleDelete = async (photo: PhotoItem) => {
     console.log("Demande de suppression multiple pour :", selectedPhotos);
 
     try {
-      const { data, error } = await supabase.storage
-        .from(BUCKET_NAME)
+      const { error } = await supabase.storage
+        .from("photos")
         .remove(selectedPhotos);
 
       console.log("Résultat remove multiple Supabase :", { data, error });
