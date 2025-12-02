@@ -1,7 +1,7 @@
 import argparse
 
-from encodeur import encoder_images
-from recherche import trouver_similaires
+from ia_local.encodeur import encoder_images
+from ia_local.recherche import trouver_similaires
 
 
 def _encoder(args: argparse.Namespace) -> None:
