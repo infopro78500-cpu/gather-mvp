@@ -122,6 +122,8 @@ export default function EventPage() {
         if (!file) return null;
 
         const path = `${evt.id}/${file.name}`;
+        const filename = file.name || "";
+        const uploaderDeviceId = filename.split("__")[0] || null;
         const { data: publicData } = supabase.storage
           .from(BUCKET_NAME)
           .getPublicUrl(path);
@@ -135,6 +137,7 @@ export default function EventPage() {
           name: file.name,
           path,
           url: publicData.publicUrl,
+          uploaderDeviceId,
         } satisfies PhotoItem;
       })
       .filter((photo): photo is PhotoItem => photo !== null);
@@ -235,7 +238,13 @@ export default function EventPage() {
   };
 
   const handleDelete = async (photo: PhotoItem) => {
-    if (!event) return;
+    if (!event || !deviceId) return;
+
+    const isAllowed = deviceId === event.host_device_id
+      ? true
+      : photo.uploaderDeviceId === deviceId;
+
+    if (!isAllowed) return;
 
     const confirmDelete = window.confirm(
       "Supprimer définitivement cette photo de l'espace commun ?"
@@ -250,18 +259,21 @@ export default function EventPage() {
         .remove([photo.path]);
 
       if (deleteError) {
-        throw deleteError;
+        console.error("Erreur lors de la suppression :", deleteError);
+        alert("Erreur lors de la suppression de la photo.");
+        return;
       }
 
       if (!deleteData) {
-        throw new Error("Aucune donnée de suppression retournée.");
+        console.error("Aucune donnée de suppression retournée.");
+        alert("Erreur lors de la suppression de la photo.");
+        return;
       }
 
       setPhotos((prev) => prev.filter((p) => p.path !== photo.path));
       await refreshPhotos(event);
     } catch (err) {
       console.error("Delete error:", err);
-      alert("Erreur lors de la suppression de la photo.");
     } finally {
       setDeletingPath(null);
     }
@@ -274,7 +286,18 @@ export default function EventPage() {
   };
 
   const handleDeleteSelected = async () => {
-    if (!event || selectedPhotos.length === 0) return;
+    if (!event || selectedPhotos.length === 0 || !deviceId) return;
+
+    const allowedPaths = selectedPhotos.filter((path) => {
+      if (deviceId === event.host_device_id) return true;
+      const uploaderId = path.split("/").pop()?.split("__")[0] || null;
+      return uploaderId === deviceId;
+    });
+
+    if (allowedPaths.length === 0) {
+      alert("Aucune photo autorisée à être supprimée.");
+      return;
+    }
 
     const ok = window.confirm(
       `Supprimer définitivement ${selectedPhotos.length} photo${
@@ -286,17 +309,25 @@ export default function EventPage() {
     try {
       const { data: deleteData, error: deleteError } = await supabase.storage
         .from(BUCKET_NAME)
-        .remove(selectedPhotos);
+        .remove(allowedPaths);
 
-      if (deleteError) throw deleteError;
-      if (!deleteData) throw new Error("Aucune donnée de suppression retournée.");
+      if (deleteError) {
+        console.error("Erreur lors de la suppression multiple :", deleteError);
+        alert("Erreur lors de la suppression des photos sélectionnées.");
+        return;
+      }
+
+      if (!deleteData) {
+        console.error("Aucune donnée de suppression retournée.");
+        alert("Erreur lors de la suppression des photos sélectionnées.");
+        return;
+      }
 
       setSelectedPhotos([]);
       setMultiDeleteMode(false);
       await refreshPhotos(event);
     } catch (err) {
       console.error("Delete selected error:", err);
-      alert("Erreur lors de la suppression des photos sélectionnées.");
     }
   };
 
