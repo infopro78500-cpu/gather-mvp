@@ -6,31 +6,43 @@ import { supabase } from "@/lib/supabaseClient";
 import QRCode from "react-qr-code";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+
 import { EventData } from "@/types/event";
 import { Photo } from "@/types/photo";
 import { EventHeader } from "@/app/components/events/EventHeader";
+import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
 
-
-export default function EventPage() {
-  const MAX_FILES = 20;       // max 20 fichiers à la fois
+const BUCKET_NAME = "event-photos";
+const MAX_FILES = 20; // max 20 fichiers à la fois
 const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
 
+// On étend le type Photo pour ajouter l'uploader
+type PhotoItem = Photo & {
+  uploaderDeviceId?: string | null;
+};
+
+export default function EventPage() {
   const params = useParams();
   const pin = params.pin as string;
+
+  // --- STATE ---
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [uploading, setUploading] = useState(false);
-  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
 
   const [isCoffreOpen, setIsCoffreOpen] = useState(false);
   const [origin, setOrigin] = useState<string | null>(null);
 
-  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [isHost, setIsHost] = useState(false);
+
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoItem | null>(null);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
@@ -39,181 +51,256 @@ const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
   const photoCount = photos.length;
   const hasPhotos = photoCount > 0;
 
-  // Récupérer l'origin pour construire le lien de partage
+  // --- DEVICE ID & HOST ---
+
+  // 1) Récupérer l’ID du device courant
+  useEffect(() => {
+    const id = getEventDeviceId();
+    console.log("DEVICE ID (event page) :", id);
+    setDeviceId(id);
+  }, []);
+
+  // 2) Savoir si ce device est l'organisateur de l'évènement
+  useEffect(() => {
+    if (event && deviceId) {
+      const host = event.host_device_id === deviceId;
+      console.log("isHost ?", host, "event.host_device_id =", event.host_device_id);
+      setIsHost(host);
+    }
+  }, [event, deviceId]);
+
+  // --- ORIGIN & SHARE URL ---
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setOrigin(window.location.origin);
     }
   }, []);
 
-  const shareUrl =
-    origin && event ? `${origin}/events/${event.pin}` : null;
+  const shareUrl = origin && event ? `${origin}/events/${event.pin}` : null;
 
-  // Charger l'évènement par PIN
-  useEffect(() => {
-    const fetchEvent = async () => {
-      const { data, error } = await supabase
-        .from("events")
-        .select("*")
-        .eq("pin", pin)
-        .maybeSingle<EventData>();
-
-      if (error) {
-        console.error(error);
-        setError("Erreur lors du chargement de l’évènement.");
-      } else if (!data) {
-        setError("Aucun évènement trouvé pour ce PIN.");
-      } else {
-        setEvent(data);
-      }
-
-      setLoading(false);
-    };
-
-    fetchEvent();
-  }, [pin]);
-
-  // Charger les photos de l'évènement (depuis le bucket "photos")
-  const refreshPhotos = async (evt: EventData) => {
-    const { data: files, error } = await supabase.storage
-      .from("photos")
-      .list(evt.id, {
-        limit: 200,
-        sortBy: { column: "name", order: "asc" },
-      });
+// --- FETCH EVENT ---
+useEffect(() => {
+  const fetchEvent = async () => {
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .eq("pin", pin)
+      .maybeSingle<EventData>();
 
     if (error) {
-      console.error("Erreur list photos:", error);
-      return;
+      console.error(error);
+      setError("Erreur lors du chargement de l'évènement.");
+    } else if (!data) {
+      setError("Aucun évènement trouvé pour ce PIN.");
+    } else {
+      setEvent(data);
+
+      // 🔍 LOGS POUR CHECKER L'ÉVÈNEMENT
+      console.log("[CHECK EVENT] id =", data.id);
+      console.log("[CHECK EVENT] pin =", data.pin);
     }
 
-    const photosWithUrl: Photo[] =
-      files?.map((file) => {
-        const path = `${evt.id}/${file.name}`;
-        const { data } = supabase.storage
-          .from("photos")
-          .getPublicUrl(path);
-
-        return {
-          name: file.name,
-          url: data.publicUrl,
-          path,
-        };
-      }) ?? [];
-
-    setPhotos(photosWithUrl);
+    setLoading(false);
   };
 
-  // Recharger les photos quand l'évènement est chargé
+  fetchEvent();
+}, [pin]);
+
+  // --- REFRESH PHOTOS ---
+
+const refreshPhotos = async (evt: EventData) => {
+  console.log("🔄 refreshPhotos pour event :", evt.id);
+
+  // 1️⃣ On relit les fichiers dans le dossier de l'évènement
+  const { data: files, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .list(evt.id, {
+      limit: 200,
+      sortBy: { column: "name", order: "asc" },
+    });
+
+  console.log("📁 Files bruts Supabase :", files, "error :", error);
+
+  if (error) {
+    console.error("Erreur list photos:", error);
+    return;
+  }
+
+  // 2️⃣ On enlève le fichier système `.emptyFolderPlaceholder`
+  const safeFiles = (files ?? []).filter(
+    (file) => file.name !== ".emptyFolderPlaceholder"
+  );
+
+  // 3️⃣ On reconstruit le chemin complet + l’URL publique
+const photosWithUrl: PhotoItem[] = safeFiles.map((file) => {
+  const path = `${evt.id}/${file.name}`;
+
+  const { data } = supabase.storage
+    .from(BUCKET_NAME)
+    .getPublicUrl(path);
+
+  return {
+    name: file.name,
+    path,
+    url: data.publicUrl,
+    // ... uploadeur, etc
+  };
+});
+
+console.log("[REFRESH] Photos construites pour l'état React =", photosWithUrl); // 👈 AJOUTE ÇA
+
+setPhotos(photosWithUrl);
+
+};
+
+
+  // Quand l'évènement change, on recharge les photos
   useEffect(() => {
     if (event) {
       refreshPhotos(event);
     }
   }, [event]);
 
-// Upload de plusieurs photos
-const handleUpload = async (
-  e: React.ChangeEvent<HTMLInputElement>
-) => {
-  const files = e.target.files;
-  if (!files || files.length === 0 || !event) return;
+  // --- DROITS DE SUPPRESSION ---
 
-  const filesArray = Array.from(files);
+  const canDeletePhoto = (photo: PhotoItem) => {
+    if (!deviceId) return false;
+    if (isHost) return true; // l'organisateur peut tout supprimer
+    return photo.uploaderDeviceId === deviceId; // sinon seulement ses propres photos
+  };
 
-  // 1) Limiter le nombre de fichiers
-  if (filesArray.length > MAX_FILES) {
-    alert(`Tu peux envoyer maximum ${MAX_FILES} fichiers à la fois.`);
-    return;
-  }
+  // --- UPLOAD ---
+console.log("[UPLOAD] event.id =", event?.id);
+console.log("[UPLOAD] currentDeviceId =", getEventDeviceId());
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !event) return;
 
-  // 2) Vérifier type + taille
-  for (const file of filesArray) {
-    const sizeInMb = file.size / (1024 * 1024);
+    const filesArray = Array.from(files);
 
-    if (!file.type.startsWith("image/")) {
-      alert(`Le fichier ${file.name} n'est pas une image.`);
+    // 1) Récupérer l'ID de cet appareil
+    const currentDeviceId = getEventDeviceId();
+    if (!currentDeviceId) {
+      console.error("Impossible de récupérer le deviceId");
+      setError("Erreur : appareil non identifié.");
       return;
     }
 
-    if (sizeInMb > MAX_FILE_SIZE_MB) {
-      alert(`Le fichier ${file.name} dépasse ${MAX_FILE_SIZE_MB} Mo.`);
+    // 2) Limiter le nombre de fichiers
+    if (filesArray.length > MAX_FILES) {
+      alert(`Tu peux envoyer maximum ${MAX_FILES} fichiers à la fois.`);
       return;
     }
-  }
 
-  setUploading(true);
+    setUploading(true);
+    setError(null);
 
-  try {
-    await Promise.all(
-      filesArray.map(async (file) => {
-        const cleanName = file.name
-          .normalize("NFD")
+    try {
+      const newPhotos: PhotoItem[] = [];
+
+      for (const file of filesArray) {
+        // 3) Vérifier la taille
+        const sizeMb = file.size / (1024 * 1024);
+        if (sizeMb > MAX_FILE_SIZE_MB) {
+          console.warn(`Fichier trop lourd : ${file.name}`);
+          continue;
+        }
+
+        // 4) Nom de fichier safe
+        const safeName = file.name
+          .normalize("NFKD")
           .replace(/[\u0300-\u036f]/g, "")
           .replace(/[^a-zA-Z0-9.\-_]/g, "_");
 
-        const fileExt = cleanName.split(".").pop() || "jpg";
-        const fileName = `${event.id}/${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2, 8)}.${fileExt}`;
+        // 5) Path complet dans le bucket
+        const filenameOnStorage = `${currentDeviceId}__${Date.now()}-${safeName}`;
+        const path = `${event.id}/${filenameOnStorage}`;
+        console.log("[UPLOAD] path envoyé à Supabase =", path);
 
+        // 6) Upload
         const { error: uploadError } = await supabase.storage
-          .from("event-photos")
-          .upload(fileName, file);
+          .from(BUCKET_NAME)
+          .upload(path, file);
 
         if (uploadError) {
-          console.error(uploadError);
-          throw uploadError;
+          console.error("Erreur upload Supabase :", uploadError);
+          setError("Erreur lors de l’upload d’une photo.");
+          continue;
         }
-      })
-    );
 
+        // 7) URL publique
+        const { data: publicData } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(path);
+
+        newPhotos.push({
+          name: filenameOnStorage,
+          url: publicData.publicUrl,
+          path,
+          uploaderDeviceId: currentDeviceId,
+        });
+      }
+
+      if (newPhotos.length > 0) {
+        setPhotos((prev) => [...prev, ...newPhotos]);
+      }
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+// --- SUPPRESSION INDIVIDUELLE ---
+const handleDelete = async (photo: PhotoItem) => {
+  if (!event) return;
+
+  const confirmDelete = window.confirm(
+    "Supprimer définitivement cette photo de l'espace commun ?"
+  );
+  if (!confirmDelete) return;
+
+  console.log("[DELETE] Demande de suppression pour :", photo.path);
+  console.log("[DELETE] isHost =", isHost, "deviceId =", deviceId);
+
+  try {
+    setDeletingPath(photo.path);
+
+    console.log("[DELETE] path envoyé à Supabase =", photo.path);
+
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove([photo.path]);
+
+    console.log("[DELETE] Résultat remove Supabase :", { data, error });
+
+    if (error) {
+      throw error;
+    }
+
+    // 🔁 Mise à jour immédiate du state local
+    setPhotos((prev) => prev.filter((p) => p.path !== photo.path));
+
+    // 🔁 Sync avec Supabase au cas où
     await refreshPhotos(event);
-  } catch (error) {
-    console.error("Erreur pendant l'upload :", error);
-    alert("Une erreur est survenue pendant l'upload. Réessaie.");
+  } catch (err) {
+    console.error("Delete error:", err);
+    alert("Erreur lors de la suppression de la photo.");
   } finally {
-    setUploading(false);
+    setDeletingPath(null);
   }
 };
 
 
-  // Suppression individuelle
-  const handleDelete = async (photo: Photo) => {
-    if (!event) return;
 
-    const confirmDelete = window.confirm(
-      "Supprimer définitivement cette photo de l’espace commun ?"
-    );
-    if (!confirmDelete) return;
+  // --- SUPPRESSION MULTIPLE ---
 
-    try {
-      setDeletingPath(photo.path);
-
-      const { error } = await supabase.storage
-        .from("photos")
-        .remove([photo.path]);
-
-      if (error) throw error;
-
-      await refreshPhotos(event);
-    } catch (err) {
-      console.error("Delete error:", err);
-      alert("Erreur lors de la suppression de la photo.");
-    } finally {
-      setDeletingPath(null);
-    }
-  };
-
-  // Toggle sélection multi
   const toggleSelectPhoto = (path: string) => {
     setSelectedPhotos((prev) =>
-      prev.includes(path)
-        ? prev.filter((p) => p !== path)
-        : [...prev, path]
+      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]
     );
   };
 
-  // Suppression multiple
   const handleDeleteSelected = async () => {
     if (!event || selectedPhotos.length === 0) return;
 
@@ -224,10 +311,14 @@ const handleUpload = async (
     );
     if (!ok) return;
 
+    console.log("Demande de suppression multiple pour :", selectedPhotos);
+
     try {
-      const { error } = await supabase.storage
-        .from("photos")
+      const { data, error } = await supabase.storage
+        .from(BUCKET_NAME)
         .remove(selectedPhotos);
+
+      console.log("Résultat remove multiple Supabase :", { data, error });
 
       if (error) throw error;
 
@@ -240,14 +331,16 @@ const handleUpload = async (
     }
   };
 
-  // Copier le lien
+  // --- COPIER LIEN ---
+
   const handleCopyLink = () => {
     if (!shareUrl) return;
     navigator.clipboard.writeText(shareUrl);
     alert("Lien de l’évènement copié dans le presse-papiers ✅");
   };
 
-  // Télécharger toutes les photos en ZIP
+  // --- DOWNLOAD ZIP ---
+
   const handleDownloadAll = async () => {
     if (!event) return;
 
@@ -286,6 +379,8 @@ const handleUpload = async (
     }
   };
 
+  // --- RENDER ---
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
       <div className="w-[380px] md:w-[720px] rounded-2xl bg-slate-900/80 border border-slate-800 p-6 md:p-7 shadow-xl space-y-4">
@@ -301,7 +396,8 @@ const handleUpload = async (
 
         {!loading && event && (
           <>
-<EventHeader event={event} />
+            <EventHeader event={event} />
+
             {/* PARTAGE */}
             {shareUrl && (
               <section className="mt-1 rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-4 flex flex-col md:flex-row items-center md:items-stretch gap-4">
@@ -460,99 +556,116 @@ const handleUpload = async (
                 )}
 
                 {/* GALERIE */}
-                {photos.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center mb-2">
-                    Aucune photo pour l’instant. Ajoute la première ✨
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                    {photos.map((photo) => {
-                      const isSelected = selectedPhotos.includes(
-                        photo.path
-                      );
+                <section className="mt-4">
+                  {photos.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center mb-2">
+                      Aucune photo pour l’instant. Ajoute la première ✨
+                    </p>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                        {photos.map((photo) => {
+                          const isSelected = selectedPhotos.includes(photo.path);
 
-                      return (
-                        <div
-                          key={photo.path}
-                          className={`group relative flex flex-col rounded-lg border overflow-hidden bg-slate-900/60 transition-all ${
-                            isSelected
-                              ? "border-teal-400 bg-slate-900"
-                              : "border-slate-700"
-                          }`}
-                        >
-                          {/* Checkbox mode multi */}
-                          {multiDeleteMode && (
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() =>
-                                toggleSelectPhoto(photo.path)
-                              }
-                              className="absolute top-2 left-2 h-4 w-4 accent-teal-400 z-20"
-                            />
-                          )}
-
-                          <div className="relative">
-                            <img
-                              src={photo.url}
-                              alt={photo.name}
-                              onClick={() => {
-                                if (multiDeleteMode) {
-                                  toggleSelectPhoto(photo.path);
-                                } else {
+                          return (
+                            <div
+                              key={photo.path}
+                              className={`group relative flex flex-col rounded-lg border overflow-hidden bg-slate-900/60 transition-all ${
+                                isSelected
+                                  ? "border-teal-400 bg-slate-900"
+                                  : "border-slate-700"
+                              }`}
+                            >
+                              {/* Clic sur l’image → lightbox */}
+                              <button
+                                type="button"
+                                onClick={() => {
                                   setSelectedPhoto(photo);
                                   setIsLightboxOpen(true);
-                                }
-                              }}
-                              className="w-full h-32 object-cover cursor-pointer transition-transform duration-200 group-hover:scale-[1.02]"
-                            />
-                          </div>
+                                }}
+                                className="w-full h-32 md:h-40 overflow-hidden"
+                              >
+                                <img
+                                  src={photo.url}
+                                  alt={photo.name}
+                                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                />
+                              </button>
 
-                          {/* Bouton suppression individuelle */}
-                          {!multiDeleteMode && (
-                            <button
-                              onClick={() => handleDelete(photo)}
-                              disabled={deletingPath === photo.path}
-                              className="mt-auto text-xs bg-red-500 hover:bg-red-600 disabled:opacity-50 py-1 text-center transition-colors"
-                            >
-                              {deletingPath === photo.path
-                                ? "Suppression..."
-                                : "Supprimer de l’espace commun"}
-                            </button>
-                          )}
+                              {/* Checkbox mode multi */}
+                              {multiDeleteMode && (
+                                <div className="absolute top-2 left-2 bg-slate-900/70 rounded px-1 py-0.5">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() =>
+                                      toggleSelectPhoto(photo.path)
+                                    }
+                                  />
+                                </div>
+                              )}
+
+                              {/* Bouton suppression individuelle */}
+                              {!multiDeleteMode && canDeletePhoto(photo) && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(photo)}
+                                  disabled={deletingPath === photo.path}
+                                  className="mt-auto text-xs bg-red-500 hover:bg-red-600 disabled:opacity-50 py-1 text-center transition-colors"
+                                >
+                                  {deletingPath === photo.path
+                                    ? "Suppression..."
+                                    : "Supprimer de l’espace commun"}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Actions mode multi */}
+                      {multiDeleteMode && selectedPhotos.length > 0 && (
+                        <div className="mt-3 flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={handleDeleteSelected}
+                            className="text-xs bg-red-500 hover:bg-red-600 px-3 py-1 rounded"
+                          >
+                            Supprimer {selectedPhotos.length} photo(s)
+                          </button>
                         </div>
-                      );
-                    })}
+                      )}
+                    </>
+                  )}
+                </section>
+
+                {/* LIGHTBOX */}
+                {isLightboxOpen && selectedPhoto && (
+                  <div
+                    className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center"
+                    onClick={() => setIsLightboxOpen(false)}
+                  >
+                    <div
+                      className="relative max-w-[90%] max-h-[90%]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <img
+                        src={selectedPhoto.url}
+                        alt={selectedPhoto.name}
+                        className="max-w-full max-h-full rounded-lg shadow-lg"
+                      />
+                      <button
+                        onClick={() => setIsLightboxOpen(false)}
+                        className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white px-3 py-1 rounded-md text-sm"
+                      >
+                        Fermer
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
             </section>
           </>
-        )}
-
-        {/* LIGHTBOX */}
-        {isLightboxOpen && selectedPhoto && (
-          <div
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center"
-            onClick={() => setIsLightboxOpen(false)}
-          >
-            <div
-              className="relative max-w-[90%] max-h-[90%]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img
-                src={selectedPhoto.url}
-                alt={selectedPhoto.name}
-                className="max-w-full max-h-full rounded-lg shadow-lg"
-              />
-              <button
-                onClick={() => setIsLightboxOpen(false)}
-                className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white px-3 py-1 rounded-md text-sm"
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
         )}
       </div>
     </main>

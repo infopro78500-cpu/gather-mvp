@@ -1,11 +1,17 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
+import { getDeviceId } from "@/lib/deviceId";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
-import Link from "next/link";
 
 export default function CreateEventPage() {
+  // 🔥 TEST LOGIN ICI
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      console.log("USER =>", data.user);
+    });
+  }, []);
 
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -16,88 +22,97 @@ export default function CreateEventPage() {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
+const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault();
+  setError(null);
 
-    if (!name.trim()) {
-      setError("Donne un nom à ton évènement.");
-      return;
-    }
+  if (!name.trim()) {
+    setError("Donne un nom à ton évènement.");
+    return;
+  }
 
-    const pin = generatePin();
-    setCreating(true);
+  const pin = generatePin();
+  setCreating(true);
 
-    try {
-      const { data, error } = await supabase
-        .from("events")
-        .insert([{ name: name.trim(), pin }])
-        .select()
-        .single();
+  try {
+    const deviceId = await getDeviceId();
+    console.log("DEVICE ID (host) :", deviceId);
 
-      if (error || !data) {
-        console.error(error);
-        setError("Erreur lors de la création de l’évènement.");
-        setCreating(false);
-        return;
-      }
+    const { data: authInfo } = await supabase.auth.getUser();
+    const userId = authInfo?.user?.id || null;
 
-      if (typeof window !== "undefined") {
-        window.location.href = `/events/${data.pin}`;
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Erreur inattendue.");
-      setCreating(false);
-    }
-  };
+    console.log("HOST USER ID :", userId);
+
+const { error } = await supabase
+  .from("events")
+  .insert({
+    name: name.trim(),
+    pin,
+    host_device_id: deviceId,
+    host_user_id: userId,
+  });
+
+if (error) {
+  console.error(error);
+  setError("Erreur lors de la création de l'évènement.");
+  setCreating(false);
+  return;
+}
+
+// ici on utilise simplement la variable pin qu'on a déjà
+window.location.href = `/events/${pin}`;
+
+  } catch (err) {
+    console.error(err);
+    setError("Erreur inattendue.");
+  } finally {
+    setCreating(false);
+  }
+};
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white px-4">
       <div className="w-full max-w-3xl rounded-3xl bg-slate-900/80 border border-slate-800 p-6 md:p-8 shadow-xl flex flex-col md:flex-row gap-8">
-{/* Bloc gauche : branding / pitch */}
-<div className="flex-1 flex flex-col justify-between gap-4">
-  <div>
-{/* Logo Gather */}
-<div className="mb-4 flex items-center gap-3">
-  <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center overflow-hidden">
-    <Image
-      src="/gather-logo.png"
-      alt="Logo Gather"
-      width={56}
-      height={56}
-      className="object-cover"
-    />
-  </div>
-  <div className="flex flex-col">
-    <span className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
-      Gather-MVP
-    </span>
-    <span className="text-xs text-slate-500">
-      Coffres photo partagés
-    </span>
-  </div>
-</div>
+        {/* Bloc gauche : branding / pitch */}
+        <div className="flex-1 flex flex-col justify-between gap-4">
+          <div>
+            {/* Logo Gather */}
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center overflow-hidden">
+                <Image
+                  src="/gather-logo.png"
+                  alt="Logo Gather"
+                  width={56}
+                  height={56}
+                  className="object-cover"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
+                  Gather-MVP
+                </span>
+                <span className="text-xs text-slate-500">
+                  Coffres photo partagés
+                </span>
+              </div>
+            </div>
 
+            <h1 className="text-2xl md:text-3xl font-semibold text-slate-50 leading-snug">
+              Crée un{" "}
+              <span className="text-teal-400">coffre photo éphémère</span>{" "}
+              pour ton groupe.
+            </h1>
 
-    <h1 className="text-2xl md:text-3xl font-semibold text-slate-50 leading-snug">
-      Crée un{" "}
-      <span className="text-teal-400">
-        coffre photo éphémère
-      </span>{" "}
-      pour ton groupe.
-    </h1>
-
-    <p className="mt-3 text-xs md:text-sm text-slate-400 max-w-md">
-      Un évènement = un PIN + un QR code.  
-      Tout le monde peut déposer ses photos dans le même coffre,
-      sans compte, en quelques secondes.
-    </p>
-  </div>
+            <p className="mt-3 text-xs md:text-sm text-slate-400 max-w-md">
+              Un évènement = un PIN + un QR code. Tout le monde peut déposer
+              ses photos dans le même coffre, sans compte, en quelques
+              secondes.
+            </p>
+          </div>
 
           <div className="hidden md:block text-[11px] text-slate-500">
-            Pensé pour les voyages, mariages, soirées et moments de vie
-            que tu veux rassembler au même endroit.
+            Pensé pour les voyages, mariages, soirées et moments de vie que tu
+            veux rassembler au même endroit.
           </div>
         </div>
 
@@ -133,9 +148,7 @@ export default function CreateEventPage() {
                   placeholder="Ex : Anniversaire de Léa, Weekend à Lisbonne…"
                 />
                 {error && (
-                  <p className="text-[11px] text-red-400 mt-1">
-                    {error}
-                  </p>
+                  <p className="text-[11px] text-red-400 mt-1">{error}</p>
                 )}
               </div>
 
@@ -159,20 +172,18 @@ export default function CreateEventPage() {
                 </a>
               </p>
             </div>
-<div className="mt-4 text-center">
-  <a
-    href="/coming-soon"
-    className="inline-block px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm border border-slate-700"
-  >
-    Participer à l’aventure Gather 🚀
-  </a>
-</div>
 
-
+            <div className="mt-4 text-center">
+              <a
+                href="/coming-soon"
+                className="inline-block px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm border border-slate-700"
+              >
+                Participer à l’aventure Gather 🚀
+              </a>
+            </div>
           </div>
         </div>
       </div>
     </main>
   );
 }
- 
