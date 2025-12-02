@@ -45,6 +45,9 @@ export default function EventPage() {
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [multiDeleteMode, setMultiDeleteMode] = useState(false);
 
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+
   const photoCount = photos.length;
   const hasPhotos = photoCount > 0;
 
@@ -163,96 +166,108 @@ export default function EventPage() {
     return photo.uploaderDeviceId === deviceId;
   };
 
-  const handleUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ): Promise<void> => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !event) return;
+const handleUpload = async (
+  e: React.ChangeEvent<HTMLInputElement>
+): Promise<void> => {
+  const files = e.target.files;
+  if (!files || files.length === 0 || !event) return;
 
-    const filesArray = Array.from(files);
+  const filesArray = Array.from(files);
 
-    const currentDeviceId = getEventDeviceId();
-    if (!currentDeviceId) {
-      console.error("Impossible de récupérer le deviceId");
-      setError("Erreur : appareil non identifié.");
-      return;
-    }
+  const currentDeviceId = getEventDeviceId();
+  if (!currentDeviceId) {
+    console.error("Impossible de récupérer le deviceId");
+    setError("Erreur : appareil non identifié.");
+    return;
+  }
 
-    if (filesArray.length > MAX_FILES) {
-      alert(`Tu peux envoyer maximum ${MAX_FILES} fichiers à la fois.`);
-      return;
-    }
+  if (filesArray.length > MAX_FILES) {
+    alert(`Tu peux envoyer maximum ${MAX_FILES} fichiers à la fois.`);
+    return;
+  }
 
-    setUploading(true);
-    setError(null);
+  setUploading(true);
+  setError(null);
+  setUploadError(null);
 
-    try {
-      const newPhotos: PhotoItem[] = [];
+  try {
+    const newPhotos: PhotoItem[] = [];
+    const rejectedFiles: string[] = [];
 
-      for (const file of filesArray) {
-        const sizeMb = file.size / (1024 * 1024);
-        if (sizeMb > MAX_FILE_SIZE_MB) {
-          console.warn(`Fichier trop lourd : ${file.name}`);
+    for (const file of filesArray) {
+      const sizeMb = file.size / (1024 * 1024);
+      if (sizeMb > MAX_FILE_SIZE_MB) {
+        console.warn(`Fichier trop lourd : ${file.name}`);
+        rejectedFiles.push(file.name);
+        continue;
+      }
+
+      const safeName = file.name
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9.\-_]/g, "_");
+
+      const filenameOnStorage = `${currentDeviceId}__${Date.now()}-${safeName}`;
+      const path = `${event.id}/${filenameOnStorage}`;
+
+      try {
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from(BUCKET_NAME)
+          .upload(path, file);
+
+        if (uploadError) {
+          console.error("Erreur upload Supabase", uploadError);
           continue;
         }
 
-        const safeName = file.name
-          .normalize("NFKD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-zA-Z0-9.\-_]/g, "_");
-
-        const filenameOnStorage = `${currentDeviceId}__${Date.now()}-${safeName}`;
-        const path = `${event.id}/${filenameOnStorage}`;
-
-        try {
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from(BUCKET_NAME)
-            .upload(path, file);
-
-          if (uploadError) {
-            console.error("Erreur upload Supabase", uploadError);
-            continue;
-          }
-
-          if (!uploadData) {
-            console.warn("Upload terminé sans données retournées", {
-              path,
-              file: file.name,
-            });
-            continue;
-          }
-
-          const { data: publicData } = supabase.storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(path);
-
-          if (!publicData?.publicUrl) {
-            console.warn("URL publique manquante après upload", { path });
-            continue;
-          }
-
-          newPhotos.push({
-            name: filenameOnStorage,
-            url: publicData.publicUrl,
+        if (!uploadData) {
+          console.warn("Upload terminé sans données retournées", {
             path,
-            uploaderDeviceId: currentDeviceId,
+            file: file.name,
           });
-        } catch (err) {
-          console.error("Erreur inattendue lors de l’upload d’un fichier", err);
+          continue;
         }
-      }
 
-      if (newPhotos.length > 0) {
-        setPhotos((prev) => [...prev, ...newPhotos]);
+        const { data: publicData } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(path);
+
+        if (!publicData?.publicUrl) {
+          console.warn("URL publique manquante après upload", { path });
+          continue;
+        }
+
+        newPhotos.push({
+          name: filenameOnStorage,
+          url: publicData.publicUrl,
+          path,
+          uploaderDeviceId: currentDeviceId,
+        });
+      } catch (err) {
+        console.error("Erreur inattendue lors de l’upload d’un fichier", err);
       }
-    } finally {
-      if (event) {
-        await refreshPhotos(event);
-      }
-      setUploading(false);
-      e.target.value = "";
     }
-  };
+
+    if (rejectedFiles.length > 0) {
+      const rejectedList = rejectedFiles.join(", ");
+      const message = `${rejectedFiles.length} fichier${
+        rejectedFiles.length > 1 ? "s" : ""
+      } n'ont pas été ajoutés car ils dépassent 10 Mo : ${rejectedList}`;
+      setUploadError(message);
+    }
+
+    if (newPhotos.length > 0) {
+      setPhotos((prev) => [...prev, ...newPhotos]);
+    }
+  } finally {
+    if (event) {
+      await refreshPhotos(event);
+    }
+    setUploading(false);
+    e.target.value = "";
+  }
+};
+
 
   const handleDelete = async (photo: PhotoItem): Promise<void> => {
     if (!event) return;
@@ -497,6 +512,12 @@ export default function EventPage() {
                       ? "Quitter le mode sélection"
                       : "Sélectionner plusieurs photos"}
                   </button>
+                  <p className="text-sm text-slate-400 text-center leading-relaxed">
+  {isHost
+    ? "En tant qu'hôte, vous pouvez supprimer toutes les photos du coffre."
+    : "Vous pouvez supprimer uniquement les photos que vous avez envoyées. Seul l'hôte peut supprimer l'ensemble des photos."}
+</p>
+
 
                   <label className="bg-teal-500 px-4 py-2 rounded-md cursor-pointer text-slate-900 font-semibold hover:bg-teal-400 text-sm shadow-sm">
                     {uploading
@@ -510,6 +531,12 @@ export default function EventPage() {
                       onChange={handleUpload}
                     />
                   </label>
+                  {uploadError && (
+  <p className="text-xs text-red-400 text-center max-w-[320px]">
+    {uploadError}
+  </p>
+)}
+
 
                   {multiDeleteMode && selectedPhotos.length > 0 && (
                     <div className="flex gap-2">
