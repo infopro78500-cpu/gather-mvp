@@ -1,16 +1,32 @@
 import argparse
+from pathlib import Path
 
 from ia_local.encodeur import encoder_images
 from ia_local.recherche import trouver_similaires
 
 
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_DEFAULT_IMAGES = Path("ia_local/data/test_photos")
+_DEFAULT_OUTPUT = Path("ia_local/data/embeddings.pkl")
+
+
+def _resolve_path(path_str: str) -> str:
+    chemin = Path(path_str)
+    if not chemin.is_absolute():
+        chemin = _PROJECT_ROOT / chemin
+    return str(chemin)
+
+
 def _encoder(args: argparse.Namespace) -> None:
-    encoder_images(args.images, args.output)
-    print(f"Embeddings générés et sauvegardés dans '{args.output}'.")
+    images_path = _resolve_path(args.images)
+    output_path = _resolve_path(args.output)
+    encoder_images(images_path, output_path)
+    print(f"Embeddings générés et sauvegardés dans '{output_path}'.")
 
 
 def _rechercher(args: argparse.Namespace) -> None:
-    paires = trouver_similaires(args.output, args.seuil)
+    embeddings_path = _resolve_path(args.output)
+    paires = trouver_similaires(embeddings_path, args.seuil)
     if not paires:
         print("Aucun doublon détecté au-dessus du seuil fourni.")
         return
@@ -26,13 +42,15 @@ def main() -> None:
     )
     parser.add_argument(
         "--images",
-        default="data/images/",
-        help="Dossier contenant les images à encoder (par défaut: data/images/).",
+        default=str(_DEFAULT_IMAGES),
+        help=(
+            "Dossier contenant les images à encoder (par défaut: ia_local/data/test_photos)."
+        ),
     )
     parser.add_argument(
         "--output",
-        default="data/embeddings.pkl",
-        help="Chemin du fichier de sortie pour les embeddings (par défaut: data/embeddings.pkl).",
+        default=str(_DEFAULT_OUTPUT),
+        help="Chemin du fichier de sortie pour les embeddings (par défaut: ia_local/data/embeddings.pkl).",
     )
     parser.add_argument(
         "--seuil",
