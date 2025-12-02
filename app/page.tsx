@@ -30,53 +30,33 @@ export default function CreateEventPage() {
     try {
       const deviceId = await getDeviceId();
 
-      const { data: authInfo, error: authError } = await supabase.auth.getUser();
-
-      if (authError) {
-        console.error(authError);
-        setError("Erreur lors de la récupération de l'utilisateur.");
-        setCreating(false);
-        return;
+      // --- Récupération optionnelle de l'utilisateur (anonyme autorisé) ---
+      let userId: string | null = null;
+      try {
+        const { data: authInfo } = await supabase.auth.getUser();
+        userId = authInfo?.user?.id ?? null;
+      } catch (authError) {
+        console.warn(
+          "Aucune session Supabase, création d'évènement anonyme.",
+          authError
+        );
       }
+      // IMPORTANT : on NE bloque PAS si userId est null
 
-      if (!authInfo) {
-        setError("Aucune donnée utilisateur renvoyée.");
-        setCreating(false);
-        return;
-      }
-
-      const userId = authInfo.user?.id || null;
-
-      if (!userId) {
-        setError("Utilisateur non authentifié.");
-        setCreating(false);
-        return;
-      }
-
-      const { data: insertData, error: insertError } = await supabase
-        .from("events")
-        .insert({
-          name: name.trim(),
-          pin,
-          host_device_id: deviceId,
-          host_user_id: userId,
-        })
-        .select()
-        .single();
+      const { error: insertError } = await supabase.from("events").insert({
+        name: name.trim(),
+        pin,
+        host_device_id: deviceId,
+        host_user_id: userId, // peut être null pour le MVP
+      });
 
       if (insertError) {
         console.error(insertError);
         setError("Erreur lors de la création de l'évènement.");
-        setCreating(false);
         return;
       }
 
-      if (!insertData) {
-        setError("Aucune donnée reçue lors de la création de l'évènement.");
-        setCreating(false);
-        return;
-      }
-
+      // On connaît déjà le PIN, pas besoin de .select().single()
       window.location.href = `/events/${pin}`;
     } catch (err) {
       console.error(err);
@@ -180,10 +160,7 @@ export default function CreateEventPage() {
             <div className="pt-2 border-t border-slate-800">
               <p className="text-[11px] text-slate-500">
                 Tu as déjà un PIN ?{" "}
-                <a
-                  href="/join"
-                  className="text-teal-400 hover:underline"
-                >
+                <a href="/join" className="text-teal-400 hover:underline">
                   Rejoindre un coffre existant
                 </a>
               </p>
