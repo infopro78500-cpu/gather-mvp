@@ -433,8 +433,8 @@ const handleUpload = async (
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
-      <div className="w-[380px] md:w-[720px] rounded-2xl bg-slate-900/80 border border-slate-800 p-6 md:p-7 shadow-xl space-y-4">
+    <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white px-4 py-6">
+      <div className="w-[380px] md:w-[720px] rounded-2xl bg-slate-900/80 border border-slate-800 p-6 md:p-8 shadow-2xl space-y-5">
         {loading && (
           <p className="text-center text-sm text-slate-300">
             Chargement de l’évènement...
@@ -450,62 +450,66 @@ const handleUpload = async (
             <EventHeader event={event} />
 
             {shareUrl && (
-              <section className="mt-1 rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-4 flex flex-col md:flex-row items-center md:items-stretch gap-4">
-                <div className="flex-1 flex flex-col justify-between gap-2">
-                  <p className="text-xs uppercase tracking-wide text-slate-400">
-                    Partage de l’évènement
-                  </p>
-                  <p className="text-sm font-medium text-slate-50">
-                    Invite ton groupe à rejoindre ce coffre.
-                  </p>
-
-                  <div className="mt-2 flex flex-col gap-2">
-                    <div className="w-full max-w-full overflow-hidden rounded-md border border-slate-700 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-300">
-                      {shareUrl}
+              <section className="mt-1 rounded-xl border border-slate-800 bg-slate-950/90 px-5 py-5 flex flex-col gap-4 shadow-lg">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex-1 flex flex-col gap-2">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
+                      Partage de l’évènement
+                    </p>
+                    <p className="text-base font-semibold text-slate-50">
+                      Invite ton groupe à rejoindre ce coffre.
+                    </p>
+                    <p className="text-sm text-slate-400">
+                      Copie le lien ou scanne le QR code pour partager rapidement.
+                    </p>
+                    <div className="mt-3 flex flex-col gap-2">
+                      <div className="w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-[11px] text-slate-200 shadow-inner">
+                        {shareUrl}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyLink}
+                        className="self-start inline-flex items-center gap-2 rounded-lg bg-teal-500 px-3.5 py-2 text-xs font-semibold text-slate-950 shadow-sm transition-colors hover:bg-teal-400"
+                      >
+                        📋 Copier le lien
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleCopyLink}
-                      className="self-start rounded-md bg-teal-500 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-teal-400 transition-colors"
-                    >
-                      Copier le lien
-                    </button>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-center md:justify-end">
-                  <div className="rounded-lg border border-slate-700 bg-slate-900/80 p-3">
-                    <QRCode
-                      value={shareUrl}
-                      size={96}
-                      bgColor="transparent"
-                      fgColor="#ffffff"
-                    />
+                  <div className="flex items-center md:items-start justify-center md:justify-end">
+                    <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-4 shadow-inner">
+                      <QRCode
+                        value={shareUrl}
+                        size={112}
+                        bgColor="transparent"
+                        fgColor="#ffffff"
+                      />
+                    </div>
                   </div>
                 </div>
               </section>
             )}
 
-            <section className="mt-3 rounded-xl border border-slate-800 bg-slate-950/80 px-4 py-4">
+            <section className="mt-2 rounded-xl border border-slate-800 bg-slate-950/90 px-5 py-5 shadow-lg">
               <button
                 type="button"
                 onClick={() => setIsCoffreOpen((prev) => !prev)}
-                className="w-full flex items-center justify-between px-5 py-4 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700 hover:border-teal-400/60 transition-all duration-200"
+                className="w-full flex items-center justify-between px-5 py-4 rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-900/90 hover:to-slate-800/90 border border-slate-700 hover:border-teal-400/60 transition-all duration-200 shadow"
               >
                 <div className="flex flex-col text-left">
-                  <p className="text-[11px] tracking-wide uppercase text-slate-400">
+                  <p className="text-[11px] tracking-wide uppercase text-slate-500 font-semibold">
                     Espace commun du groupe
                   </p>
-                  <p className="text-sm font-medium text-slate-50">
+                  <p className="text-base font-semibold text-slate-50">
                     Galerie photo commune
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-slate-500 mt-1">
                     Cliquez pour {isCoffreOpen ? "masquer la galerie." : "ouvrir la galerie."}
                   </p>
                 </div>
 
                 <div className="flex flex-col items-end gap-1">
-                  <span className="inline-flex items-center rounded-full bg-slate-900/80 px-2 py-1 text-[10px] text-slate-300 mt-1">
+                  <span className="inline-flex items-center rounded-full bg-slate-900/80 px-2.5 py-1 text-[10px] text-slate-200 mt-1 border border-slate-700/70">
                     {hasPhotos ? (
                       <>
                         <span className="mr-1 h-1.5 w-1.5 rounded-full bg-teal-400" />
@@ -517,12 +521,11 @@ const handleUpload = async (
                       "Aucune photo"
                     )}
                   </span>
-
-                  <div className="h-10 w-10 flex items-center justify-center rounded-lg border border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900 shadow-inner">
+                  <div className="h-10 w-10 flex items-center justify-center rounded-xl border border-teal-500/40 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 shadow-inner">
                     <span className="text-xl">{isCoffreOpen ? "📖" : "🔒"}</span>
                   </div>
 
-                  <p className="text-[11px] text-teal-400 mb-1">
+                  <p className="text-[11px] text-teal-400 mb-1 font-semibold tracking-wide">
                     {isCoffreOpen ? "Coffre ouvert" : "Coffre fermé"}
                   </p>
                 </div>
@@ -535,26 +538,27 @@ const handleUpload = async (
                     : "max-h-0 opacity-0 -translate-y-1 pointer-events-none"
                 }`}
               >
-                <div className="flex flex-col items-center gap-3 mb-4">
+                <div className="flex flex-col items-center gap-3 mb-5">
                   <button
                     onClick={() => {
                       setMultiDeleteMode((prev) => !prev);
                       setSelectedPhotos([]);
                     }}
-                    className="text-xs text-teal-400 hover:underline mb-1"
+                    className="text-xs text-teal-300 hover:text-teal-200 underline-offset-4 hover:underline mb-1 font-medium"
                   >
                     {multiDeleteMode
                       ? "Quitter le mode sélection"
                       : "Sélectionner plusieurs photos"}
                   </button>
-                  <p className="text-sm text-slate-400 text-center leading-relaxed">
-  {isHost
-    ? "En tant qu'hôte, vous pouvez supprimer toutes les photos du coffre."
-    : "Vous pouvez supprimer uniquement les photos que vous avez envoyées. Seul l'hôte peut supprimer l'ensemble des photos."}
-</p>
+                  <p className="text-sm text-slate-400 text-center leading-relaxed max-w-[560px]">
+                    {isHost
+                      ? "En tant qu'hôte, vous pouvez supprimer toutes les photos du coffre."
+                      : "Vous pouvez supprimer uniquement les photos que vous avez envoyées. Seul l'hôte peut supprimer l'ensemble des photos."}
+                  </p>
 
 
-                  <label className="bg-teal-500 px-4 py-2 rounded-md cursor-pointer text-slate-900 font-semibold hover:bg-teal-400 text-sm shadow-sm">
+                  <label className="bg-teal-500 px-4 py-2 rounded-lg cursor-pointer text-slate-900 font-semibold hover:bg-teal-400 text-sm shadow-sm inline-flex items-center gap-2">
+                    <span>📤</span>
                     {uploading
                       ? uploadInfo
                         ? `Upload : ${uploadInfo.processed}/${uploadInfo.total}`
@@ -569,10 +573,10 @@ const handleUpload = async (
                     />
                   </label>
                   {uploadError && (
-  <p className="text-xs text-red-400 text-center max-w-[320px]">
-    {uploadError}
-  </p>
-)}
+                    <p className="text-xs text-red-400 text-center max-w-[360px]">
+                      {uploadError}
+                    </p>
+                  )}
 
 
                   {multiDeleteMode && selectedPhotos.length > 0 && (
@@ -581,7 +585,7 @@ const handleUpload = async (
                         type="button"
                         onClick={handleDownloadSelected}
                         disabled={downloading}
-                        className="rounded-md bg-slate-800 hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors"
+                        className="rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors shadow-sm"
                       >
                         {downloading
                           ? "Préparation du ZIP..."
@@ -590,14 +594,14 @@ const handleUpload = async (
                       <button
                         type="button"
                         onClick={handleDeleteSelected}
-                        className="rounded-md bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+                        className="rounded-lg bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm"
                       >
                         Supprimer {selectedPhotos.length} photo(s)
                       </button>
                       <button
                         type="button"
                         onClick={() => setSelectedPhotos([])}
-                        className="rounded-md bg-slate-700 hover:bg-slate-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+                        className="rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm"
                       >
                         Réinitialiser la sélection
                       </button>
@@ -617,7 +621,7 @@ const handleUpload = async (
                       type="button"
                       onClick={handleDownloadAll}
                       disabled={downloading}
-                      className="rounded-md bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-[11px] font-semibold text-white border border-slate-700"
+                      className="rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-[11px] font-semibold text-white border border-slate-700 shadow-sm"
                     >
                       {downloading
                         ? "Préparation du ZIP..."
@@ -640,7 +644,7 @@ const handleUpload = async (
                           return (
                             <div
                               key={photo.path}
-                              className={`group relative flex flex-col rounded-lg border overflow-hidden bg-slate-900/60 transition-all ${
+                              className={`group relative flex flex-col rounded-xl border overflow-hidden bg-slate-900/60 transition-all ${
                                 isSelected
                                   ? "border-teal-400 bg-slate-900"
                                   : "border-slate-700"
@@ -657,7 +661,7 @@ const handleUpload = async (
                                 <img
                                   src={photo.url}
                                   alt={photo.name}
-                                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
                                 />
                               </button>
 
@@ -676,7 +680,7 @@ const handleUpload = async (
                                   type="button"
                                   onClick={() => handleDelete(photo)}
                                   disabled={deletingPath === photo.path}
-                                  className="mt-auto text-xs bg-red-500 hover:bg-red-600 disabled:opacity-50 py-1 text-center transition-colors"
+                                  className="mt-auto text-xs bg-red-500 hover:bg-red-600 disabled:opacity-50 py-1.5 text-center transition-colors"
                                 >
                                   {deletingPath === photo.path
                                     ? "Suppression..."
