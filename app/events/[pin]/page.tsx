@@ -240,9 +240,10 @@ export default function EventPage() {
   const handleDelete = async (photo: PhotoItem) => {
     if (!event || !deviceId) return;
 
-    const isAllowed = deviceId === event.host_device_id
-      ? true
-      : photo.uploaderDeviceId === deviceId;
+    const isAllowed =
+      deviceId === event.host_device_id
+        ? true
+        : photo.uploaderDeviceId === deviceId;
 
     if (!isAllowed) return;
 
@@ -251,30 +252,31 @@ export default function EventPage() {
     );
     if (!confirmDelete) return;
 
-    try {
-      setDeletingPath(photo.path);
+    setDeletingPath(photo.path);
+    setPhotos((prev) => prev.filter((p) => p.path !== photo.path));
 
+    try {
       const { data: deleteData, error: deleteError } = await supabase.storage
         .from(BUCKET_NAME)
         .remove([photo.path]);
 
       if (deleteError) {
-        console.error("Erreur lors de la suppression :", deleteError);
-        alert("Erreur lors de la suppression de la photo.");
-        return;
+        console.error(
+          "Erreur Supabase lors de la suppression de la photo :",
+          { path: photo.path, error: deleteError }
+        );
       }
 
       if (!deleteData) {
-        console.error("Aucune donnée de suppression retournée.");
-        alert("Erreur lors de la suppression de la photo.");
-        return;
+        console.error(
+          "Aucune donnée de suppression retournée par Supabase pour la photo supprimée :",
+          photo.path
+        );
       }
-
-      setPhotos((prev) => prev.filter((p) => p.path !== photo.path));
-      await refreshPhotos(event);
     } catch (err) {
-      console.error("Delete error:", err);
+      console.error("Erreur inattendue lors de la suppression de la photo :", err);
     } finally {
+      await refreshPhotos(event);
       setDeletingPath(null);
     }
   };
@@ -306,28 +308,32 @@ export default function EventPage() {
     );
     if (!ok) return;
 
+    setPhotos((prev) => prev.filter((p) => !allowedPaths.includes(p.path)));
+    setSelectedPhotos([]);
+    setMultiDeleteMode(false);
+
     try {
       const { data: deleteData, error: deleteError } = await supabase.storage
         .from(BUCKET_NAME)
         .remove(allowedPaths);
 
       if (deleteError) {
-        console.error("Erreur lors de la suppression multiple :", deleteError);
-        alert("Erreur lors de la suppression des photos sélectionnées.");
-        return;
+        console.error("Erreur Supabase lors de la suppression multiple :", {
+          paths: allowedPaths,
+          error: deleteError,
+        });
       }
 
       if (!deleteData) {
-        console.error("Aucune donnée de suppression retournée.");
-        alert("Erreur lors de la suppression des photos sélectionnées.");
-        return;
+        console.error(
+          "Aucune donnée de suppression retournée par Supabase pour la suppression multiple :",
+          allowedPaths
+        );
       }
-
-      setSelectedPhotos([]);
-      setMultiDeleteMode(false);
-      await refreshPhotos(event);
     } catch (err) {
-      console.error("Delete selected error:", err);
+      console.error("Erreur inattendue lors de la suppression multiple :", err);
+    } finally {
+      await refreshPhotos(event);
     }
   };
 
