@@ -1,14 +1,18 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function JoinPage() {
-  const [pin, setPin] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const initialPin = (searchParams.get("pin") ?? "").slice(0, 6);
+
+  const [pin, setPin] = useState(initialPin);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -35,6 +39,7 @@ export default function JoinPage() {
       return;
     }
 
+    setLoading(false);
     router.push(`/events/${trimmed}`);
   };
 
@@ -98,4 +103,3 @@ export default function JoinPage() {
     </main>
   );
 }
- 

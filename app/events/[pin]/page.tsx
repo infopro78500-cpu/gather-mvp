@@ -68,7 +68,7 @@ export default function EventPage() {
     }
   }, []);
 
-  const shareUrl = origin && event ? `${origin}/events/${event.pin}` : null;
+  const shareUrl = origin && event ? `${origin}/join?pin=${event.pin}` : null
 
   useEffect(() => {
     const fetchEvent = async () => {
