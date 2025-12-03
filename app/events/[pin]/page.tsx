@@ -72,7 +72,7 @@ export default function EventPage() {
     }
   }, []);
 
-  const shareUrl = origin && event ? `${origin}/join?pin=${event.pin}` : null
+  const shareUrl = origin && event ? `${origin}/join?pin=${event.pin}` : null;
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -450,18 +450,12 @@ const handleUpload = async (
             <EventHeader event={event} />
 
             {shareUrl && (
-              <section className="mt-1 rounded-xl border border-slate-800 bg-slate-950/90 px-5 py-5 flex flex-col gap-4 shadow-lg">
+              <section className="mt-1 rounded-lg border border-slate-800 bg-slate-950/90 px-5 py-5 flex flex-col gap-4 shadow-md">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex-1 flex flex-col gap-2">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
-                      Partage de l’évènement
-                    </p>
-                    <p className="text-base font-semibold text-slate-50">
-                      Invite ton groupe à rejoindre ce coffre.
-                    </p>
-                    <p className="text-sm text-slate-400">
-                      Copie le lien ou scanne le QR code pour partager rapidement.
-                    </p>
+                    <p className="text-[11px] tracking-wide uppercase text-slate-400 font-semibold">Partage de l’évènement</p>
+                    <p className="text-base font-semibold text-slate-50">Invite ton groupe à rejoindre ce coffre.</p>
+                    <p className="text-sm text-slate-400">Copie le lien ou scanne le QR code pour partager rapidement.</p>
                     <div className="mt-3 flex flex-col gap-2">
                       <div className="w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-[11px] text-slate-200 shadow-inner">
                         {shareUrl}
@@ -469,7 +463,7 @@ const handleUpload = async (
                       <button
                         type="button"
                         onClick={handleCopyLink}
-                        className="self-start inline-flex items-center gap-2 rounded-lg bg-teal-500 px-3.5 py-2 text-xs font-semibold text-slate-950 shadow-sm transition-colors hover:bg-teal-400"
+                        className="self-start inline-flex items-center gap-2 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors hover:bg-slate-700 hover:border-teal-400 shadow-sm"
                       >
                         📋 Copier le lien
                       </button>
@@ -477,39 +471,30 @@ const handleUpload = async (
                   </div>
 
                   <div className="flex items-center md:items-start justify-center md:justify-end">
-                    <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-4 shadow-inner">
-                      <QRCode
-                        value={shareUrl}
-                        size={112}
-                        bgColor="transparent"
-                        fgColor="#ffffff"
-                      />
+                    <div className="rounded-lg border border-slate-800 bg-slate-950/90 p-4 shadow-inner">
+                      <QRCode value={shareUrl} size={128} bgColor="transparent" fgColor="#ffffff" />
                     </div>
                   </div>
                 </div>
               </section>
             )}
 
-            <section className="mt-2 rounded-xl border border-slate-800 bg-slate-950/90 px-5 py-5 shadow-lg">
+            <section className="mt-4 rounded-lg border border-slate-800 bg-slate-950/90 px-5 py-5 shadow-md">
               <button
                 type="button"
                 onClick={() => setIsCoffreOpen((prev) => !prev)}
-                className="w-full flex items-center justify-between px-5 py-4 rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-900/90 hover:to-slate-800/90 border border-slate-700 hover:border-teal-400/60 transition-all duration-200 shadow"
+                className="w-full flex items-center justify-between px-5 py-4 rounded-lg bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-900/90 hover:to-slate-800/90 border border-slate-700 hover:border-teal-400/60 transition-all duration-200 shadow-sm"
               >
                 <div className="flex flex-col text-left">
-                  <p className="text-[11px] tracking-wide uppercase text-slate-500 font-semibold">
-                    Espace commun du groupe
-                  </p>
-                  <p className="text-base font-semibold text-slate-50">
-                    Galerie photo commune
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <p className="text-[11px] tracking-wide uppercase text-slate-400 font-semibold">Espace commun du groupe</p>
+                  <p className="text-base font-semibold text-slate-50">Galerie photo commune</p>
+                  <p className="text-sm text-slate-400 mt-1">
                     Cliquez pour {isCoffreOpen ? "masquer la galerie." : "ouvrir la galerie."}
                   </p>
                 </div>
 
                 <div className="flex flex-col items-end gap-1">
-                  <span className="inline-flex items-center rounded-full bg-slate-900/80 px-2.5 py-1 text-[10px] text-slate-200 mt-1 border border-slate-700/70">
+                  <span className="inline-flex items-center rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] text-slate-200 mt-1 border border-slate-700">
                     {hasPhotos ? (
                       <>
                         <span className="mr-1 h-1.5 w-1.5 rounded-full bg-teal-400" />
@@ -521,11 +506,11 @@ const handleUpload = async (
                       "Aucune photo"
                     )}
                   </span>
-                  <div className="h-10 w-10 flex items-center justify-center rounded-xl border border-teal-500/40 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 shadow-inner">
+                  <div className="h-10 w-10 flex items-center justify-center rounded-lg border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 shadow-inner">
                     <span className="text-xl">{isCoffreOpen ? "📖" : "🔒"}</span>
                   </div>
 
-                  <p className="text-[11px] text-teal-400 mb-1 font-semibold tracking-wide">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400 mb-1">
                     {isCoffreOpen ? "Coffre ouvert" : "Coffre fermé"}
                   </p>
                 </div>
@@ -544,21 +529,21 @@ const handleUpload = async (
                       setMultiDeleteMode((prev) => !prev);
                       setSelectedPhotos([]);
                     }}
-                    className="text-xs text-teal-300 hover:text-teal-200 underline-offset-4 hover:underline mb-1 font-medium"
+                    className="text-xs font-medium text-teal-400 underline-offset-4 hover:underline mb-1"
                   >
                     {multiDeleteMode
                       ? "Quitter le mode sélection"
                       : "Sélectionner plusieurs photos"}
                   </button>
-                  <p className="text-sm text-slate-400 text-center leading-relaxed max-w-[560px]">
+                  <p className="text-[11px] text-slate-400 text-center leading-relaxed max-w-[560px]">
                     {isHost
                       ? "En tant qu'hôte, vous pouvez supprimer toutes les photos du coffre."
                       : "Vous pouvez supprimer uniquement les photos que vous avez envoyées. Seul l'hôte peut supprimer l'ensemble des photos."}
                   </p>
 
 
-                  <label className="bg-teal-500 px-4 py-2 rounded-lg cursor-pointer text-slate-900 font-semibold hover:bg-teal-400 text-sm shadow-sm inline-flex items-center gap-2">
-                    <span>📤</span>
+                    <label className="bg-teal-500 px-4 py-2 rounded-lg cursor-pointer text-slate-900 font-semibold hover:bg-teal-400 text-sm shadow-sm inline-flex items-center gap-2">
+                      <span>📤</span>
                     {uploading
                       ? uploadInfo
                         ? `Upload : ${uploadInfo.processed}/${uploadInfo.total}`
@@ -579,79 +564,79 @@ const handleUpload = async (
                   )}
 
 
-                  {multiDeleteMode && selectedPhotos.length > 0 && (
-                    <div className="flex flex-wrap justify-center gap-2">
+                    {multiDeleteMode && selectedPhotos.length > 0 && (
+                      <div className="flex flex-wrap justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleDownloadSelected}
+                          disabled={downloading}
+                          className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors hover:bg-slate-700 hover:border-teal-400 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+                        >
+                          {downloading
+                            ? "Préparation du ZIP..."
+                            : "Télécharger la sélection (ZIP)"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDeleteSelected}
+                          className="rounded-md bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm"
+                        >
+                          Supprimer {selectedPhotos.length} photo(s)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPhotos([])}
+                          className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors hover:bg-slate-700 hover:border-teal-400 shadow-sm"
+                        >
+                          Réinitialiser la sélection
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap justify-center gap-2 text-[11px] text-slate-400">
+                      <span>Max {MAX_FILES} fichiers</span>
+                      <span>—</span>
+                      <span>10 Mo par fichier</span>
+                      <span>—</span>
+                      <span>Formats : JPG, PNG...</span>
+                    </div>
+
+                    <div className="flex justify-center gap-3 text-xs text-slate-400">
                       <button
                         type="button"
-                        onClick={handleDownloadSelected}
+                        onClick={handleDownloadAll}
                         disabled={downloading}
-                        className="rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors shadow-sm"
+                        className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors hover:bg-slate-700 hover:border-teal-400 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
                       >
                         {downloading
                           ? "Préparation du ZIP..."
-                          : "Télécharger la sélection (ZIP)"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleDeleteSelected}
-                        className="rounded-lg bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm"
-                      >
-                        Supprimer {selectedPhotos.length} photo(s)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPhotos([])}
-                        className="rounded-lg bg-slate-700 hover:bg-slate-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm"
-                      >
-                        Réinitialiser la sélection
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap justify-center gap-2 text-xs text-slate-400">
-                    <span>Max {MAX_FILES} fichiers</span>
-                    <span>—</span>
-                    <span>10 Mo par fichier</span>
-                    <span>—</span>
-                    <span>Formats : JPG, PNG...</span>
-                  </div>
-
-                  <div className="flex justify-center gap-3 text-xs text-slate-400">
-                    <button
-                      type="button"
-                      onClick={handleDownloadAll}
-                      disabled={downloading}
-                      className="rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-[11px] font-semibold text-white border border-slate-700 shadow-sm"
-                    >
-                      {downloading
-                        ? "Préparation du ZIP..."
                         : "Télécharger toutes les photos (ZIP)"}
                     </button>
                   </div>
                 </div>
 
-                <section className="mt-4">
-                  {photos.length === 0 ? (
-                    <p className="text-xs text-slate-400 text-center mb-2">
-                      Aucune photo pour l’instant. Ajoute la première ✨
-                    </p>
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                        {photos.map((photo) => {
-                          const isSelected = selectedPhotos.includes(photo.path);
+                  <section className="mt-4">
+                    {photos.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center mb-2">
+                        Aucune photo pour l’instant. Ajoute la première ✨
+                      </p>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                          {photos.map((photo) => {
+                            const isSelected = selectedPhotos.includes(photo.path);
 
-                          return (
-                            <div
-                              key={photo.path}
-                              className={`group relative flex flex-col rounded-xl border overflow-hidden bg-slate-900/60 transition-all ${
-                                isSelected
-                                  ? "border-teal-400 bg-slate-900"
-                                  : "border-slate-700"
-                              }`}
-                            >
-                              <button
-                                type="button"
+                            return (
+                              <div
+                                key={photo.path}
+                                className={`group relative flex flex-col rounded-lg border overflow-hidden bg-slate-900/70 transition-all shadow-sm ${
+                                  isSelected
+                                    ? "border-teal-400 scale-[1.02]"
+                                    : "border-slate-700 hover:border-teal-400 hover:scale-[1.02]"
+                                }`}
+                              >
+                                <button
+                                  type="button"
                                 onClick={() => {
                                   setSelectedPhoto(photo);
                                   setIsLightboxOpen(true);
@@ -665,25 +650,25 @@ const handleUpload = async (
                                 />
                               </button>
 
-                              {multiDeleteMode && (
-                                <div className="absolute top-2 left-2 bg-slate-900/70 rounded px-1 py-0.5">
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={() => toggleSelectPhoto(photo.path)}
-                                  />
+                                {multiDeleteMode && (
+                                  <div className="absolute top-2 left-2 bg-slate-900/70 rounded px-1 py-0.5">
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => toggleSelectPhoto(photo.path)}
+                                    />
                                 </div>
                               )}
 
-                              {!multiDeleteMode && canDeletePhoto(photo) && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDelete(photo)}
-                                  disabled={deletingPath === photo.path}
-                                  className="mt-auto text-xs bg-red-500 hover:bg-red-600 disabled:opacity-50 py-1.5 text-center transition-colors"
-                                >
-                                  {deletingPath === photo.path
-                                    ? "Suppression..."
+                                {!multiDeleteMode && canDeletePhoto(photo) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDelete(photo)}
+                                    disabled={deletingPath === photo.path}
+                                    className="mt-auto text-xs bg-red-600 hover:bg-red-700 disabled:opacity-60 py-1.5 text-center transition-colors rounded-md border border-slate-700"
+                                  >
+                                    {deletingPath === photo.path
+                                      ? "Suppression..."
                                     : "Supprimer de l’espace commun"}
                                 </button>
                               )}
@@ -692,41 +677,41 @@ const handleUpload = async (
                         })}
                       </div>
 
-                      {multiDeleteMode && selectedPhotos.length > 0 && (
-                        <div className="mt-3 flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={handleDeleteSelected}
-                            className="text-xs bg-red-500 hover:bg-red-600 px-3 py-1 rounded"
-                          >
-                            Supprimer {selectedPhotos.length} photo(s)
-                          </button>
-                        </div>
-                      )}
+                        {multiDeleteMode && selectedPhotos.length > 0 && (
+                          <div className="mt-3 flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={handleDeleteSelected}
+                              className="text-xs bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md shadow-sm"
+                            >
+                              Supprimer {selectedPhotos.length} photo(s)
+                            </button>
+                          </div>
+                        )}
                     </>
                   )}
                 </section>
 
                 {isLightboxOpen && selectedPhoto && (
-                  <div
-                    className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center"
-                    onClick={() => setIsLightboxOpen(false)}
-                  >
                     <div
-                      className="relative max-w-[90%] max-h-[90%]"
-                      onClick={(e) => e.stopPropagation()}
+                      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center"
+                      onClick={() => setIsLightboxOpen(false)}
                     >
-                      <img
-                        src={selectedPhoto.url}
-                        alt={selectedPhoto.name}
-                        className="max-w-full max-h-full rounded-lg shadow-lg"
-                      />
-                      <button
-                        onClick={() => setIsLightboxOpen(false)}
-                        className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white px-3 py-1 rounded-md text-sm"
+                      <div
+                        className="relative max-w-[90%] max-h-[90%]"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        Fermer
-                      </button>
+                        <img
+                          src={selectedPhoto.url}
+                          alt={selectedPhoto.name}
+                          className="max-w-full max-h-full rounded-lg shadow-2xl"
+                        />
+                        <button
+                          onClick={() => setIsLightboxOpen(false)}
+                          className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-md px-2 py-1 text-xs shadow-sm"
+                        >
+                          Fermer
+                        </button>
                     </div>
                   </div>
                 )}
