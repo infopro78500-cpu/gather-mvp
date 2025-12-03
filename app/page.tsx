@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { getDeviceId } from "@/lib/deviceId";
-import { getSupabaseClient, supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import Image from "next/image";
 
 export default function CreateEventPage() {
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const generatePin = () => {
     // Génère un PIN à 6 chiffres
@@ -28,13 +30,29 @@ export default function CreateEventPage() {
     setCreating(true);
 
     try {
-      const deviceId = await getDeviceId();
+      const supabase = getSupabaseClient();
+
+      if (!supabase) {
+        console.error("Supabase n'est pas configuré");
+        setError("Supabase n'est pas configuré. Vérifie les variables d'environnement.");
+        setCreating(false);
+        return;
+      }
+
+      const deviceId = getDeviceId();
 
       // --- Récupération optionnelle de l'utilisateur (anonyme autorisé) ---
       let userId: string | null = null;
       try {
-        const { data: authInfo } = await supabase.auth.getUser();
-        userId = authInfo?.user?.id ?? null;
+        const { data: authInfo, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          console.warn(
+            "Aucune session Supabase, création d'évènement anonyme.",
+            authError
+          );
+        } else {
+          userId = authInfo?.user?.id ?? null;
+        }
       } catch (authError) {
         console.warn(
           "Aucune session Supabase, création d'évènement anonyme.",
@@ -43,21 +61,25 @@ export default function CreateEventPage() {
       }
       // IMPORTANT : on NE bloque PAS si userId est null
 
-      const { error: insertError } = await supabase.from("events").insert({
-        name: name.trim(),
-        pin,
-        host_device_id: deviceId,
-        host_user_id: userId, // peut être null pour le MVP
-      });
+      const { data: createdEvent, error: insertError } = await supabase
+        .from("events")
+        .insert({
+          name: name.trim(),
+          pin,
+          host_device_id: deviceId,
+          host_user_id: userId, // peut être null pour le MVP
+        })
+        .select("pin")
+        .single();
 
-      if (insertError) {
+      if (insertError || !createdEvent) {
         console.error(insertError);
         setError("Erreur lors de la création de l'évènement.");
         return;
       }
 
-      // On connaît déjà le PIN, pas besoin de .select().single()
-      window.location.href = `/events/${pin}`;
+      const targetPin = createdEvent.pin || pin;
+      router.push(`/events/${targetPin}`);
     } catch (err) {
       console.error(err);
       setError("Erreur inattendue.");
