@@ -47,7 +47,7 @@ export default function InvestisseurV2Page() {
   scroll={false}
   className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg"
 >
-  Découvrir le modèle d'investissement
+  Découvrir le modèle d&apos;investissement
   <span className="text-lg">↗</span>
 </Link>
    
