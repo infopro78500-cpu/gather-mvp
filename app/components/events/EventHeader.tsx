@@ -1,7 +1,6 @@
-"use client";
-
 import React from "react";
 import { EventData } from "@/types/event";
+import { Card } from "../ui/card";
 
 type Props = {
   event: EventData;
@@ -9,22 +8,25 @@ type Props = {
 
 export function EventHeader({ event }: Props) {
   return (
-    <div className="flex items-center justify-between gap-2 mb-2">
-      <div className="text-left">
-        <p className="text-[11px] uppercase tracking-[0.25em] text-amber-700">
-          Évènement
-        </p>
-        <p className="text-sm md:text-base font-semibold text-amber-950">
-          {event.name}
+    <Card className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-gradient-to-r from-surface to-surface-strong/70 px-5 py-4 md:flex-row md:items-center md:justify-between">
+      <div className="space-y-1">
+        <p className="text-[11px] uppercase tracking-[0.28em] text-muted">Évènement</p>
+        <p className="text-xl font-semibold text-foreground leading-tight">{event.name}</p>
+        <p className="text-sm text-muted leading-relaxed">
+          Coffre partagé • PIN à transmettre aux invités pour rejoindre le groupe.
         </p>
       </div>
-
-      <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-[11px] font-medium text-amber-900 shadow-sm">
-        PIN
-        <span className="ml-1 font-semibold tracking-widest text-amber-700">
-          {event.pin}
-        </span>
-      </span>
-    </div>
+      <div className="flex items-center gap-3 rounded-xl bg-surface-strong/70 px-4 py-3 border border-border/60 shadow-inner">
+        <div className="flex flex-col text-xs uppercase tracking-[0.2em] text-muted">
+          <span className="text-[11px] text-muted">PIN</span>
+          <span className="text-base font-semibold text-foreground">{event.pin}</span>
+        </div>
+        <div className="h-10 w-px bg-border/80" aria-hidden />
+        <div className="flex flex-col text-right">
+          <span className="text-xs text-muted">Organisateur</span>
+          <span className="text-sm font-medium text-foreground">Ton appareil</span>
+        </div>
+      </div>
+    </Card>
   );
 }

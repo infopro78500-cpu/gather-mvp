@@ -2,19 +2,23 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { getSupabaseClient } from "@/lib/supabaseClient";
 import QRCode from "react-qr-code";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import { EventData } from "@/types/event";
 import { Photo } from "@/types/photo";
 import { EventHeader } from "@/app/components/events/EventHeader";
 import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
+import { Button, buttonClasses } from "@/app/components/ui/button";
+import { PageLayout } from "@/app/components/ui/page-layout";
+import { Section } from "@/app/components/ui/section";
+import { Card } from "@/app/components/ui/card";
 
 const BUCKET_NAME = "event-photos";
-const MAX_FILES = 20; // max 20 fichiers à la fois
-const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
+const MAX_FILES = 20;
+const MAX_FILE_SIZE_MB = 10;
 
 type PhotoItem = Photo & {
   uploaderDeviceId?: string | null;
@@ -33,7 +37,7 @@ export default function EventPage() {
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
 
-  const [isCoffreOpen, setIsCoffreOpen] = useState(false);
+  const [isCoffreOpen, setIsCoffreOpen] = useState(true);
   const [origin, setOrigin] = useState<string | null>(null);
 
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -52,7 +56,6 @@ export default function EventPage() {
   } | null>(null);
 
   const supabase = getSupabaseClient();
-
 
   const photoCount = photos.length;
   const hasPhotos = photoCount > 0;
@@ -110,7 +113,7 @@ export default function EventPage() {
     if (pin) {
       fetchEvent();
     }
-  }, [pin]);
+  }, [pin, supabase]);
 
   const refreshPhotos = async (evt: EventData): Promise<void> => {
     if (!supabase) {
@@ -183,119 +186,118 @@ export default function EventPage() {
     return photo.uploaderDeviceId === deviceId;
   };
 
-const handleUpload = async (
-  e: React.ChangeEvent<HTMLInputElement>
-): Promise<void> => {
-  if (!supabase) {
-    setError("Configuration Supabase manquante.");
-    return;
-  }
+  const handleUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
+    if (!supabase) {
+      setError("Configuration Supabase manquante.");
+      return;
+    }
 
-  const files = e.target.files;
-  if (!files || files.length === 0 || !event) return;
+    const files = e.target.files;
+    if (!files || files.length === 0 || !event) return;
 
-  const filesArray = Array.from(files);
+    const filesArray = Array.from(files);
 
-  const currentDeviceId = getEventDeviceId();
-  if (!currentDeviceId) {
-    console.error("Impossible de récupérer le deviceId");
-    setError("Erreur : appareil non identifié.");
-    return;
-  }
+    const currentDeviceId = getEventDeviceId();
+    if (!currentDeviceId) {
+      console.error("Impossible de récupérer le deviceId");
+      setError("Erreur : appareil non identifié.");
+      return;
+    }
 
-  if (filesArray.length > MAX_FILES) {
-    alert(`Tu peux envoyer maximum ${MAX_FILES} fichiers à la fois.`);
-    return;
-  }
+    if (filesArray.length > MAX_FILES) {
+      alert(`Tu peux envoyer maximum ${MAX_FILES} fichiers à la fois.`);
+      return;
+    }
 
-  setUploading(true);
-  setError(null);
-  setUploadError(null);
-  setUploadInfo({ processed: 0, total: filesArray.length });
+    setUploading(true);
+    setError(null);
+    setUploadError(null);
+    setUploadInfo({ processed: 0, total: filesArray.length });
 
-  try {
-    const newPhotos: PhotoItem[] = [];
-    const rejectedFiles: string[] = [];
+    try {
+      const newPhotos: PhotoItem[] = [];
+      const rejectedFiles: string[] = [];
 
-    for (const file of filesArray) {
-      const sizeMb = file.size / (1024 * 1024);
-      if (sizeMb > MAX_FILE_SIZE_MB) {
-        console.warn(`Fichier trop lourd : ${file.name}`);
-        rejectedFiles.push(file.name);
-        continue;
-      }
-
-      const safeName = file.name
-        .normalize("NFKD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9.\-_]/g, "_");
-
-      const filenameOnStorage = `${currentDeviceId}__${Date.now()}-${safeName}`;
-      const path = `${event.id}/${filenameOnStorage}`;
-
-      try {
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from(BUCKET_NAME)
-          .upload(path, file);
-
-        if (uploadError) {
-          console.error("Erreur upload Supabase", uploadError);
+      for (const file of filesArray) {
+        const sizeMb = file.size / (1024 * 1024);
+        if (sizeMb > MAX_FILE_SIZE_MB) {
+          console.warn(`Fichier trop lourd : ${file.name}`);
+          rejectedFiles.push(file.name);
           continue;
         }
 
-        if (!uploadData) {
-          console.warn("Upload terminé sans données retournées", {
+        const safeName = file.name
+          .normalize("NFKD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9.\-_]/g, "_");
+
+        const filenameOnStorage = `${currentDeviceId}__${Date.now()}-${safeName}`;
+        const path = `${event.id}/${filenameOnStorage}`;
+
+        try {
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .upload(path, file);
+
+          if (uploadError) {
+            console.error("Erreur upload Supabase", uploadError);
+            continue;
+          }
+
+          if (!uploadData) {
+            console.warn("Upload terminé sans données retournées", {
+              path,
+              file: file.name,
+            });
+            continue;
+          }
+
+          const { data: publicData } = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(path);
+
+          if (!publicData?.publicUrl) {
+            console.warn("URL publique manquante après upload", { path });
+            continue;
+          }
+
+          newPhotos.push({
+            name: filenameOnStorage,
+            url: publicData.publicUrl,
             path,
-            file: file.name,
+            uploaderDeviceId: currentDeviceId,
           });
-          continue;
+        } catch (err) {
+          console.error("Erreur inattendue lors de l’upload d’un fichier", err);
         }
 
-        const { data: publicData } = supabase.storage
-          .from(BUCKET_NAME)
-          .getPublicUrl(path);
-
-        if (!publicData?.publicUrl) {
-          console.warn("URL publique manquante après upload", { path });
-          continue;
-        }
-
-        newPhotos.push({
-          name: filenameOnStorage,
-          url: publicData.publicUrl,
-          path,
-          uploaderDeviceId: currentDeviceId,
-        });
-      } catch (err) {
-        console.error("Erreur inattendue lors de l’upload d’un fichier", err);
+        setUploadInfo((prev) =>
+          prev ? { ...prev, processed: prev.processed + 1 } : null
+        );
       }
 
-      setUploadInfo((prev) =>
-        prev ? { ...prev, processed: prev.processed + 1 } : null
-      );
-    }
+      if (rejectedFiles.length > 0) {
+        const rejectedList = rejectedFiles.join(", ");
+        const message = `${rejectedFiles.length} fichier${
+          rejectedFiles.length > 1 ? "s" : ""
+        } n'ont pas été ajoutés car ils dépassent 10 Mo : ${rejectedList}`;
+        setUploadError(message);
+      }
 
-    if (rejectedFiles.length > 0) {
-      const rejectedList = rejectedFiles.join(", ");
-      const message = `${rejectedFiles.length} fichier${
-        rejectedFiles.length > 1 ? "s" : ""
-      } n'ont pas été ajoutés car ils dépassent 10 Mo : ${rejectedList}`;
-      setUploadError(message);
+      if (newPhotos.length > 0) {
+        setPhotos((prev) => [...prev, ...newPhotos]);
+      }
+    } finally {
+      if (event) {
+        await refreshPhotos(event);
+      }
+      setUploading(false);
+      setUploadInfo(null);
+      e.target.value = "";
     }
-
-    if (newPhotos.length > 0) {
-      setPhotos((prev) => [...prev, ...newPhotos]);
-    }
-  } finally {
-    if (event) {
-      await refreshPhotos(event);
-    }
-    setUploading(false);
-    setUploadInfo(null);
-    e.target.value = "";
-  }
-};
-
+  };
 
   const handleDelete = async (photo: PhotoItem): Promise<void> => {
     if (!event) return;
@@ -461,16 +463,24 @@ const handleUpload = async (
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white px-4 py-6">
-      <div className="w-[380px] md:w-[720px] rounded-2xl bg-slate-900/80 border border-slate-800 p-6 md:p-8 shadow-2xl space-y-5">
+    <PageLayout
+      eyebrow="Coffre partagé"
+      title={event ? event.name : "Chargement de l’évènement"}
+      description={
+        event
+          ? "Partage le PIN ou le QR code pour inviter ton groupe et gérez la galerie commune en quelques gestes."
+          : "Nous préparons la galerie et les photos associées."
+      }
+    >
+      <div className="space-y-4 md:space-y-6 animate-fade">
         {loading && (
-          <p className="text-center text-sm text-slate-300">
+          <Card className="p-5 text-center text-muted">
             Chargement de l’évènement...
-          </p>
+          </Card>
         )}
 
         {!loading && error && (
-          <p className="text-center text-sm text-red-400">{error}</p>
+          <Card className="p-5 text-center text-danger">{error}</Card>
         )}
 
         {!loading && event && (
@@ -478,276 +488,248 @@ const handleUpload = async (
             <EventHeader event={event} />
 
             {shareUrl && (
-              <section className="mt-1 rounded-lg border border-slate-800 bg-slate-950/90 px-5 py-5 flex flex-col gap-4 shadow-md">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex-1 flex flex-col gap-2">
-                    <p className="text-[11px] tracking-wide uppercase text-slate-400 font-semibold">Partage de l’évènement</p>
-                    <p className="text-base font-semibold text-slate-50">Invite ton groupe à rejoindre ce coffre.</p>
-                    <p className="text-sm text-slate-400">Copie le lien ou scanne le QR code pour partager rapidement.</p>
-                    <div className="mt-3 flex flex-col gap-2">
-                      <div className="w-full overflow-hidden rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-[11px] text-slate-200 shadow-inner">
-                        {shareUrl}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleCopyLink}
-                        className="self-start inline-flex items-center gap-2 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors hover:bg-slate-700 hover:border-teal-400 shadow-sm"
-                      >
-                        📋 Copier le lien
-                      </button>
+              <Section
+                title="Partager l’accès"
+                description="Copie le lien ou affiche le QR code pour permettre aux invités de rejoindre le coffre en quelques secondes."
+                actions={
+                  <Button variant="secondary" size="sm" onClick={handleCopyLink}>
+                    Copier le lien
+                  </Button>
+                }
+              >
+                <div className="grid gap-4 md:grid-cols-[2fr_1fr] md:items-center">
+                  <div className="space-y-3">
+                    <div className="rounded-xl border border-border/60 bg-surface/80 px-4 py-3 text-sm text-foreground shadow-inner">
+                      {shareUrl}
+                    </div>
+                    <div className="flex flex-col gap-2 text-sm text-muted">
+                      <p>Partage ce lien ou scanne le QR code ci-contre.</p>
+                      <p>Les invités arriveront directement sur la page de connexion.</p>
                     </div>
                   </div>
-
-                  <div className="flex items-center md:items-start justify-center md:justify-end">
-                    <div className="rounded-lg border border-slate-800 bg-slate-950/90 p-4 shadow-inner">
-                      <QRCode value={shareUrl} size={128} bgColor="transparent" fgColor="#ffffff" />
-                    </div>
+                  <div className="flex items-center justify-center">
+                    <Card className="p-4 border border-border/60 bg-surface-strong/70">
+                      <QRCode
+                        value={shareUrl}
+                        size={148}
+                        bgColor="transparent"
+                        fgColor="#e2e8f0"
+                      />
+                    </Card>
                   </div>
                 </div>
-              </section>
+              </Section>
             )}
 
-            <section className="mt-4 rounded-lg border border-slate-800 bg-slate-950/90 px-5 py-5 shadow-md">
-              <button
-                type="button"
-                onClick={() => setIsCoffreOpen((prev) => !prev)}
-                className="w-full flex items-center justify-between px-5 py-4 rounded-lg bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-900/90 hover:to-slate-800/90 border border-slate-700 hover:border-teal-400/60 transition-all duration-200 shadow-sm"
-              >
-                <div className="flex flex-col text-left">
-                  <p className="text-[11px] tracking-wide uppercase text-slate-400 font-semibold">Espace commun du groupe</p>
-                  <p className="text-base font-semibold text-slate-50">Galerie photo commune</p>
-                  <p className="text-sm text-slate-400 mt-1">
-                    Cliquez pour {isCoffreOpen ? "masquer la galerie." : "ouvrir la galerie."}
-                  </p>
-                </div>
+            <Section
+              title="Espace commun du groupe"
+              description="Ajoute des photos, télécharge tout le coffre ou supprime tes envois. Pensé pour fonctionner rapidement sur mobile."
+              actions={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsCoffreOpen((prev) => !prev)}
+                >
+                  {isCoffreOpen ? "Masquer la galerie" : "Afficher la galerie"}
+                </Button>
+              }
+            >
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
+                <span className="inline-flex items-center gap-2 rounded-full bg-surface-strong/60 px-3 py-1 text-foreground border border-border/60">
+                  {hasPhotos ? `${photoCount} photo${photoCount > 1 ? "s" : ""}` : "Aucune photo pour le moment"}
+                </span>
+                <span className="text-xs text-muted">
+                  Max {MAX_FILES} fichiers • {MAX_FILE_SIZE_MB} Mo par fichier
+                </span>
+              </div>
 
-                <div className="flex flex-col items-end gap-1">
-                  <span className="inline-flex items-center rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] text-slate-200 mt-1 border border-slate-700">
-                    {hasPhotos ? (
-                      <>
-                        <span className="mr-1 h-1.5 w-1.5 rounded-full bg-teal-400" />
-                        {photoCount} photo
-                        {photoCount > 1 ? "s" : ""} partagée
-                        {photoCount > 1 ? "s" : ""}
-                      </>
-                    ) : (
-                      "Aucune photo"
+              {isCoffreOpen && (
+                <div className="space-y-4 animate-fade">
+                  <Card className="p-4 md:p-5 border border-border/60 bg-surface/70">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">
+                          Ajouter des photos à l’espace commun
+                        </p>
+                        <p className="text-sm text-muted">
+                          Vous pouvez envoyer jusqu’à {MAX_FILES} fichiers à la fois (10 Mo par fichier).
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                          id="upload-input"
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleUpload}
+                        />
+                        <label
+                          htmlFor="upload-input"
+                          className={buttonClasses({
+                            variant: "primary",
+                            size: "md",
+                            className: "cursor-pointer w-full sm:w-auto text-center",
+                          })}
+                        >
+                          {uploading && uploadInfo
+                            ? `Upload : ${uploadInfo.processed}/${uploadInfo.total}`
+                            : uploading
+                              ? "Upload en cours..."
+                              : "Ajouter des photos"}
+                        </label>
+                        {multiDeleteMode && selectedPhotos.length > 0 && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={handleDeleteSelected}
+                          >
+                            Supprimer {selectedPhotos.length}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    {uploadError && (
+                      <p className="mt-2 text-sm text-danger" role="alert">
+                        {uploadError}
+                      </p>
                     )}
-                  </span>
-                  <div className="h-10 w-10 flex items-center justify-center rounded-lg border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 shadow-inner">
-                    <span className="text-xl">{isCoffreOpen ? "📖" : "🔒"}</span>
+                  </Card>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setMultiDeleteMode((prev) => !prev);
+                        setSelectedPhotos([]);
+                      }}
+                    >
+                      {multiDeleteMode
+                        ? "Quitter le mode sélection"
+                        : "Sélectionner plusieurs photos"}
+                    </Button>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleDownloadAll}
+                        loading={downloading}
+                        disabled={!hasPhotos}
+                      >
+                        Télécharger toutes les photos
+                      </Button>
+                      {multiDeleteMode && selectedPhotos.length > 0 && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={handleDownloadSelected}
+                          loading={downloading}
+                        >
+                          Télécharger la sélection
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
-                  <p className="text-[11px] uppercase tracking-wide text-slate-400 mb-1">
-                    {isCoffreOpen ? "Coffre ouvert" : "Coffre fermé"}
-                  </p>
-                </div>
-              </button>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                    {photos.map((photo) => {
+                      const isSelected = selectedPhotos.includes(photo.path);
 
-              <div
-                className={`mt-3 overflow-hidden transition-all duration-300 ease-out ${
-                  isCoffreOpen
-                    ? "max-h-[2000px] opacity-100 translate-y-0"
-                    : "max-h-0 opacity-0 -translate-y-1 pointer-events-none"
-                }`}
-              >
-                <div className="flex flex-col items-center gap-3 mb-5">
-                  <button
-                    onClick={() => {
-                      setMultiDeleteMode((prev) => !prev);
-                      setSelectedPhotos([]);
-                    }}
-                    className="text-xs font-medium text-teal-400 underline-offset-4 hover:underline mb-1"
-                  >
-                    {multiDeleteMode
-                      ? "Quitter le mode sélection"
-                      : "Sélectionner plusieurs photos"}
-                  </button>
-                  <p className="text-[11px] text-slate-400 text-center leading-relaxed max-w-[560px]">
-                    {isHost
-                      ? "En tant qu'hôte, vous pouvez supprimer toutes les photos du coffre."
-                      : "Vous pouvez supprimer uniquement les photos que vous avez envoyées. Seul l'hôte peut supprimer l'ensemble des photos."}
-                  </p>
+                      return (
+                        <div
+                          key={photo.path}
+                          className={`group relative overflow-hidden rounded-xl border border-border/60 bg-surface/70 shadow-[0_10px_40px_rgba(0,0,0,0.25)] transition-all duration-200 ${
+                            isSelected
+                              ? "ring-2 ring-primary/70 scale-[1.01]"
+                              : "hover:border-primary/60 hover:scale-[1.01]"
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPhoto(photo);
+                              setIsLightboxOpen(true);
+                            }}
+                            className="block h-32 w-full overflow-hidden sm:h-36 md:h-40"
+                          >
+                            <img
+                              src={photo.url}
+                              alt={photo.name}
+                              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.05]"
+                            />
+                          </button>
 
+                          {multiDeleteMode && (
+                            <div className="absolute left-2 top-2 rounded-md bg-surface/80 px-2 py-1 text-xs">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleSelectPhoto(photo.path)}
+                              />
+                            </div>
+                          )}
 
-                    <label className="bg-teal-500 px-4 py-2 rounded-lg cursor-pointer text-slate-900 font-semibold hover:bg-teal-400 text-sm shadow-sm inline-flex items-center gap-2">
-                      <span>📤</span>
-                    {uploading
-                      ? uploadInfo
-                        ? `Upload : ${uploadInfo.processed}/${uploadInfo.total}`
-                        : "Upload en cours..."
-                      : "Ajouter des photos à l’espace commun"}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={handleUpload}
-                    />
-                  </label>
-                  {uploadError && (
-                    <p className="text-xs text-red-400 text-center max-w-[360px]">
-                      {uploadError}
-                    </p>
+                          {!multiDeleteMode && canDeletePhoto(photo) && (
+                            <div className="p-2">
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDelete(photo)}
+                                loading={deletingPath === photo.path}
+                                className="w-full"
+                              >
+                                {deletingPath === photo.path
+                                  ? "Suppression..."
+                                  : "Supprimer"}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {photos.length === 0 && (
+                    <Card className="p-4 text-center text-muted">
+                      Aucune photo pour l’instant. Ajoute la première ✨
+                    </Card>
                   )}
+                </div>
+              )}
 
-
-                    {multiDeleteMode && selectedPhotos.length > 0 && (
-                      <div className="flex flex-wrap justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handleDownloadSelected}
-                          disabled={downloading}
-                          className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors hover:bg-slate-700 hover:border-teal-400 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
-                        >
-                          {downloading
-                            ? "Préparation du ZIP..."
-                            : "Télécharger la sélection (ZIP)"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleDeleteSelected}
-                          className="rounded-md bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm"
-                        >
-                          Supprimer {selectedPhotos.length} photo(s)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedPhotos([])}
-                          className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors hover:bg-slate-700 hover:border-teal-400 shadow-sm"
-                        >
-                          Réinitialiser la sélection
-                        </button>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap justify-center gap-2 text-[11px] text-slate-400">
-                      <span>Max {MAX_FILES} fichiers</span>
-                      <span>—</span>
-                      <span>10 Mo par fichier</span>
-                      <span>—</span>
-                      <span>Formats : JPG, PNG...</span>
-                    </div>
-
-                    <div className="flex justify-center gap-3 text-xs text-slate-400">
-                      <button
-                        type="button"
-                        onClick={handleDownloadAll}
-                        disabled={downloading}
-                        className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white border border-slate-700 transition-colors hover:bg-slate-700 hover:border-teal-400 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
-                      >
-                        {downloading
-                          ? "Préparation du ZIP..."
-                        : "Télécharger toutes les photos (ZIP)"}
+              {isLightboxOpen && selectedPhoto && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                  onClick={() => setIsLightboxOpen(false)}
+                >
+                  <div
+                    className="relative max-h-[90vh] max-w-[90vw] animate-pop"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <img
+                      src={selectedPhoto.url}
+                      alt={selectedPhoto.name}
+                      className="max-h-[90vh] max-w-[90vw] rounded-xl shadow-2xl"
+                    />
+                    <button
+                      onClick={() => setIsLightboxOpen(false)}
+                      className={buttonClasses({
+                        variant: "secondary",
+                        size: "sm",
+                        className: "absolute right-3 top-3",
+                      })}
+                    >
+                      Fermer
                     </button>
                   </div>
                 </div>
-
-                  <section className="mt-4">
-                    {photos.length === 0 ? (
-                      <p className="text-xs text-slate-400 text-center mb-2">
-                        Aucune photo pour l’instant. Ajoute la première ✨
-                      </p>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                          {photos.map((photo) => {
-                            const isSelected = selectedPhotos.includes(photo.path);
-
-                            return (
-                              <div
-                                key={photo.path}
-                                className={`group relative flex flex-col rounded-lg border overflow-hidden bg-slate-900/70 transition-all shadow-sm ${
-                                  isSelected
-                                    ? "border-teal-400 scale-[1.02]"
-                                    : "border-slate-700 hover:border-teal-400 hover:scale-[1.02]"
-                                }`}
-                              >
-                                <button
-                                  type="button"
-                                onClick={() => {
-                                  setSelectedPhoto(photo);
-                                  setIsLightboxOpen(true);
-                                }}
-                                className="w-full h-32 md:h-40 overflow-hidden"
-                              >
-                                <img
-                                  src={photo.url}
-                                  alt={photo.name}
-                                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
-                                />
-                              </button>
-
-                                {multiDeleteMode && (
-                                  <div className="absolute top-2 left-2 bg-slate-900/70 rounded px-1 py-0.5">
-                                    <input
-                                      type="checkbox"
-                                      checked={isSelected}
-                                      onChange={() => toggleSelectPhoto(photo.path)}
-                                    />
-                                </div>
-                              )}
-
-                                {!multiDeleteMode && canDeletePhoto(photo) && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDelete(photo)}
-                                    disabled={deletingPath === photo.path}
-                                    className="mt-auto text-xs bg-red-600 hover:bg-red-700 disabled:opacity-60 py-1.5 text-center transition-colors rounded-md border border-slate-700"
-                                  >
-                                    {deletingPath === photo.path
-                                      ? "Suppression..."
-                                    : "Supprimer de l’espace commun"}
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                        {multiDeleteMode && selectedPhotos.length > 0 && (
-                          <div className="mt-3 flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={handleDeleteSelected}
-                              className="text-xs bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md shadow-sm"
-                            >
-                              Supprimer {selectedPhotos.length} photo(s)
-                            </button>
-                          </div>
-                        )}
-                    </>
-                  )}
-                </section>
-
-                {isLightboxOpen && selectedPhoto && (
-                    <div
-                      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center"
-                      onClick={() => setIsLightboxOpen(false)}
-                    >
-                      <div
-                        className="relative max-w-[90%] max-h-[90%]"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <img
-                          src={selectedPhoto.url}
-                          alt={selectedPhoto.name}
-                          className="max-w-full max-h-full rounded-lg shadow-2xl"
-                        />
-                        <button
-                          onClick={() => setIsLightboxOpen(false)}
-                          className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-md px-2 py-1 text-xs shadow-sm"
-                        >
-                          Fermer
-                        </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
+              )}
+            </Section>
           </>
         )}
       </div>
-    </main>
+    </PageLayout>
   );
 }
