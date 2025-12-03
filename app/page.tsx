@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { getDeviceId } from "@/lib/deviceId";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import Image from "next/image";
 
 export default function CreateEventPage() {
@@ -16,8 +16,8 @@ export default function CreateEventPage() {
   };
 
   const handleSubmit = async (e: FormEvent) => {
-  e.preventDefault();
-  setError(null);
+    e.preventDefault();
+    setError(null);
 
   if (!name.trim()) {
     setError("Donne un nom à ton évènement.");

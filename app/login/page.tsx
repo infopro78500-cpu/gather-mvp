@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
 
   const handleLogin = async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setMessage("Supabase n'est pas configuré. Contacte l'équipe.");
+      return;
+    }
+
     const { data, error } = await supabase.auth.signInWithOtp({ email });
 
     if (error) {

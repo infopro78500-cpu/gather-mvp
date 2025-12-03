@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
-export default function JoinPage() {
+function JoinPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -17,6 +17,12 @@ export default function JoinPage() {
   const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setError("Supabase n'est pas configuré. Contacte l'équipe.");
+      return;
+    }
 
     const trimmed = pin.trim();
 
@@ -101,5 +107,13 @@ export default function JoinPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense fallback={<div className="text-white">Chargement...</div>}>
+      <JoinPageContent />
+    </Suspense>
   );
 }
