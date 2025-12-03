@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   bundledWebRuntime: false,
   server: {
     // ⚠️ Mets ici ton URL Vercel en prod
-    url: "https://TON-URL-VERCEL.vercel.app",
+  url: "https://gather-mvp.vercel.app",
     androidScheme: "https",
   },
 };
