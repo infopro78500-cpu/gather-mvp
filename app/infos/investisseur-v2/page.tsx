@@ -47,13 +47,13 @@ export default function InvestisseurV2Page() {
   scroll={false}
   className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg"
 >
-  Découvrir le modèle d'investissement
+    Découvrir le modèle d&apos;investissement
   <span className="text-lg">↗</span>
 </Link>
    
    <Link href="/infos/investissement-fonctionnement-resume"
         className="block text-xs text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline">
-      Je veux d’abord comprendre Gather et le fonctionnement général (résumé)
+        Je veux d’abord comprendre Gather et le fonctionnement général (résumé)
   </Link>
 
 </div>
