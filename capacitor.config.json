@@ -2,7 +2,6 @@
   "appId": "com.gather.mvp",
   "appName": "Gather",
   "webDir": "public",
-  "bundledWebRuntime": false,
   "server": {
     "url": "https://gather-mvp.vercel.app",
     "androidScheme": "https"
