@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function JoinPage() {
+function JoinPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -14,7 +14,7 @@ export default function JoinPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 
@@ -39,67 +39,61 @@ export default function JoinPage() {
       return;
     }
 
-    setLoading(false);
     router.push(`/events/${trimmed}`);
+    setLoading(false);
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
-      <div className="w-[360px] md:w-[420px] rounded-2xl bg-slate-900/80 border border-slate-800 p-6 md:p-7 shadow-xl space-y-5">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
-            Gather
-          </p>
-          <h1 className="mt-1 text-xl font-semibold text-slate-50">
-            Rejoindre un coffre photo
-          </h1>
-          <p className="mt-1 text-xs text-slate-400">
-            Entre le PIN partagé avec toi pour accéder à l’espace commun du
-            groupe.
-          </p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+        <h1 className="text-xl font-semibold text-white mb-2 text-center">
+          Rejoindre un coffre
+        </h1>
+        <p className="text-sm text-slate-300 mb-4 text-center">
+          Entre le PIN à 6 chiffres pour accéder à l&apos;événement.
+        </p>
 
-        <form className="space-y-3" onSubmit={handleJoin}>
-          <div className="space-y-1">
-            <label
-              htmlFor="pin"
-              className="text-xs font-medium text-slate-300"
-            >
-              PIN de l&apos;évènement
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-200 mb-1">
+              PIN
             </label>
             <input
-              id="pin"
               type="text"
               inputMode="numeric"
               maxLength={6}
               value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              className="w-full rounded-md border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-slate-50 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
-              placeholder="Ex : 335058"
+              onChange={(e) =>
+                setPin(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="123456"
             />
-            {error && (
-              <p className="text-[11px] text-red-400 mt-1">
-                {error}
-              </p>
-            )}
           </div>
+
+          {error && (
+            <p className="text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-md px-3 py-2">
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full rounded-md bg-teal-500 py-2 text-sm font-semibold text-slate-950 hover:bg-teal-400 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            className="w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-950 font-medium py-2.5 mt-2 transition"
           >
-            {loading ? "Recherche..." : "Rejoindre le coffre"}
+            {loading ? "Connexion..." : "Rejoindre"}
           </button>
         </form>
-
-        <div className="pt-2 border-t border-slate-800">
-          <p className="text-[11px] text-slate-500">
-            Tu peux aussi rejoindre un coffre en scannant le QR code partagé
-            depuis la page évènement.
-          </p>
-        </div>
       </div>
-    </main>
+    </div>
+  );
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense fallback={<div className="text-center text-white p-4">Chargement...</div>}>
+      <JoinPageInner />
+    </Suspense>
   );
 }

@@ -2,20 +2,15 @@
   "name": "gather-mvp",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "build:web": "next build",
-    "build:mobile": "NEXT_EXPORT=1 next build",
-    "cap:copy": "npm run build:mobile && npx cap copy",
-    "cap:sync": "npm run build:mobile && npx cap sync",
-    "cap:android": "npm run build:mobile && npx cap run android",
-    "cap:ios": "npm run build:mobile && npx cap run ios",
-    "cap:open:android": "npx cap open android",
-    "cap:open:ios": "npx cap open ios",
-    "start": "next start",
-    "lint": "eslint"
-  },
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "lint": "next lint",
+
+  "cap:sync": "npx cap sync",
+  "cap:android": "npx cap open android"
+},
   "dependencies": {
     "@capacitor/android": "^6.2.0",
     "@capacitor/core": "^6.2.0",

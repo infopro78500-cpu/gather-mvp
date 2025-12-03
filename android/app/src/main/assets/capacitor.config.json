@@ -1,0 +1,10 @@
+{
+	"appId": "com.gather.mvp",
+	"appName": "Gather",
+	"webDir": "public",
+	"bundledWebRuntime": false,
+	"server": {
+		"url": "https://TON-URL-VERCEL.vercel.app",
+		"androidScheme": "https"
+	}
+}
