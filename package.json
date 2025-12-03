@@ -18,6 +18,9 @@
     "react-qr-code": "^2.0.18"
   },
   "devDependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
     "@tailwindcss/postcss": "^4",
     "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
