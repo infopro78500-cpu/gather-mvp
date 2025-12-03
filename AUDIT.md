@@ -3,7 +3,7 @@
 Ce document synthétise l'état des fonctionnalités observées dans le dépôt, sans spéculation ni prise en compte du dossier `ia_local`.
 
 ## 1) Structure du projet
-- **app/** : routes et pages Next.js (création d'évènement, join, événement par PIN, login OTP, coming soon/landing, admin dashboard, pages infos). Composants UI dans `app/components/` (EventHeader, LandingForm).
+- **app/** : routes et pages Next.js avec séparation `core` (socle commun) et `versions` (landings V1/V2/V3-fêtes). Les routes fonctionnelles (`events`, `join`, `admin`, `coming-soon`, `infos`, `login`) sont implémentées dans `app/core/...` puis réexportées depuis leurs chemins publics. Composants UI partagés dans `app/core/components/` (EventHeader, LandingForm) et landing générique dans `app/core/landing/CreateEventLanding`.
 - **app/api/** : route API `/api/lead` pour insérer des leads Supabase.
 - **lib/** : utilitaires communs, notamment `supabaseClient` (instanciation Supabase avec variables d'environnement publiques) et `deviceId` (génération/stockage d'un identifiant local).
 - **types/** : types partagés `EventData` et `Photo`.
@@ -11,7 +11,7 @@ Ce document synthétise l'état des fonctionnalités observées dans le dépôt,
 - **utils/** : script `image_utils.py` (hors périmètre fonctionnel web).
 
 ## 2) Pages et rôles
-- **/ (app/page.tsx)** : formulaire client pour créer un évènement (validation nom, génération PIN aléatoire 6 chiffres, insert Supabase et redirection vers `/events/{pin}`).
+- **/ (app/page.tsx)** : point d'entrée qui choisit une landing (`v1`, `v2`, `v3-fetes`) via la variable d'env `GATHER_LANDING_VERSION`, en important les pages `app/versions/...`. La landing actuelle par défaut est V3 fêtes.
 - **/join** : saisie PIN (validation regex 6 chiffres) puis redirection vers `/events/{pin}`.
 - **/events/[pin]** : page évènement (chargement Supabase par PIN, en-tête, partage lien/QR, galerie avec upload/suppression/téléchargement ZIP, permissions deviceId/host).
 - **/login** : login OTP e-mail via `supabase.auth.signInWithOtp` avec message de statut.
@@ -26,7 +26,7 @@ Ce document synthétise l'état des fonctionnalités observées dans le dépôt,
 
 ## 4) Fonctionnalités observées
 ### Évènements
-- **Création** : `app/page.tsx` génère un PIN 6 chiffres, vérifie le nom non vide, récupère `deviceId`, tente d'obtenir `userId` via `supabase.auth.getUser` (non bloquant), insère `{name,pin,host_device_id,host_user_id}` dans la table `events`, puis redirige vers `/events/{pin}`.
+- **Création** : `app/core/landing/CreateEventLanding` (utilisée par `app/versions/v1|v2|v3-fetes`) génère un PIN 6 chiffres, vérifie le nom non vide, récupère `deviceId`, tente d'obtenir `userId` via `supabase.auth.getUser` (non bloquant), insère `{name,pin,host_device_id,host_user_id}` dans la table `events`, puis redirige vers `/events/{pin}`.
 - **Chargement événement** : `app/events/[pin]/page.tsx` récupère l'évènement par `pin` via `maybeSingle`, gère erreurs/absence.
 - **Permissions hôte** : comparaison `event.host_device_id === deviceId` pour activer la suppression universelle.
 
