@@ -2,13 +2,15 @@
 
 import { useState, FormEvent } from "react";
 import { getDeviceId } from "@/lib/deviceId";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import Image from "next/image";
 
 export default function CreateEventPage() {
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const supabase = getSupabaseClient();
 
   const generatePin = () => {
     // Génère un PIN à 6 chiffres
@@ -18,6 +20,11 @@ export default function CreateEventPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!supabase) {
+      setError("Configuration Supabase manquante.");
+      return;
+    }
 
     if (!name.trim()) {
       setError("Donne un nom à ton évènement.");

@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 function JoinPageInner() {
   const router = useRouter();
@@ -13,6 +13,8 @@ function JoinPageInner() {
   const [pin, setPin] = useState(initialPin);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const supabase = getSupabaseClient();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -26,6 +28,12 @@ function JoinPageInner() {
     }
 
     setLoading(true);
+
+    if (!supabase) {
+      setError("Configuration Supabase manquante.");
+      setLoading(false);
+      return;
+    }
 
     const { data, error: supabaseError } = await supabase
       .from("events")
