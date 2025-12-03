@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 type Lead = {
   id: string;
@@ -12,6 +12,16 @@ type Lead = {
 };
 
 export default async function AdminPage() {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-slate-50 px-6 py-10 flex justify-center">
+        <p>Supabase n&apos;est pas configuré. Merci d&apos;ajouter les variables requises.</p>
+      </main>
+    );
+  }
+
   const { data, error } = await supabase
     .from("leads_landing")
     .select("*")
@@ -54,6 +64,13 @@ export default async function AdminPage() {
         <p className="text-sm text-slate-400">
           On se concentre sur la version fêtes et les tests mobile 🎄
         </p>
+        <div className="text-left text-sm space-y-1">
+          <p>Total leads: {totalLeads}</p>
+          <p>Investisseurs intéressés: {investors}</p>
+          <p>Contributeurs intéressés: {contributors}</p>
+          <p>Ambassadeurs intéressés: {ambassadors}</p>
+          <p>Beta-testeurs intéressés: {betas}</p>
+        </div>
       </div>
     </main>
   );
