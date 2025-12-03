@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import QRCode from "react-qr-code";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -51,6 +51,8 @@ export default function EventPage() {
     total: number;
   } | null>(null);
 
+  const supabase = getSupabaseClient();
+
 
   const photoCount = photos.length;
   const hasPhotos = photoCount > 0;
@@ -76,6 +78,12 @@ export default function EventPage() {
 
   useEffect(() => {
     const fetchEvent = async () => {
+      if (!supabase) {
+        setError("Configuration Supabase manquante.");
+        setLoading(false);
+        return;
+      }
+
       const { data, error: eventError } = await supabase
         .from("events")
         .select("*")
@@ -105,6 +113,11 @@ export default function EventPage() {
   }, [pin]);
 
   const refreshPhotos = async (evt: EventData): Promise<void> => {
+    if (!supabase) {
+      setError("Configuration Supabase manquante.");
+      return;
+    }
+
     try {
       const { data: files, error: listError } = await supabase.storage
         .from(BUCKET_NAME)
@@ -173,6 +186,11 @@ export default function EventPage() {
 const handleUpload = async (
   e: React.ChangeEvent<HTMLInputElement>
 ): Promise<void> => {
+  if (!supabase) {
+    setError("Configuration Supabase manquante.");
+    return;
+  }
+
   const files = e.target.files;
   if (!files || files.length === 0 || !event) return;
 
@@ -282,6 +300,11 @@ const handleUpload = async (
   const handleDelete = async (photo: PhotoItem): Promise<void> => {
     if (!event) return;
 
+    if (!supabase) {
+      setError("Configuration Supabase manquante.");
+      return;
+    }
+
     if (!canDeletePhoto(photo)) return;
 
     const confirmDelete = window.confirm(
@@ -321,6 +344,11 @@ const handleUpload = async (
 
   const handleDeleteSelected = async (): Promise<void> => {
     if (!event || selectedPhotos.length === 0) return;
+
+    if (!supabase) {
+      setError("Configuration Supabase manquante.");
+      return;
+    }
 
     const allowedPaths = selectedPhotos.filter((path) => {
       const photo = photos.find((p) => p.path === path);

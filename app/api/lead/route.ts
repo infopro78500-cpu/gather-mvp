@@ -1,7 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '../../../lib/supabaseClient';
+import { NextRequest, NextResponse } from "next/server";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 export async function POST(req: NextRequest) {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    return NextResponse.json(
+      { success: false, error: "MISSING_SUPABASE_CONFIG" },
+      { status: 500 }
+    );
+  }
+
   try {
     const body = await req.json();
 
