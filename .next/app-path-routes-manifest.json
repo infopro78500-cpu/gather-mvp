@@ -1,0 +1,15 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/admin/page": "/admin",
+  "/admin/stats/page": "/admin/stats",
+  "/api/lead/route": "/api/lead",
+  "/coming-soon/page": "/coming-soon",
+  "/events/[pin]/page": "/events/[pin]",
+  "/favicon.ico/route": "/favicon.ico",
+  "/infos/investissement-fonctionnement/page": "/infos/investissement-fonctionnement",
+  "/infos/investisseur-v2/page": "/infos/investisseur-v2",
+  "/join/page": "/join",
+  "/login/page": "/login",
+  "/page": "/"
+}

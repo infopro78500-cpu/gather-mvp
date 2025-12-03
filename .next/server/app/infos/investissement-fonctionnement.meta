@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/infos/layout,_N_T_/infos/investissement-fonctionnement/layout,_N_T_/infos/investissement-fonctionnement/page,_N_T_/infos/investissement-fonctionnement"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/infos/investissement-fonctionnement/__PAGE__",
+    "/infos/investissement-fonctionnement",
+    "/infos",
+    "/_index",
+    "/_head"
+  ]
+}

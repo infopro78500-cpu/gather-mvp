@@ -16,55 +16,65 @@ export default function CreateEventPage() {
   };
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  e.preventDefault();
+  setError(null);
 
-    if (!name.trim()) {
-      setError("Donne un nom à ton évènement.");
+  if (!name.trim()) {
+    setError("Donne un nom à ton évènement.");
+    return;
+  }
+
+  // 🔒 Garde Supabase : si pas de client, on stoppe proprement
+  if (!supabase) {
+    console.error("Supabase client not available in CreateEventPage");
+    setError(
+      "Problème de configuration interne. Réessaie plus tard (Supabase non dispo)."
+    );
+    return;
+  }
+
+  const pin = generatePin();
+  setCreating(true);
+
+  try {
+    const deviceId = await getDeviceId();
+
+    // --- Récupération optionnelle de l'utilisateur (anonyme autorisé) ---
+    let userId: string | null = null;
+    try {
+      const { data: authInfo } = await supabase.auth.getUser();
+      userId = authInfo?.user?.id ?? null;
+    } catch (authError) {
+      console.warn(
+        "Aucune session Supabase, création d'évènement anonyme.",
+        authError
+      );
+    }
+
+    // IMPORTANT : on NE bloque PAS si userId est null
+    const { error: insertError } = await supabase.from("events").insert({
+      name: name.trim(),
+      pin,
+      host_device_id: deviceId,
+      host_user_id: userId, // peut être null pour le MVP
+    });
+
+    if (insertError) {
+      console.error(insertError);
+      setError("Erreur lors de la création de l'évènement.");
       return;
     }
 
-    const pin = generatePin();
-    setCreating(true);
+    // On connaît déjà le PIN, pas besoin de .select().single()
+    window.location.href = `/events/${pin}`;
+  } catch (err) {
+    console.error(err);
+    setError("Erreur inattendue.");
+  } finally {
+    setCreating(false);
+  }
+};
 
-    try {
-      const deviceId = await getDeviceId();
-
-      // --- Récupération optionnelle de l'utilisateur (anonyme autorisé) ---
-      let userId: string | null = null;
-      try {
-        const { data: authInfo } = await supabase.auth.getUser();
-        userId = authInfo?.user?.id ?? null;
-      } catch (authError) {
-        console.warn(
-          "Aucune session Supabase, création d'évènement anonyme.",
-          authError
-        );
-      }
-      // IMPORTANT : on NE bloque PAS si userId est null
-
-      const { error: insertError } = await supabase.from("events").insert({
-        name: name.trim(),
-        pin,
-        host_device_id: deviceId,
-        host_user_id: userId, // peut être null pour le MVP
-      });
-
-      if (insertError) {
-        console.error(insertError);
-        setError("Erreur lors de la création de l'évènement.");
-        return;
-      }
-
-      // On connaît déjà le PIN, pas besoin de .select().single()
-      window.location.href = `/events/${pin}`;
-    } catch (err) {
-      console.error(err);
-      setError("Erreur inattendue.");
-    } finally {
-      setCreating(false);
-    }
-  };
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white px-4">

@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,18566,(e,t,o)=>{t.exports=e.r(76562)},53024,e=>{"use strict";function t(){let e="gather_device_id",t=window.localStorage.getItem(e);return t||(t=crypto.randomUUID(),window.localStorage.setItem(e,t)),t}e.s(["getDeviceId",()=>t])}]);
