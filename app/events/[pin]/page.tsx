@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import QRCode from "react-qr-code";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -21,6 +21,20 @@ type PhotoItem = Photo & {
 };
 
 export default function EventPage() {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white px-4 py-6">
+        <div className="w-[380px] md:w-[720px] rounded-2xl bg-slate-900/80 border border-slate-800 p-6 md:p-8 shadow-2xl space-y-4 text-center">
+          <p className="text-lg font-semibold">Supabase n'est pas configuré.</p>
+          <p className="text-sm text-slate-300">
+            Merci d'ajouter NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY pour charger les événements.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   const params = useParams<{ pin: string }>();
   const pin = params.pin;
 

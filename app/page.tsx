@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { getDeviceId } from "@/lib/deviceId";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import Image from "next/image";
 
 export default function CreateEventPage() {
@@ -18,6 +18,12 @@ export default function CreateEventPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setError("Supabase n'est pas configuré. Contacte l'équipe.");
+      return;
+    }
 
     if (!name.trim()) {
       setError("Donne un nom à ton évènement.");
