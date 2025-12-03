@@ -1,10 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Image from "next/image";
 import { getDeviceId } from "@/lib/deviceId";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { Button, buttonClasses } from "./components/ui/button";
+import { Card } from "./components/ui/card";
 import { PageLayout } from "./components/ui/page-layout";
 import { Section } from "./components/ui/section";
 
@@ -73,81 +73,72 @@ export default function CreateEventPage() {
   };
 
   return (
-    <PageLayout
-      eyebrow="Gather"
-      title="Coffre photo instantané pour ton évènement"
-      description="Crée un PIN, scanne un QR code et centralise les photos de ton groupe en quelques secondes. Pensé mobile-first pour les voyages, mariages et soirées."
-      actions={
-        <a
-          href="/join"
-          className={buttonClasses({ variant: "ghost", size: "sm" })}
-        >
-          Déjà un PIN ?
-        </a>
-      }
-    >
-      <div className="grid gap-4 md:gap-6 lg:grid-cols-5 animate-fade">
-        <Section className="lg:col-span-3" title="Une interface simple pour rassembler vos souvenirs" description="Les invités déposent leurs photos sans compte, tu gères le coffre en un clic. Tout est pensé pour rester fluide sur smartphone.">
-          <div className="flex flex-col gap-4 md:gap-6">
-            <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-surface to-surface-strong/70 p-4 md:p-6 shadow-[0_12px_60px_rgba(0,0,0,0.25)]">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl border border-border/60 bg-surface-strong/80 p-2 shadow-inner">
-                  <Image
-                    src="/gather-logo.png"
-                    alt="Logo Gather"
-                    width={48}
-                    height={48}
-                    className="h-full w-full object-contain"
-                  />
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.28em] text-muted">Gather</p>
-                  <p className="text-sm text-muted">Galerie partagée en direct</p>
-                </div>
-              </div>
-              <p className="mt-4 text-base md:text-lg leading-relaxed text-foreground">
-                Crée un coffre éphémère, partage le PIN ou le QR code, et laisse
-                ton groupe déposer ses photos en toute simplicité.
-              </p>
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {["Mobile-first", "Uploads rapides", "QR prêt à partager", "Sélection & suppression faciles"].map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-3 rounded-xl border border-border/60 bg-surface/60 px-3 py-2 text-sm text-foreground"
-                  >
-                    <span className="h-8 w-8 rounded-full bg-primary/10 text-primary inline-flex items-center justify-center text-lg">
-                      ✦
-                    </span>
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                { label: "Création instantanée", value: "1 PIN = 1 coffre" },
-                { label: "Photos partagées", value: "Illimitées*" },
-                { label: "Contrôle hôte", value: "Supprime & télécharge" },
-              ].map((feature) => (
-                <div
-                  key={feature.label}
-                  className="rounded-xl border border-border/60 bg-surface/70 px-4 py-3 shadow-inner"
-                >
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted">{feature.label}</p>
-                  <p className="text-lg font-semibold text-foreground mt-1">{feature.value}</p>
-                </div>
-              ))}
-            </div>
+    <PageLayout className="py-8 md:py-12">
+      <div className="grid gap-5 md:gap-6 lg:grid-cols-5">
+        <Section className="lg:col-span-3 space-y-5 md:space-y-6">
+          <div className="flex items-center gap-3 text-xs font-semibold text-primary">
+            <span className="rounded-full bg-primary/10 px-3 py-1 tracking-wide text-primary shadow-inner">
+              Gather - MVP
+            </span>
+            <span className="rounded-full border border-border/70 bg-surface px-3 py-1 text-muted">
+              v0.1
+            </span>
           </div>
+
+          <div className="space-y-3 md:space-y-4">
+            <h1 className="text-3xl font-semibold leading-tight text-foreground md:text-4xl">
+              Crée un coffre photo éphémère pour ton groupe.
+            </h1>
+            <p className="text-base leading-relaxed text-muted md:text-lg">
+              Un événement = un PIN + un QR code. Tout le monde peut déposer ses
+              photos dans le même coffre, sans compte, en quelques secondes.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <Button type="submit" form="create-event-form" size="lg">
+              Créer l&apos;évènement
+            </Button>
+            <a
+              href="/join"
+              className={buttonClasses({ variant: "ghost", size: "lg" })}
+            >
+              Rejoindre un coffre existant
+            </a>
+          </div>
+
+          <Card className="p-4 md:p-5 bg-surface/80 border border-border/70 shadow-inner space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary text-lg">
+                ✦
+              </div>
+              <p className="text-sm leading-relaxed text-foreground md:text-base">
+                Parfait pour les voyages, mariages, soirées, ou un groupe qui passe
+                du temps ensemble.
+              </p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary/10 text-secondary text-lg">
+                ✦
+              </div>
+              <p className="text-sm leading-relaxed text-foreground md:text-base">
+                Un QR code à partager, prêt en 30 secondes.
+              </p>
+            </div>
+          </Card>
         </Section>
 
         <Section
           className="lg:col-span-2"
-          title="Créer un nouvel évènement"
-          description="Un nom, un clic, on génère le PIN pour toi."
+          title="Nouveau coffre"
+          description="Créer un évènement"
+          actions={
+            <p className="text-xs text-muted md:text-sm">
+              Donne un nom à ton évènement, on génère le PIN pour toi.
+            </p>
+          }
         >
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="create-event-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="name" className="text-sm font-medium text-foreground">
                 Nom de l&apos;évènement
@@ -157,8 +148,8 @@ export default function CreateEventPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-lg border border-border/60 bg-surface/80 px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/60"
-                placeholder="Ex : Anniversaire de Léa, Weekend à Lisbonne…"
+                className="w-full rounded-lg border border-border/70 bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/60"
+                placeholder="Ex : Anniversaire de Léa, Weekend à Lisbonne"
               />
               {error && (
                 <p className="text-xs text-danger" role="alert">
@@ -171,22 +162,13 @@ export default function CreateEventPage() {
               {creating ? "Création en cours..." : "Créer l’évènement"}
             </Button>
 
-            <div className="rounded-xl border border-border/60 bg-surface/70 px-4 py-3 text-sm text-muted">
-              <p className="text-foreground font-medium text-sm">Accès rapide</p>
-              <p className="mt-1 text-muted text-sm">
-                Invite ton groupe avec le PIN ou le QR code généré automatiquement.
-              </p>
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <a href="/join" className="text-primary hover:underline text-sm">
+            <div className="flex flex-col gap-2 text-sm text-muted">
+              <p className="text-xs text-muted md:text-sm">
+                Tu as déjà un PIN ?
+                <a href="/join" className="ml-1 text-primary hover:underline">
                   Rejoindre un coffre existant
                 </a>
-                <a
-                  href="/coming-soon"
-                  className="text-sm text-secondary hover:underline"
-                >
-                  Participer à l’aventure Gather 🚀
-                </a>
-              </div>
+              </p>
             </div>
           </form>
         </Section>
