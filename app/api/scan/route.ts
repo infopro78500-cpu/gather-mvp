@@ -1,10 +1,9 @@
+// Objectif : exécuter le script Python `main.py` avec les bons arguments, et retourner un JSON contenant le nombre de doublons ou une erreur.
+
 import { NextResponse } from "next/server";
 import { spawn } from "child_process";
 import fs from "fs";
 import path from "path";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 type ScanResponse = {
   success: boolean;
@@ -15,12 +14,12 @@ type ScanResponse = {
 export async function POST() {
   const projectRoot = path.resolve(process.cwd(), "ia_local");
   const scriptPath = path.join(projectRoot, "main.py");
-  const csvPath = path.join(projectRoot, "data", "doublons.csv");
+  const csvOutput = path.join(projectRoot, "data", "doublons.csv");
 
   return new Promise<NextResponse>((resolve) => {
     const pythonProcess = spawn(
       "python",
-      [scriptPath, "--encode", "--search", "--csv-export"],
+      [scriptPath, "--encode", "--search", "--csv-export", csvOutput],
       {
         cwd: projectRoot,
       }
@@ -41,37 +40,21 @@ export async function POST() {
       );
     });
 
-    pythonProcess.on("close", (code) => {
-      if (code !== 0) {
-        resolve(
-          NextResponse.json<ScanResponse>(
-            {
-              success: false,
-              error: stderr || `Le script s'est terminé avec le code ${code}.`,
-            },
-            { status: 500 }
-          )
-        );
-        return;
-      }
-
+    pythonProcess.on("close", () => {
       try {
         let doublons = 0;
 
-        if (fs.existsSync(csvPath)) {
-          const csvContent = fs.readFileSync(csvPath, "utf8").trim();
-
-          if (csvContent.length > 0) {
-            const lines = csvContent.split("\n");
-            doublons = Math.max(lines.length - 1, 0);
-          }
+        if (fs.existsSync(csvOutput)) {
+          const csvContent = fs.readFileSync(csvOutput, "utf-8").trim();
+          const lines = csvContent.split("\n");
+          doublons = Math.max(lines.length - 1, 0);
         }
 
         resolve(NextResponse.json<ScanResponse>({ success: true, doublons }));
-      } catch (error) {
+      } catch (err) {
         resolve(
           NextResponse.json<ScanResponse>(
-            { success: false, error: (error as Error).message },
+            { success: false, error: (err as Error).message },
             { status: 500 }
           )
         );
