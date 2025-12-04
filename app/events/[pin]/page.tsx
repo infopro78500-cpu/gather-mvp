@@ -501,11 +501,11 @@ export default function EventPage() {
             </section>
 
             <section className="rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1">
                   <p className="text-[11px] uppercase tracking-[0.2em] text-amber-700 font-semibold">Évènement</p>
-                  <p className="text-lg font-semibold text-amber-950">{event.name}</p>
-                  <p className="text-sm text-amber-800/80 mt-1">Ce coffre regroupe toutes les photos de votre groupe.</p>
+                  <p className="text-lg font-semibold text-amber-950">{event.name || "Photos"}</p>
+                  <p className="text-sm text-amber-800/80">Ce coffre regroupe toutes les photos de votre groupe.</p>
                 </div>
                 <EventHeader event={event} />
               </div>
