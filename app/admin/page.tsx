@@ -74,6 +74,10 @@ export default async function AdminPage() {
           </div>
         </section>
 
+        <section className="space-y-4">
+          <LocalScanIA />
+        </section>
+
         {/* Derniers inscrits */}
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Derniers inscrits</h2>
