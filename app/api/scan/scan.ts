@@ -23,7 +23,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   process.on("close", (code) => {
     if (code !== 0) {
-      return res.status(500).json({ success: false, error: errorLog });
+    console.error("Erreur script Python:", errorLog);
+return res.status(500).json({ success: false, error: errorLog });
+
     }
 
     try {
