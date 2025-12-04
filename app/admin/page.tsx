@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { LocalScanIA } from "@/app/components/LocalScanIA";
 
 type Lead = {
   id: string;
@@ -132,6 +133,8 @@ export default async function AdminPage() {
             </table>
           </div>
         </section>
+
+        <LocalScanIA />
       </div>
     </main>
   );
