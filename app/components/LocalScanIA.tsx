@@ -21,6 +21,11 @@ export function LocalScanIA() {
     try {
       const response = await fetch("/api/scan", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        cache: "no-store",
       });
 
       if (!response.ok) {
