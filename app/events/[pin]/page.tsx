@@ -186,7 +186,293 @@ export default function EventPage() {
       refreshPhotos(event, true);
     }, 8000);
 
-    return (
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [event]);
+
+  const canDeletePhoto = (photo: PhotoItem): boolean => {
+    if (!deviceId) return false;
+    if (isHost) return true;
+    return photo.uploaderDeviceId === deviceId;
+  };
+
+  const handleUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !event) return;
+
+    const filesArray = Array.from(files);
+
+    const currentDeviceId = getEventDeviceId();
+    if (!currentDeviceId) {
+      console.error("Impossible de récupérer le deviceId");
+      setError("Erreur : appareil non identifié.");
+      return;
+    }
+
+    if (filesArray.length > MAX_FILES) {
+      alert(`Tu peux envoyer maximum ${MAX_FILES} fichiers à la fois.`);
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+    setUploadError(null);
+    setUploadSuccess(null);
+    setUploadInfo({ processed: 0, total: filesArray.length });
+
+    try {
+      const newPhotos: PhotoItem[] = [];
+      const rejectedFiles: string[] = [];
+
+      for (const file of filesArray) {
+        const sizeMb = file.size / (1024 * 1024);
+        if (sizeMb > MAX_FILE_SIZE_MB) {
+          console.warn(`Fichier trop lourd : ${file.name}`);
+          rejectedFiles.push(file.name);
+          continue;
+        }
+
+        const safeName = file.name
+          .normalize("NFKD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9.\-_]/g, "_");
+
+        const filenameOnStorage = `${currentDeviceId}__${Date.now()}-${safeName}`;
+        const path = `${event.id}/${filenameOnStorage}`;
+
+        try {
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .upload(path, file);
+
+          if (uploadError) {
+            console.error("Erreur upload Supabase", uploadError);
+            continue;
+          }
+
+          if (!uploadData) {
+            console.warn("Upload terminé sans données retournées", {
+              path,
+              file: file.name,
+            });
+            continue;
+          }
+
+          const { data: publicData } = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(path);
+
+          if (!publicData?.publicUrl) {
+            console.warn("URL publique manquante après upload", { path });
+            continue;
+          }
+
+          newPhotos.push({
+            name: filenameOnStorage,
+            url: publicData.publicUrl,
+            path,
+            uploaderDeviceId: currentDeviceId,
+          });
+        } catch (err) {
+          console.error("Erreur inattendue lors de l’upload d’un fichier", err);
+        }
+
+        setUploadInfo((prev) =>
+          prev ? { ...prev, processed: prev.processed + 1 } : null
+        );
+      }
+
+      if (rejectedFiles.length > 0) {
+        const rejectedList = rejectedFiles.join(", ");
+        const message = `${rejectedFiles.length} fichier${
+          rejectedFiles.length > 1 ? "s" : ""
+        } n'ont pas été ajoutés car ils dépassent 10 Mo : ${rejectedList}`;
+        setUploadError(message);
+      }
+
+      if (newPhotos.length > 0) {
+        setPhotos((prev) => [...prev, ...newPhotos]);
+        setUploadSuccess("Upload terminé ✅");
+        setTimeout(() => setUploadSuccess(null), 2500);
+      }
+    } finally {
+      if (event) {
+        await refreshPhotos(event);
+      }
+      setUploading(false);
+      setUploadInfo(null);
+      e.target.value = "";
+    }
+  };
+
+  const handleDelete = async (photo: PhotoItem): Promise<void> => {
+    if (!event) return;
+
+    if (!canDeletePhoto(photo)) return;
+
+    const confirmDelete = window.confirm(
+      "Supprimer définitivement cette photo de l'espace commun ?"
+    );
+    if (!confirmDelete) return;
+
+    setDeletingPath(photo.path);
+    setPhotos((prev) => prev.filter((p) => p.path !== photo.path));
+
+    try {
+      try {
+        const { error: deleteError } = await supabase.storage
+          .from(BUCKET_NAME)
+          .remove([photo.path]);
+
+        if (deleteError) {
+          console.error("Erreur Supabase lors de la suppression", {
+            path: photo.path,
+            error: deleteError,
+          });
+        }
+      } catch (err) {
+        console.error("Erreur inattendue lors de la suppression de la photo", err);
+      }
+    } finally {
+      await refreshPhotos(event);
+      setDeletingPath(null);
+    }
+  };
+
+  const toggleSelectPhoto = (path: string) => {
+    setSelectedPhotos((prev) =>
+      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]
+    );
+  };
+
+  const handleDeleteSelected = async (): Promise<void> => {
+    if (!event || selectedPhotos.length === 0) return;
+
+    const allowedPaths = selectedPhotos.filter((path) => {
+      const photo = photos.find((p) => p.path === path);
+      return photo ? canDeletePhoto(photo) : false;
+    });
+
+    if (allowedPaths.length === 0) {
+      alert("Aucune photo autorisée à être supprimée.");
+      return;
+    }
+
+    const ok = window.confirm(
+      `Supprimer définitivement ${selectedPhotos.length} photo${
+        selectedPhotos.length > 1 ? "s" : ""
+      } ?`
+    );
+    if (!ok) return;
+
+    setPhotos((prev) => prev.filter((p) => !allowedPaths.includes(p.path)));
+    setSelectedPhotos([]);
+
+    try {
+      try {
+        const { error: deleteError } = await supabase.storage
+          .from(BUCKET_NAME)
+          .remove(allowedPaths);
+
+        if (deleteError) {
+          console.error("Erreur Supabase lors de la suppression multiple", {
+            paths: allowedPaths,
+            error: deleteError,
+          });
+        }
+      } catch (err) {
+        console.error("Erreur inattendue lors de la suppression multiple", err);
+      }
+    } finally {
+      await refreshPhotos(event);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl);
+    alert("Lien de l’évènement copié dans le presse-papiers ✅");
+  };
+
+  const formatZipName = (evt: EventData, label: string) => {
+    const normalizedName = evt.name
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+
+    const date = new Date().toISOString().split("T")[0];
+    return `${normalizedName || "gather-event"}_${date}_${label}.zip`;
+  };
+
+  const downloadPhotos = async (
+    photosToDownload: PhotoItem[],
+    zipLabel: string
+  ): Promise<void> => {
+    if (!event) return;
+
+    if (photosToDownload.length === 0) {
+      alert("Aucune photo à télécharger.");
+      return;
+    }
+
+    try {
+      setDownloading(true);
+
+      const zip = new JSZip();
+
+      for (const photo of photosToDownload) {
+        const response = await fetch(photo.url);
+        if (!response.ok) {
+          console.error("Erreur de téléchargement pour", photo.url);
+          continue;
+        }
+        const blob = await response.blob();
+
+        const filename =
+          photo.name || photo.path.split("/").pop() || "photo.jpg";
+
+        zip.file(filename, blob);
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const zipName = formatZipName(event, zipLabel);
+      saveAs(content, zipName);
+    } catch (err) {
+      console.error("Erreur lors de la création du ZIP :", err);
+      alert("Erreur lors de la création du fichier ZIP.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    await downloadPhotos(photos, event ? event.pin || event.id : "coffre");
+  };
+
+  const handleDownloadSelected = async () => {
+    if (!event) return;
+
+    if (selectedPhotos.length === 0) {
+      alert("Sélectionne au moins une photo pour télécharger.");
+      return;
+    }
+
+    const photosToDownload = photos.filter((photo) =>
+      selectedPhotos.includes(photo.path)
+    );
+
+    await downloadPhotos(
+      photosToDownload,
+      `${event.pin || event.id}-selection`
+    );
+  };
+
+  return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-100 via-rose-50 to-amber-200 text-amber-950 px-4 py-6">
       <div className="w-full max-w-4xl rounded-3xl bg-white/80 border border-amber-200 p-5 md:p-8 shadow-2xl backdrop-blur-lg space-y-6">
         {loading && (
@@ -355,14 +641,14 @@ export default function EventPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-inner">
+                    <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-inner space-y-2">
                       <p className="text-xs font-semibold text-amber-900 uppercase tracking-[0.15em]">Section 2 — Téléchargements</p>
-                      <p className="text-sm text-amber-800/90 mt-1">Récupère les photos de ton groupe.</p>
-                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <p className="text-sm text-amber-800/90">Récupère toutes les photos du coffre.</p>
+                      <div className="flex flex-col gap-2">
                         <button
                           type="button"
                           onClick={handleDownloadAll}
-                          disabled={downloading}
+                          disabled={downloading || photos.length === 0}
                           className="rounded-lg border border-amber-200 bg-amber-500 px-3 py-2 text-sm font-semibold text-amber-950 shadow-sm transition-colors hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           {downloading ? "Préparation du ZIP..." : "Télécharger toutes les photos (ZIP)"}
@@ -543,5 +829,4 @@ export default function EventPage() {
       </div>
     </main>
   );
-
 }
