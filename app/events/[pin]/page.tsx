@@ -31,6 +31,7 @@ export default function EventPage() {
   const [uploading, setUploading] = useState(false);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
+  const [deletingSelected, setDeletingSelected] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -349,7 +350,7 @@ export default function EventPage() {
   };
 
   const handleDeleteSelected = async (): Promise<void> => {
-    if (!event || selectedPhotos.length === 0) return;
+    if (!event || selectedPhotos.length === 0 || deletingSelected) return;
 
     const allowedPaths = selectedPhotos.filter((path) => {
       const photo = photos.find((p) => p.path === path);
@@ -368,26 +369,31 @@ export default function EventPage() {
     );
     if (!ok) return;
 
-    setPhotos((prev) => prev.filter((p) => !allowedPaths.includes(p.path)));
-    setSelectedPhotos([]);
-
     try {
-      try {
-        const { error: deleteError } = await supabase.storage
-          .from(BUCKET_NAME)
-          .remove(allowedPaths);
+      setDeletingSelected(true);
+      setError(null);
 
-        if (deleteError) {
-          console.error("Erreur Supabase lors de la suppression multiple", {
-            paths: allowedPaths,
-            error: deleteError,
-          });
-        }
-      } catch (err) {
-        console.error("Erreur inattendue lors de la suppression multiple", err);
+      const { error: deleteError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .remove(allowedPaths);
+
+      if (deleteError) {
+        console.error("Erreur Supabase lors de la suppression multiple", {
+          paths: allowedPaths,
+          error: deleteError,
+        });
+        setError("Erreur lors de la suppression des photos sélectionnées.");
+        return;
       }
+
+      setPhotos((prev) => prev.filter((p) => !allowedPaths.includes(p.path)));
+      setSelectedPhotos([]);
+    } catch (err) {
+      console.error("Erreur inattendue lors de la suppression multiple", err);
+      setError("Erreur lors de la suppression des photos sélectionnées.");
     } finally {
       await refreshPhotos(event);
+      setDeletingSelected(false);
     }
   };
 
@@ -712,10 +718,12 @@ export default function EventPage() {
                           <button
                             type="button"
                             onClick={handleDeleteSelected}
-                            disabled={selectedPhotos.length === 0}
+                            disabled={selectedPhotos.length === 0 || deletingSelected}
                             className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
                           >
-                            Supprimer {selectedPhotos.length || "0"} photo(s)
+                            {deletingSelected
+                              ? "Suppression en cours..."
+                              : `Supprimer ${selectedPhotos.length || "0"} photo(s)`}
                           </button>
                           <button
                             type="button"
