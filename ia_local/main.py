@@ -40,10 +40,16 @@ def _rechercher(args: argparse.Namespace) -> None:
     for image1, image2, score in paires:
         print(f"- {image1} <> {image2} (similarité : {score:.4f})")
 
-    if args.csv:
-        csv_path = _resolve_path(args.csv)
-        enregistrer_doublons_csv(paires, csv_path)
-        print(f"Liste des doublons sauvegardée dans '{csv_path}'.")
+    if args.csv_export:
+        csv_path = _resolve_path(args.csv_export)
+        try:
+            enregistrer_doublons_csv(paires, csv_path)
+        except OSError as exc:
+            print(
+                f"❌ Impossible d'écrire le fichier CSV dans '{csv_path}': {exc}"
+            )
+        else:
+            print(f"Liste des doublons sauvegardée dans '{csv_path}'.")
 
     if args.move:
         déplacer_doublons(paires)
@@ -86,7 +92,9 @@ def main() -> None:
         help="Rechercher des doublons à partir des embeddings existants.",
     )
     parser.add_argument(
+        "--csv-export",
         "--csv",
+        dest="csv_export",
         help="Enregistrer les doublons détectés dans un fichier CSV (optionnel).",
     )
     
