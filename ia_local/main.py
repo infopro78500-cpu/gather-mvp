@@ -2,15 +2,17 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
+
 import argparse
 from pathlib import Path
 
-from ia_local.encodeur import encoder_images
-from ia_local.recherche import (
+from encodeur import encoder_images
+from recherche import (
     déplacer_doublons,
     enregistrer_doublons_csv,
     trouver_similaires,
 )
+
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
