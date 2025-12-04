@@ -766,7 +766,11 @@ export default function EventPage() {
                                       <input
                                         type="checkbox"
                                         checked={isSelected}
-                                        onChange={() => toggleSelectPhoto(photo.path)}
+                                        onClick={(event) => event.stopPropagation()}
+                                        onChange={(event) => {
+                                          event.stopPropagation();
+                                          toggleSelectPhoto(photo.path);
+                                        }}
                                       />
                                     </div>
                                   )}
