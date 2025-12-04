@@ -44,7 +44,7 @@ export default function EventPage() {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
-  const [multiDeleteMode, setMultiDeleteMode] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
@@ -186,296 +186,9 @@ export default function EventPage() {
       refreshPhotos(event, true);
     }, 8000);
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [event]);
-
-  const canDeletePhoto = (photo: PhotoItem): boolean => {
-    if (!deviceId) return false;
-    if (isHost) return true;
-    return photo.uploaderDeviceId === deviceId;
-  };
-
-  const handleUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ): Promise<void> => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !event) return;
-
-    const filesArray = Array.from(files);
-
-    const currentDeviceId = getEventDeviceId();
-    if (!currentDeviceId) {
-      console.error("Impossible de récupérer le deviceId");
-      setError("Erreur : appareil non identifié.");
-      return;
-    }
-
-    if (filesArray.length > MAX_FILES) {
-      alert(`Tu peux envoyer maximum ${MAX_FILES} fichiers à la fois.`);
-      return;
-    }
-
-    setUploading(true);
-    setError(null);
-    setUploadError(null);
-    setUploadSuccess(null);
-    setUploadInfo({ processed: 0, total: filesArray.length });
-
-    try {
-      const newPhotos: PhotoItem[] = [];
-      const rejectedFiles: string[] = [];
-
-      for (const file of filesArray) {
-        const sizeMb = file.size / (1024 * 1024);
-        if (sizeMb > MAX_FILE_SIZE_MB) {
-          console.warn(`Fichier trop lourd : ${file.name}`);
-          rejectedFiles.push(file.name);
-          continue;
-        }
-
-        const safeName = file.name
-          .normalize("NFKD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-zA-Z0-9.\-_]/g, "_");
-
-        const filenameOnStorage = `${currentDeviceId}__${Date.now()}-${safeName}`;
-        const path = `${event.id}/${filenameOnStorage}`;
-
-        try {
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from(BUCKET_NAME)
-            .upload(path, file);
-
-          if (uploadError) {
-            console.error("Erreur upload Supabase", uploadError);
-            continue;
-          }
-
-          if (!uploadData) {
-            console.warn("Upload terminé sans données retournées", {
-              path,
-              file: file.name,
-            });
-            continue;
-          }
-
-          const { data: publicData } = supabase.storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(path);
-
-          if (!publicData?.publicUrl) {
-            console.warn("URL publique manquante après upload", { path });
-            continue;
-          }
-
-          newPhotos.push({
-            name: filenameOnStorage,
-            url: publicData.publicUrl,
-            path,
-            uploaderDeviceId: currentDeviceId,
-          });
-        } catch (err) {
-          console.error("Erreur inattendue lors de l’upload d’un fichier", err);
-        }
-
-        setUploadInfo((prev) =>
-          prev ? { ...prev, processed: prev.processed + 1 } : null
-        );
-      }
-
-      if (rejectedFiles.length > 0) {
-        const rejectedList = rejectedFiles.join(", ");
-        const message = `${rejectedFiles.length} fichier${
-          rejectedFiles.length > 1 ? "s" : ""
-        } n'ont pas été ajoutés car ils dépassent 10 Mo : ${rejectedList}`;
-        setUploadError(message);
-      }
-
-      if (newPhotos.length > 0) {
-        setPhotos((prev) => [...prev, ...newPhotos]);
-        setUploadSuccess("Upload terminé ✅");
-        setTimeout(() => setUploadSuccess(null), 2500);
-      }
-    } finally {
-      if (event) {
-        await refreshPhotos(event);
-      }
-      setUploading(false);
-      setUploadInfo(null);
-      e.target.value = "";
-    }
-  };
-
-  const handleDelete = async (photo: PhotoItem): Promise<void> => {
-    if (!event) return;
-
-    if (!canDeletePhoto(photo)) return;
-
-    const confirmDelete = window.confirm(
-      "Supprimer définitivement cette photo de l'espace commun ?"
-    );
-    if (!confirmDelete) return;
-
-    setDeletingPath(photo.path);
-    setPhotos((prev) => prev.filter((p) => p.path !== photo.path));
-
-    try {
-      try {
-        const { error: deleteError } = await supabase.storage
-          .from(BUCKET_NAME)
-          .remove([photo.path]);
-
-        if (deleteError) {
-          console.error("Erreur Supabase lors de la suppression", {
-            path: photo.path,
-            error: deleteError,
-          });
-        }
-      } catch (err) {
-        console.error("Erreur inattendue lors de la suppression de la photo", err);
-      }
-    } finally {
-      await refreshPhotos(event);
-      setDeletingPath(null);
-    }
-  };
-
-  const toggleSelectPhoto = (path: string) => {
-    setSelectedPhotos((prev) =>
-      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]
-    );
-  };
-
-  const handleDeleteSelected = async (): Promise<void> => {
-    if (!event || selectedPhotos.length === 0) return;
-
-    const allowedPaths = selectedPhotos.filter((path) => {
-      const photo = photos.find((p) => p.path === path);
-      return photo ? canDeletePhoto(photo) : false;
-    });
-
-    if (allowedPaths.length === 0) {
-      alert("Aucune photo autorisée à être supprimée.");
-      return;
-    }
-
-    const ok = window.confirm(
-      `Supprimer définitivement ${selectedPhotos.length} photo${
-        selectedPhotos.length > 1 ? "s" : ""
-      } ?`
-    );
-    if (!ok) return;
-
-    setPhotos((prev) => prev.filter((p) => !allowedPaths.includes(p.path)));
-    setSelectedPhotos([]);
-    setMultiDeleteMode(false);
-
-    try {
-      try {
-        const { error: deleteError } = await supabase.storage
-          .from(BUCKET_NAME)
-          .remove(allowedPaths);
-
-        if (deleteError) {
-          console.error("Erreur Supabase lors de la suppression multiple", {
-            paths: allowedPaths,
-            error: deleteError,
-          });
-        }
-      } catch (err) {
-        console.error("Erreur inattendue lors de la suppression multiple", err);
-      }
-    } finally {
-      await refreshPhotos(event);
-    }
-  };
-
-  const handleCopyLink = () => {
-    if (!shareUrl) return;
-    navigator.clipboard.writeText(shareUrl);
-    alert("Lien de l’évènement copié dans le presse-papiers ✅");
-  };
-
-  const formatZipName = (evt: EventData, label: string) => {
-    const normalizedName = evt.name
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-
-    const date = new Date().toISOString().split("T")[0];
-    return `${normalizedName || "gather-event"}_${date}_${label}.zip`;
-  };
-
-  const downloadPhotos = async (
-    photosToDownload: PhotoItem[],
-    zipLabel: string
-  ): Promise<void> => {
-    if (!event) return;
-
-    if (photosToDownload.length === 0) {
-      alert("Aucune photo à télécharger.");
-      return;
-    }
-
-    try {
-      setDownloading(true);
-
-      const zip = new JSZip();
-
-      for (const photo of photosToDownload) {
-        const response = await fetch(photo.url);
-        if (!response.ok) {
-          console.error("Erreur de téléchargement pour", photo.url);
-          continue;
-        }
-        const blob = await response.blob();
-
-        const filename =
-          photo.name || photo.path.split("/").pop() || "photo.jpg";
-
-        zip.file(filename, blob);
-      }
-
-      const content = await zip.generateAsync({ type: "blob" });
-      const zipName = formatZipName(event, zipLabel);
-      saveAs(content, zipName);
-    } catch (err) {
-      console.error("Erreur lors de la création du ZIP :", err);
-      alert("Erreur lors de la création du fichier ZIP.");
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  const handleDownloadAll = async () => {
-    await downloadPhotos(photos, event ? event.pin || event.id : "coffre");
-  };
-
-  const handleDownloadSelected = async () => {
-    if (!event) return;
-
-    if (selectedPhotos.length === 0) {
-      alert("Sélectionne au moins une photo pour télécharger.");
-      return;
-    }
-
-    const photosToDownload = photos.filter((photo) =>
-      selectedPhotos.includes(photo.path)
-    );
-
-    await downloadPhotos(
-      photosToDownload,
-      `${event.pin || event.id}-selection`
-    );
-  };
-
-  return (
+    return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-100 via-rose-50 to-amber-200 text-amber-950 px-4 py-6">
-      <div className="w-full max-w-3xl rounded-3xl bg-white/80 border border-amber-200 p-5 md:p-8 shadow-2xl backdrop-blur-lg space-y-6">
+      <div className="w-full max-w-4xl rounded-3xl bg-white/80 border border-amber-200 p-5 md:p-8 shadow-2xl backdrop-blur-lg space-y-6">
         {loading && (
           <p className="text-center text-sm text-amber-700">
             Chargement de l’évènement...
@@ -488,231 +201,255 @@ export default function EventPage() {
 
         {!loading && event && (
           <>
-            <section className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-300/70 via-rose-200/70 to-amber-300/70 border border-amber-200 shadow-inner px-4 py-4 md:px-6 md:py-5">
+            <section className="rounded-2xl bg-gradient-to-r from-amber-300/70 via-rose-200/70 to-amber-300/70 border border-amber-200 shadow-inner px-4 py-4 md:px-6 md:py-5 flex items-center gap-4">
               <div className="text-4xl md:text-5xl" aria-hidden>
                 🎄
               </div>
-              <div className="flex-1">
+              <div className="flex-1 space-y-1">
                 <p className="text-xs uppercase tracking-[0.2em] text-amber-800">Coffre photo festif</p>
-                <p className="text-xl md:text-2xl font-semibold text-amber-950">
-                  {event.name}
-                </p>
-                <p className="text-sm text-amber-800/90 mt-1">
-                  Partagez vos photos ici en scannant le QR code ou en les ajoutant ci-dessous.
+                <p className="text-xl md:text-2xl font-semibold text-amber-950">{event.name}</p>
+                <p className="text-sm text-amber-800/90">
+                  Partagez vos photos ici : scannez le QR code, ajoutez-les en quelques clics et profitez du coffre commun.
                 </p>
               </div>
             </section>
 
-            <EventHeader event={event} />
+            <section className="rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-amber-700 font-semibold">Évènement</p>
+                  <p className="text-lg font-semibold text-amber-950">{event.name}</p>
+                  <p className="text-sm text-amber-800/80 mt-1">Ce coffre regroupe toutes les photos de votre groupe.</p>
+                </div>
+                <EventHeader event={event} />
+              </div>
+            </section>
 
             {shareUrl && (
-              <section className="mt-1 rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 flex flex-col gap-4 shadow-md">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex-1 flex flex-col gap-2">
-                    <p className="text-[11px] tracking-wide uppercase text-amber-800 font-semibold">Partage de l’évènement</p>
-                    <p className="text-base font-semibold text-amber-950">Invite ton groupe à rejoindre ce coffre.</p>
+              <section className="rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2 flex-1">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-amber-700 font-semibold">Partage de l’évènement</p>
+                    <p className="text-base font-semibold text-amber-950">Invitez votre groupe à rejoindre ce coffre.</p>
                     <p className="text-sm text-amber-800/90">Copie le lien ou scanne le QR code pour partager rapidement.</p>
-                    <div className="mt-3 flex flex-col gap-2">
-                      <div className="w-full overflow-hidden rounded-lg border border-amber-200 bg-white px-3 py-2.5 text-[11px] text-amber-900 shadow-inner">
+                    <div className="mt-3 space-y-2">
+                      <div className="w-full overflow-hidden rounded-lg border border-amber-200 bg-white px-3 py-2.5 text-[12px] text-amber-900 shadow-inner">
                         {shareUrl}
                       </div>
                       <button
                         type="button"
                         onClick={handleCopyLink}
-                        className="self-start inline-flex items-center gap-2 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-700 shadow-sm"
+                        className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-700 shadow-sm"
                       >
                         📋 Copier le lien
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center md:items-start justify-center md:justify-end">
-                    <div className="rounded-lg border border-amber-200 bg-white/70 p-4 shadow-inner">
-                      <QRCode value={shareUrl} size={128} bgColor="transparent" fgColor="#0f172a" />
+                  <div className="flex items-center justify-center">
+                    <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-inner">
+                      <QRCode value={shareUrl} size={132} bgColor="transparent" fgColor="#0f172a" />
                     </div>
                   </div>
                 </div>
               </section>
             )}
 
-            <section className="mt-4 rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex flex-col text-left">
-                  <p className="text-[11px] tracking-wide uppercase text-amber-800 font-semibold">Espace commun du groupe</p>
-                  <p className="text-base font-semibold text-amber-950">Galerie photo commune</p>
-                  <p className="text-sm text-amber-800/90 mt-1">
-                    Cliquez pour {isCoffreOpen ? "masquer" : "ouvrir"} la galerie.
-                  </p>
+            <section className="rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-4">
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-amber-700 font-semibold">Espace commun du groupe</p>
+                    <p className="text-base font-semibold text-amber-950">Galerie photo commune</p>
+                    <p className="text-sm text-amber-800/90">Cliquez pour masquer/afficher la galerie.</p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2">
+                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-900 shadow-sm">
+                      {photoCount} photo{photoCount > 1 ? "s" : ""}
+                    </span>
+                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-800 shadow-sm">
+                      {deviceCount > 0
+                        ? `${deviceCount} contributeur${deviceCount > 1 ? "s" : ""}`
+                        : "En attente des premiers invités"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsCoffreOpen((prev) => !prev)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-200"
+                    >
+                      <span>{isCoffreOpen ? "Refermer la galerie" : "Ouvrir la galerie"}</span>
+                      <span>{isCoffreOpen ? "⬆️" : "⬇️"}</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-1">
-                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-[11px] text-amber-900 mt-1 border border-amber-200">
-                    {hasPhotos ? (
-                      <>
-                        <span className="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        {photoCount} photo{photoCount > 1 ? "s" : ""} partagée{photoCount > 1 ? "s" : ""}
-                      </>
-                    ) : (
-                      "Aucune photo"
+                <div className="flex items-center gap-2 text-[11px] text-amber-700">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-white/80 px-2.5 py-1 shadow-sm">
+                    <span className="text-lg" aria-hidden>
+                      {isCoffreOpen ? "📖" : "🔒"}
+                    </span>
+                    <span className="font-semibold">{isCoffreOpen ? "Coffre ouvert" : "Coffre fermé"}</span>
+                  </span>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-2">
+                    {isRefreshing && (
+                      <span className="h-3 w-3 border-2 border-amber-700 border-t-transparent rounded-full animate-spin" />
                     )}
+                    <span className="text-amber-700">Rafraîchissement auto</span>
                   </span>
-                  <span className="text-[11px] text-amber-800">
-                    {deviceCount > 0
-                      ? `${deviceCount} contributeur${deviceCount > 1 ? "s" : ""}`
-                      : "En attente des premiers invités"}
-                  </span>
-                  <div className="h-10 w-10 flex items-center justify-center rounded-lg border border-amber-200 bg-gradient-to-br from-amber-100 via-white to-amber-200 shadow-inner">
-                    <span className="text-xl">{isCoffreOpen ? "📖" : "🔒"}</span>
-                  </div>
-
-                  <p className="text-[11px] uppercase tracking-wide text-amber-800/80 mb-1">
-                    {isCoffreOpen ? "Coffre ouvert" : "Coffre fermé"}
-                  </p>
                 </div>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setIsCoffreOpen((prev) => !prev)}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500/80 to-rose-400/80 hover:from-amber-500 hover:to-rose-400 border border-amber-200 transition-all duration-200 shadow-sm text-amber-950"
-              >
-                <span className="font-semibold">{isCoffreOpen ? "Refermer la galerie" : "Ouvrir la galerie"}</span>
-                <span className="text-lg">{isCoffreOpen ? "⬆️" : "⬇️"}</span>
-              </button>
 
               <div
                 className={`overflow-hidden transition-all duration-300 ease-out ${
                   isCoffreOpen
-                    ? "max-h-[2000px] opacity-100 translate-y-0"
-                    : "max-h-0 opacity-0 -translate-y-1 pointer-events-none"
+                    ? "max-h-[3000px] opacity-100 translate-y-0"
+                    : "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
                 }`}
               >
-                <div className="flex flex-col items-center gap-3 mb-5">
-                  <button
-                    onClick={() => {
-                      setMultiDeleteMode((prev) => !prev);
-                      setSelectedPhotos([]);
-                    }}
-                    className="text-xs font-medium text-amber-900 underline-offset-4 hover:underline mb-1"
-                  >
-                    {multiDeleteMode
-                      ? "Quitter le mode sélection"
-                      : "Sélectionner plusieurs photos"}
-                  </button>
-                  <p className="text-[11px] text-amber-800/90 text-center leading-relaxed max-w-[560px]">
-                    {isHost
-                      ? "En tant qu'hôte, vous pouvez supprimer toutes les photos du coffre."
-                      : "Vous pouvez supprimer uniquement les photos que vous avez envoyées. Seul l'hôte peut supprimer l'ensemble des photos."}
-                  </p>
+                <div className="space-y-4 pt-2">
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="md:col-span-2 rounded-xl border border-amber-200 bg-emerald-50/80 p-4 shadow-inner">
+                      <p className="text-xs font-semibold text-emerald-900 uppercase tracking-[0.15em]">Section 1 — Ajout de photos</p>
+                      <p className="text-sm text-emerald-900/90 mt-1">Ajoute des souvenirs pour tout le monde.</p>
+                      <div className="mt-3 flex flex-col gap-2">
+                        <label
+                          className={`inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold shadow-sm transition ${
+                            uploading
+                              ? "bg-amber-200/80 text-amber-900 cursor-not-allowed border-amber-300"
+                              : "bg-emerald-500 text-emerald-950 border-emerald-600/50 hover:bg-emerald-400"
+                          }`}
+                        >
+                          <span>📤</span>
+                          {uploading ? (
+                            <span className="inline-flex items-center gap-2">
+                              <span className="h-4 w-4 border-2 border-emerald-800 border-t-transparent rounded-full animate-spin" />
+                              {uploadInfo
+                                ? `Upload : ${uploadInfo.processed}/${uploadInfo.total}`
+                                : "Upload en cours..."}
+                            </span>
+                          ) : (
+                            "Ajouter des photos à l’espace commun"
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={handleUpload}
+                            disabled={uploading}
+                          />
+                        </label>
+                        <div className="text-[11px] text-emerald-900/80 space-y-1">
+                          {uploadError && <p className="text-red-600">{uploadError}</p>}
+                          {uploadSuccess && <p className="text-emerald-700">{uploadSuccess}</p>}
+                          {uploadInfo && (
+                            <p>
+                              {uploadInfo.processed}/{uploadInfo.total} fichiers traités...
+                            </p>
+                          )}
+                          <p className="text-emerald-900/70">
+                            Limite : {MAX_FILES} fichiers • 10 Mo par fichier • Formats : JPG, PNG...
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-                  <label
-                    className={`px-4 py-2 rounded-lg cursor-pointer font-semibold text-sm shadow-sm inline-flex items-center gap-2 border border-amber-200 transition ${
-                      uploading
-                        ? "bg-amber-300/80 text-amber-900 cursor-not-allowed"
-                        : "bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
-                    }`}
-                  >
-                    <span>📤</span>
-                    {uploading ? (
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-4 w-4 border-2 border-amber-700 border-t-transparent rounded-full animate-spin" />
-                        {uploadInfo
-                          ? `Upload : ${uploadInfo.processed}/${uploadInfo.total}`
-                          : "Upload en cours..."}
-                      </span>
-                    ) : (
-                      "Ajouter des photos à l’espace commun"
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={handleUpload}
-                      disabled={uploading}
-                    />
-                  </label>
-                  {uploadError && (
-                    <p className="text-xs text-red-600 text-center max-w-[360px]">
-                      {uploadError}
-                    </p>
-                  )}
-                  {uploadSuccess && (
-                    <p className="text-xs text-emerald-700 text-center max-w-[360px]">
-                      {uploadSuccess}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-2 text-[11px] text-amber-700">
-                    <span>Limite : {MAX_FILES} fichiers en une fois</span>
-                    <span>•</span>
-                    <span>10 Mo par fichier</span>
-                    <span>•</span>
-                    <span>Formats : JPG, PNG...</span>
-                  </div>
-
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-center gap-2 text-xs text-amber-800">
-                    <p>Téléchargez toutes les photos en un seul fichier ZIP.</p>
-                    <div className="flex justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleDownloadAll}
-                        disabled={downloading}
-                        className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
-                      >
-                        {downloading ? "Préparation du ZIP..." : "Télécharger toutes les photos (ZIP)"}
-                      </button>
-                      {multiDeleteMode && selectedPhotos.length > 0 && (
+                    <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-inner">
+                      <p className="text-xs font-semibold text-amber-900 uppercase tracking-[0.15em]">Section 2 — Téléchargements</p>
+                      <p className="text-sm text-amber-800/90 mt-1">Récupère les photos de ton groupe.</p>
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={handleDownloadAll}
+                          disabled={downloading}
+                          className="rounded-lg border border-amber-200 bg-amber-500 px-3 py-2 text-sm font-semibold text-amber-950 shadow-sm transition-colors hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {downloading ? "Préparation du ZIP..." : "Télécharger toutes les photos (ZIP)"}
+                        </button>
                         <button
                           type="button"
                           onClick={handleDownloadSelected}
-                          disabled={downloading}
-                          className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-amber-950 transition-colors hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+                          disabled={downloading || selectedPhotos.length === 0}
+                          className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-100 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           {downloading ? "Préparation..." : "Télécharger la sélection"}
                         </button>
-                      )}
+                      </div>
                     </div>
                   </div>
 
-                  {multiDeleteMode && selectedPhotos.length > 0 && (
-                    <div className="flex flex-wrap justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleDeleteSelected}
-                        className="rounded-md bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm"
-                      >
-                        Supprimer {selectedPhotos.length} photo(s)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPhotos([])}
-                        className="rounded-md bg-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-900 border border-amber-300 transition-colors hover:bg-amber-300 shadow-sm"
-                      >
-                        Réinitialiser la sélection
-                      </button>
+                  <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-inner space-y-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-xs font-semibold text-amber-900 uppercase tracking-[0.15em]">Section 3 — Mode sélection</p>
+                        <p className="text-sm text-amber-800/90">Active le mode sélection pour choisir plusieurs photos.</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectionMode((prev) => !prev);
+                            setSelectedPhotos([]);
+                          }}
+                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition-colors ${
+                            selectionMode
+                              ? "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                              : "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                          }`}
+                        >
+                          <span className="h-2.5 w-2.5 rounded-full border border-amber-300 bg-white shadow-inner" />
+                          {selectionMode ? "Mode sélection activé" : "Activer le mode sélection"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPhotos([])}
+                          className="text-xs font-semibold text-amber-800 underline-offset-4 hover:underline"
+                          disabled={!selectionMode}
+                        >
+                          Réinitialiser la sélection
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
 
-                <section className="mt-4">
-                  <div className="flex items-center justify-between text-xs text-amber-800 mb-2">
-                    <span>
-                      {photoCount} photo{photoCount > 1 ? "s" : ""} partagée{photoCount > 1 ? "s" : ""}
-                    </span>
-                    <span className="inline-flex items-center gap-2">
-                      {isRefreshing && (
-                        <span className="h-3 w-3 border-2 border-amber-700 border-t-transparent rounded-full animate-spin" />
-                      )}
-                      <span className="text-amber-700">Rafraîchissement auto</span>
-                    </span>
-                  </div>
-                  {photos.length === 0 ? (
-                    <p className="text-xs text-amber-700 text-center mb-2">
-                      Aucune photo pour l’instant. Ajoute la première ✨
+                    {selectionMode && (
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50/90 px-4 py-3 shadow-sm transition-all">
+                        <p className="text-sm font-semibold text-emerald-900">
+                          Mode sélection activé — {selectedPhotos.length} photo(s) sélectionnée(s)
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={handleDeleteSelected}
+                            disabled={selectedPhotos.length === 0}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            Supprimer {selectedPhotos.length || "0"} photo(s)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectionMode(false)}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-100"
+                          >
+                            Quitter le mode sélection
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-[11px] text-amber-700">
+                      {isHost
+                        ? "En tant qu'hôte, vous pouvez supprimer toutes les photos du coffre."
+                        : "Vous pouvez supprimer uniquement vos photos. Seul l'hôte peut supprimer l'ensemble du coffre."}
                     </p>
-                  ) : (
-                    <>
+                  </div>
+
+                  <section>
+                    {photos.length === 0 ? (
+                      <p className="text-sm text-amber-700 text-center mb-4">
+                        Aucune photo pour l’instant. Ajoute la première ✨
+                      </p>
+                    ) : (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
                         {photos.map((photo) => {
                           const isSelected = selectedPhotos.includes(photo.path);
@@ -720,10 +457,10 @@ export default function EventPage() {
                           return (
                             <div
                               key={photo.path}
-                              className={`group relative flex flex-col rounded-lg border overflow-hidden bg-white/70 transition-all shadow-sm ${
+                              className={`group relative flex flex-col rounded-lg border overflow-hidden bg-white/80 shadow-sm transition-all duration-200 ${
                                 isSelected
-                                  ? "border-emerald-400 scale-[1.02]"
-                                  : "border-amber-200 hover:border-emerald-400 hover:scale-[1.02]"
+                                  ? "border-emerald-400 scale-[1.01]"
+                                  : "border-amber-200 hover:border-emerald-400 hover:shadow-md"
                               }`}
                             >
                               <button
@@ -732,31 +469,32 @@ export default function EventPage() {
                                   setSelectedPhoto(photo);
                                   setIsLightboxOpen(true);
                                 }}
-                                className="w-full h-32 md:h-40 overflow-hidden"
+                                className="w-full h-full"
                               >
-                                <img
-                                  src={photo.url}
-                                  alt={photo.name}
-                                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
-                                />
+                                <div className="relative w-full overflow-hidden aspect-[4/5]">
+                                  <img
+                                    src={photo.url}
+                                    alt={photo.name}
+                                    className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+                                  />
+                                  {selectionMode && (
+                                    <div className="absolute top-2 left-2 rounded-md bg-white/90 px-2 py-1 shadow-sm">
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => toggleSelectPhoto(photo.path)}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
                               </button>
 
-                              {multiDeleteMode && (
-                                <div className="absolute top-2 left-2 bg-white/90 rounded px-1 py-0.5">
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={() => toggleSelectPhoto(photo.path)}
-                                  />
-                                </div>
-                              )}
-
-                              {!multiDeleteMode && canDeletePhoto(photo) && (
+                              {!selectionMode && canDeletePhoto(photo) && (
                                 <button
                                   type="button"
                                   onClick={() => handleDelete(photo)}
                                   disabled={deletingPath === photo.path}
-                                  className="mt-auto text-xs bg-red-500 hover:bg-red-600 disabled:opacity-60 py-1.5 text-center transition-colors rounded-md border border-amber-200 text-white"
+                                  className="mt-auto text-xs bg-red-500 hover:bg-red-600 disabled:opacity-60 py-2 text-center transition-colors rounded-b-lg text-white"
                                 >
                                   {deletingPath === photo.path
                                     ? "Suppression..."
@@ -767,45 +505,33 @@ export default function EventPage() {
                           );
                         })}
                       </div>
+                    )}
+                  </section>
 
-                      {multiDeleteMode && selectedPhotos.length > 0 && (
-                        <div className="mt-3 flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={handleDeleteSelected}
-                            className="text-xs bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md shadow-sm text-white"
-                          >
-                            Supprimer {selectedPhotos.length} photo(s)
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </section>
-
-                {isLightboxOpen && selectedPhoto && (
-                  <div
-                    className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center"
-                    onClick={() => setIsLightboxOpen(false)}
-                  >
+                  {isLightboxOpen && selectedPhoto && (
                     <div
-                      className="relative max-w-[90%] max-h-[90%]"
-                      onClick={(e) => e.stopPropagation()}
+                      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center"
+                      onClick={() => setIsLightboxOpen(false)}
                     >
-                      <img
-                        src={selectedPhoto.url}
-                        alt={selectedPhoto.name}
-                        className="max-w-full max-h-full rounded-lg shadow-2xl"
-                      />
-                      <button
-                        onClick={() => setIsLightboxOpen(false)}
-                        className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-md px-2 py-1 text-xs shadow-sm"
+                      <div
+                        className="relative max-w-[90%] max-h-[90%]"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        Fermer
-                      </button>
+                        <img
+                          src={selectedPhoto.url}
+                          alt={selectedPhoto.name}
+                          className="max-w-full max-h-full rounded-lg shadow-2xl"
+                        />
+                        <button
+                          onClick={() => setIsLightboxOpen(false)}
+                          className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-md px-2 py-1 text-xs shadow-sm"
+                        >
+                          Fermer
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </section>
 
@@ -817,4 +543,5 @@ export default function EventPage() {
       </div>
     </main>
   );
+
 }
