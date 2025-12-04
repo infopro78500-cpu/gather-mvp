@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 
+type ScanResponse = {
+  success: boolean;
+  doublons?: number;
+  error?: string;
+};
+
 export function LocalScanIA() {
   const [isLoading, setIsLoading] = useState(false);
   const [doublons, setDoublons] = useState<number | null>(null);
@@ -21,10 +27,10 @@ export function LocalScanIA() {
         throw new Error("SCAN_FAILED");
       }
 
-      const data: { success: boolean; doublons?: number } = await response.json();
+      const data: ScanResponse = await response.json();
 
       if (!data.success) {
-        throw new Error("SCAN_FAILED");
+        throw new Error(data.error || "SCAN_FAILED");
       }
 
       setDoublons(data.doublons ?? 0);
