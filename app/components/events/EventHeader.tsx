@@ -9,10 +9,7 @@ type Props = {
 
 export function EventHeader({ event }: Props) {
   return (
-    <div className="flex flex-col items-end gap-1 text-right">
-      <span className="text-[10px] uppercase tracking-[0.2em] text-amber-900/70">
-        PIN du coffre
-      </span>
+    <div className="flex flex-col items-start sm:items-end gap-1 text-left sm:text-right">
       <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900 shadow-sm">
         PIN
         <span className="ml-1 font-semibold tracking-widest text-amber-800">

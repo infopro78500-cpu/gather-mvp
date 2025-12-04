@@ -493,7 +493,6 @@ export default function EventPage() {
               </div>
               <div className="flex-1 space-y-1">
                 <p className="text-xs uppercase tracking-[0.2em] text-amber-800">Coffre photo festif</p>
-                <p className="text-xl md:text-2xl font-semibold text-amber-950">{event.name}</p>
                 <p className="text-sm text-amber-800/90">
                   Partagez vos photos ici : scannez le QR code, ajoutez-les en quelques clics et profitez du coffre commun.
                 </p>
@@ -545,7 +544,6 @@ export default function EventPage() {
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-amber-700 font-semibold">Espace commun du groupe</p>
                     <p className="text-base font-semibold text-amber-950">Galerie photo commune</p>
                     <p className="text-sm text-amber-800/90">Cliquez pour masquer/afficher la galerie.</p>
                   </div>
