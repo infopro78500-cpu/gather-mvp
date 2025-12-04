@@ -1,61 +1,78 @@
 import { NextResponse } from "next/server";
+import { spawn } from "child_process";
+import fs from "fs";
+import path from "path";
 
-const PYTHON_SCAN_URL = "http://127.0.0.1:8000/scan";
-const REQUEST_TIMEOUT_MS = 5000;
-
-type ScanResult = {
+type ScanResponse = {
   success: boolean;
-  doublons: number;
+  doublons?: number;
   error?: string;
 };
 
 export async function POST() {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const projectRoot = path.resolve(process.cwd(), "ia_local");
+  const scriptPath = path.join(projectRoot, "main.py");
+  const csvPath = path.join(projectRoot, "data", "doublons.csv");
 
-  try {
-    const response = await fetch(PYTHON_SCAN_URL, {
-      method: "POST",
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      console.error("Erreur API Python:", response.status, response.statusText);
-      return NextResponse.json<ScanResult>(
-        { success: false, doublons: 0, error: "PYTHON_BACKEND_ERROR" },
-        { status: 502 }
-      );
-    }
-
-    const data = (await response.json()) as Partial<ScanResult>;
-
-    if (typeof data.success !== "boolean" || typeof data.doublons !== "number") {
-      console.error("Réponse Python invalide:", data);
-      return NextResponse.json<ScanResult>(
-        { success: false, doublons: 0, error: "INVALID_RESPONSE" },
-        { status: 502 }
-      );
-    }
-
-    return NextResponse.json<ScanResult>({
-      success: data.success,
-      doublons: data.doublons,
-      error: data.error,
-    });
-  } catch (error) {
-    clearTimeout(timeout);
-    const isAbortError = (error as Error).name === "AbortError";
-    console.error("Erreur scan API/timeout:", error);
-
-    return NextResponse.json<ScanResult>(
+  return new Promise<NextResponse>((resolve) => {
+    const pythonProcess = spawn(
+      "python",
+      [scriptPath, "--encode", "--search", "--csv-export"],
       {
-        success: false,
-        doublons: 0,
-        error: isAbortError ? "SCAN_TIMEOUT" : "SCAN_ERROR",
-      },
-      { status: isAbortError ? 504 : 500 }
+        cwd: projectRoot,
+      }
     );
-  }
+
+    let stderr = "";
+
+    pythonProcess.stderr.on("data", (data: Buffer) => {
+      stderr += data.toString();
+    });
+
+    pythonProcess.on("error", (error) => {
+      resolve(
+        NextResponse.json<ScanResponse>(
+          { success: false, error: error.message },
+          { status: 500 }
+        )
+      );
+    });
+
+    pythonProcess.on("close", (code) => {
+      if (code !== 0) {
+        resolve(
+          NextResponse.json<ScanResponse>(
+            {
+              success: false,
+              error: stderr || `Le script s'est terminé avec le code ${code}.`,
+            },
+            { status: 500 }
+          )
+        );
+        return;
+      }
+
+      try {
+        let doublons = 0;
+
+        if (fs.existsSync(csvPath)) {
+          const csvContent = fs.readFileSync(csvPath, "utf8").trim();
+
+          if (csvContent.length > 0) {
+            const lines = csvContent.split("\n");
+            doublons = Math.max(lines.length - 1, 0);
+          }
+        }
+
+        resolve(NextResponse.json<ScanResponse>({ success: true, doublons }));
+      } catch (error) {
+        resolve(
+          NextResponse.json<ScanResponse>(
+            { success: false, error: (error as Error).message },
+            { status: 500 }
+          )
+        );
+      }
+    });
+  });
 }
