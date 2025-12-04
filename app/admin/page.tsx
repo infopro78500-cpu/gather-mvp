@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { LocalScanIA } from "@/app/components/LocalScanIA";
 
 type Lead = {
   id: string;
@@ -132,14 +133,6 @@ export default async function AdminPage() {
             </table>
           </div>
         </section>
-        {/* Section IA locale pour scanner la galerie */}
-<section className="mt-10 border-t border-slate-800 pt-8">
-  {/* TODO : Remplacer par <LocalScanIA /> une fois le composant créé */}
-  <p className="text-slate-400 text-sm">
-    🔍 Scan IA local à venir — ici on affichera le bouton de détection de doublons.
-  </p>
-</section>
-
       </div>
     </main>
   );
