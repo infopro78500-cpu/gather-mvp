@@ -3,6 +3,9 @@ import { spawn } from "child_process";
 import fs from "fs";
 import path from "path";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 type ScanResponse = {
   success: boolean;
   doublons?: number;
