@@ -3,7 +3,7 @@ export default function InvestissementFonctionnementPage() {
     <main className="min-h-screen bg-slate-950 text-slate-50 px-4 py-12 flex justify-center">
       <div className="w-full max-w-4xl space-y-12">
         {/* 1. HERO */}
-        <section className="space-y-4">
+        <section className="space-y-4" id="resume">
           <p className="text-xs uppercase tracking-[0.25em] text-emerald-400/80">
             Gather • Comprendre le fonctionnement
           </p>
@@ -15,6 +15,19 @@ export default function InvestissementFonctionnementPage() {
             participation financière dans Gather&nbsp;: multiplicateurs, points, types de
             contributeurs et cadre d&apos;accord. Sans jargon juridique, sans promesse magique.
           </p>
+        </section>
+
+        {/* Résumé rapide pour les lecteurs pressés */}
+        <section className="rounded-2xl border border-emerald-500/40 bg-emerald-500/5 p-5 space-y-3">
+          <p className="text-sm font-semibold text-emerald-200">
+            En bref
+          </p>
+          <ul className="space-y-2 text-sm text-slate-200 list-disc list-inside">
+            <li>Chaque contribution génère des points = montant investi × multiplicateur.</li>
+            <li>Deux cercles distincts&nbsp;: Early Access (200 personnes max) et investisseurs privés.</li>
+            <li>Les redistributions potentielles se font au prorata des points cumulés.</li>
+            <li>Un accord de contribution simple est signé pour cadrer le montant, le multiplicateur et les règles.</li>
+          </ul>
         </section>
 
         {/* 2. Principe général */}

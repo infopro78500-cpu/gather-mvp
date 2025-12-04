@@ -39,24 +39,23 @@ export default function InvestisseurV2Page() {
             </span>
           </div>
 
-{/* CTA principal + lien secondaire */}
-<div className="space-y-3 pt-2">
+        {/* CTA principal + lien secondaire */}
+        <div className="space-y-3 pt-2">
+          <Link
+            href="/infos/investissement-fonctionnement"
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg"
+          >
+            Découvrir le modèle d&apos;investissement
+            <span className="text-lg">↗</span>
+          </Link>
 
-<Link
-  href="/infos/investissement-fonctionnement"
-  scroll={false}
-  className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg"
->
-  Découvrir le modèle d&apos;investissement
-  <span className="text-lg">↗</span>
-</Link>
-   
-   <Link href="/infos/investissement-fonctionnement-resume"
-        className="block text-xs text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline">
-      Je veux d’abord comprendre Gather et le fonctionnement général (résumé)
-  </Link>
-
-</div>
+          <Link
+            href="/infos/investissement-fonctionnement#resume"
+            className="block text-xs text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline"
+          >
+            Je veux d’abord comprendre Gather et le fonctionnement général (résumé)
+          </Link>
+        </div>
         </section>
 
         {/* Pourquoi Gather a du potentiel ? */}

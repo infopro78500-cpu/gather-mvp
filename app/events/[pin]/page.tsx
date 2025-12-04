@@ -512,7 +512,7 @@ export default function EventPage() {
 
             {shareUrl && (
               <section className="rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-4">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div className="space-y-2 flex-1">
                     <p className="text-[11px] uppercase tracking-[0.2em] text-amber-700 font-semibold">Partage de l’évènement</p>
                     <p className="text-base font-semibold text-amber-950">Invitez votre groupe à rejoindre ce coffre.</p>
@@ -531,9 +531,16 @@ export default function EventPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-center">
-                    <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-inner">
-                      <QRCode value={shareUrl} size={132} bgColor="transparent" fgColor="#0f172a" />
+                  <div className="flex items-center justify-center md:justify-end">
+                    <div className="rounded-xl border border-amber-200 bg-white/80 p-3 sm:p-4 shadow-inner">
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 mx-auto">
+                        <QRCode
+                          value={shareUrl}
+                          bgColor="transparent"
+                          fgColor="#0f172a"
+                          style={{ height: "100%", width: "100%" }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
