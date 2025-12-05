@@ -20,13 +20,17 @@ export type ImageUploaderProps = {
 
 const STATUS_ICON = {
   success: "✅",
-  fuzzy: "⚠️",
-  strict: "❌",
+  warning: "⚠️",
   error: "❌",
-  uploading: "⏳",
+  info: "⏳",
 } as const;
 
 type UploadStatus = "idle" | "uploading" | "success" | "fuzzy" | "strict" | "error";
+
+type AlertState = {
+  type: "success" | "warning" | "error" | "info";
+  message: string;
+};
 
 type DuplicateState = {
   strict: boolean;
@@ -39,32 +43,30 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
 
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<UploadStatus>("idle");
-  const [message, setMessage] = useState<string | null>(null);
+  const [alert, setAlert] = useState<AlertState | null>(null);
   const [duplicates, setDuplicates] = useState<DuplicateState>({ strict: false, fuzzy: false });
 
-  const statusDisplay = useMemo(() => {
-    if (status === "idle") return null;
+  const alertDisplay = useMemo(() => {
+    if (!alert) return null;
 
-    const icon = STATUS_ICON[status];
+    const icon = STATUS_ICON[alert.type];
     const baseClass =
-      status === "success"
-        ? "text-emerald-400"
-        : status === "fuzzy"
-          ? "text-amber-300"
-          : status === "strict"
-            ? "text-red-400"
-            : status === "uploading"
-              ? "text-sky-300"
-              : "text-red-400";
+      alert.type === "success"
+        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+        : alert.type === "warning"
+          ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+          : alert.type === "info"
+            ? "border-sky-500/40 bg-sky-500/10 text-sky-100"
+            : "border-red-500/40 bg-red-500/10 text-red-200";
 
-    return { icon, className: baseClass, text: message };
-  }, [message, status]);
+    return { icon, className: baseClass, text: alert.message };
+  }, [alert]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
     setFile(nextFile);
     setStatus("idle");
-    setMessage(null);
+    setAlert(null);
     setDuplicates({ strict: false, fuzzy: false });
   };
 
@@ -73,18 +75,18 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
 
     if (!resolvedEventId) {
       setStatus("error");
-      setMessage("Impossible de déterminer l'identifiant de l'événement.");
+      setAlert({ type: "error", message: "Impossible de déterminer l'identifiant de l'événement." });
       return;
     }
 
     if (!file) {
       setStatus("error");
-      setMessage("Merci de sélectionner une image avant de continuer.");
+      setAlert({ type: "error", message: "Merci de sélectionner une image avant de continuer." });
       return;
     }
 
     setStatus("uploading");
-    setMessage("Envoi de l'image en cours...");
+    setAlert({ type: "info", message: "Envoi de l'image en cours..." });
     setDuplicates({ strict: false, fuzzy: false });
 
     try {
@@ -99,38 +101,41 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
 
       const data: ImageUploadResponse = await response.json();
 
-      if (!response.ok || !data.success) {
-        setStatus("error");
-        setMessage(data.message ?? data.error ?? "Impossible d'uploader l'image.");
-        return;
-      }
-
       const nextDuplicates: DuplicateState = {
         strict: Boolean(data.strictMatch ?? data.isStrictDuplicate),
         fuzzy: Boolean(data.fuzzyMatch ?? data.isSoftDuplicate),
       };
       setDuplicates(nextDuplicates);
 
+      if (!response.ok || !data.success) {
+        setStatus("error");
+        setAlert({
+          type: "error",
+          message: data.error ?? data.message ?? "Échec de l'upload.",
+        });
+        return;
+      }
+
       if (nextDuplicates.strict) {
         setStatus("strict");
-        setMessage(data.message ?? "Image déjà présente (identique)");
+        setAlert({ type: "error", message: data.message ?? "Image déjà présente (identique)." });
         return;
       }
 
       if (nextDuplicates.fuzzy) {
         setStatus("fuzzy");
-        setMessage(data.message ?? "Image déjà présente (similaire)");
+        setAlert({ type: "warning", message: data.message ?? "Image déjà présente (similaire)." });
         return;
       }
 
       setStatus("success");
-      setMessage(data.message ?? "Image enregistrée");
+      setAlert({ type: "success", message: data.message ?? "Image ajoutée avec succès." });
       setFile(null);
       event.currentTarget.reset();
     } catch (error) {
       console.error("Upload error", error);
       setStatus("error");
-      setMessage("Une erreur technique est survenue lors de l'upload.");
+      setAlert({ type: "error", message: "Une erreur technique est survenue lors de l'upload." });
     }
   };
 
@@ -183,10 +188,13 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
         )}
       </div>
 
-      {statusDisplay && (
-        <p className={`flex items-center gap-2 text-sm ${statusDisplay.className}`} aria-live="polite">
-          <span>{statusDisplay.icon}</span>
-          <span>{statusDisplay.text}</span>
+      {alertDisplay && (
+        <p
+          className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${alertDisplay.className}`}
+          aria-live="polite"
+        >
+          <span>{alertDisplay.icon}</span>
+          <span>{alertDisplay.text}</span>
         </p>
       )}
     </form>
