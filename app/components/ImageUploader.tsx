@@ -1,52 +1,63 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 
 export type ImageUploadResponse = {
   success: boolean;
+  strictMatch?: boolean;
+  fuzzyMatch?: boolean;
   isStrictDuplicate?: boolean;
   isSoftDuplicate?: boolean;
+  message?: string;
   error?: string;
 };
 
 export type ImageUploaderProps = {
-  eventId: string;
+  eventId?: string;
   className?: string;
 };
 
-type UploadStatus = "idle" | "uploading" | "success" | "duplicate" | "error";
+const STATUS_ICON = {
+  success: "✅",
+  fuzzy: "⚠️",
+  strict: "❌",
+  error: "❌",
+  uploading: "⏳",
+} as const;
+
+type UploadStatus = "idle" | "uploading" | "success" | "fuzzy" | "strict" | "error";
 
 type DuplicateState = {
   strict: boolean;
-  soft: boolean;
+  fuzzy: boolean;
 };
 
 export default function ImageUploader({ eventId, className }: ImageUploaderProps) {
+  const params = useParams<{ eventId?: string }>();
+  const resolvedEventId = eventId ?? params?.eventId ?? "";
+
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [message, setMessage] = useState<string | null>(null);
-  const [duplicates, setDuplicates] = useState<DuplicateState>({ strict: false, soft: false });
-
-  const hasDuplicate = duplicates.strict || duplicates.soft;
+  const [duplicates, setDuplicates] = useState<DuplicateState>({ strict: false, fuzzy: false });
 
   const statusDisplay = useMemo(() => {
-    if (status === "uploading") {
-      return { icon: "🟡", text: "Upload en cours…", color: "text-amber-400" };
-    }
-    if (status === "success") {
-      return { icon: "🟢", text: "Image ajoutée avec succès", color: "text-emerald-400" };
-    }
-    if (status === "duplicate") {
-      return {
-        icon: "🔴",
-        text: message ?? "Doublon détecté : strict ou similaire (flou)",
-        color: "text-red-400",
-      };
-    }
-    if (status === "error") {
-      return { icon: "🔴", text: message ?? "Une erreur est survenue lors de l'upload.", color: "text-red-400" };
-    }
-    return null;
+    if (status === "idle") return null;
+
+    const icon = STATUS_ICON[status];
+    const baseClass =
+      status === "success"
+        ? "text-emerald-400"
+        : status === "fuzzy"
+          ? "text-amber-300"
+          : status === "strict"
+            ? "text-red-400"
+            : status === "uploading"
+              ? "text-sky-300"
+              : "text-red-400";
+
+    return { icon, className: baseClass, text: message };
   }, [message, status]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,11 +65,17 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
     setFile(nextFile);
     setStatus("idle");
     setMessage(null);
-    setDuplicates({ strict: false, soft: false });
+    setDuplicates({ strict: false, fuzzy: false });
   };
 
   const handleUpload = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!resolvedEventId) {
+      setStatus("error");
+      setMessage("Impossible de déterminer l'identifiant de l'événement.");
+      return;
+    }
 
     if (!file) {
       setStatus("error");
@@ -67,14 +84,14 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
     }
 
     setStatus("uploading");
-    setMessage(null);
-    setDuplicates({ strict: false, soft: false });
+    setMessage("Envoi de l'image en cours...");
+    setDuplicates({ strict: false, fuzzy: false });
 
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("image", file);
 
-      const response = await fetch(`/api/events/${eventId}/upload-image`, {
+      const response = await fetch(`/api/events/${resolvedEventId}/upload-image`, {
         method: "POST",
         body: formData,
         cache: "no-store",
@@ -84,30 +101,30 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
 
       if (!response.ok || !data.success) {
         setStatus("error");
-        setMessage(data.error ?? "Impossible d'uploader l'image.");
+        setMessage(data.message ?? data.error ?? "Impossible d'uploader l'image.");
         return;
       }
 
       const nextDuplicates: DuplicateState = {
-        strict: Boolean(data.isStrictDuplicate),
-        soft: Boolean(data.isSoftDuplicate),
+        strict: Boolean(data.strictMatch ?? data.isStrictDuplicate),
+        fuzzy: Boolean(data.fuzzyMatch ?? data.isSoftDuplicate),
       };
       setDuplicates(nextDuplicates);
 
       if (nextDuplicates.strict) {
-        setStatus("duplicate");
-        setMessage("Image strictement identique déjà présente.");
+        setStatus("strict");
+        setMessage(data.message ?? "Image déjà présente (identique)");
         return;
       }
 
-      if (nextDuplicates.soft) {
-        setStatus("duplicate");
-        setMessage("Image similaire déjà existante.");
+      if (nextDuplicates.fuzzy) {
+        setStatus("fuzzy");
+        setMessage(data.message ?? "Image déjà présente (similaire)");
         return;
       }
 
       setStatus("success");
-      setMessage("Image ajoutée avec succès");
+      setMessage(data.message ?? "Image enregistrée");
       setFile(null);
       event.currentTarget.reset();
     } catch (error) {
@@ -120,7 +137,7 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
   return (
     <form
       onSubmit={handleUpload}
-      className={`flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 ${className ?? ""}`.trim()}
+      className={`flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg shadow-slate-950/30 ${className ?? ""}`.trim()}
     >
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-slate-200" htmlFor="event-image">
@@ -141,26 +158,33 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
         )}
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
           disabled={status === "uploading"}
           className="inline-flex items-center gap-2 rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {status === "uploading" ? "Envoi en cours..." : "Uploader l'image"}
+          {status === "uploading" ? "Envoi en cours..." : "Téléverser une image"}
           {status === "uploading" && (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
           )}
         </button>
-        {hasDuplicate && (
+
+        {duplicates.fuzzy && !duplicates.strict && (
+          <span className="inline-flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-200">
+            ⚠️ Image déjà présente (similaire)
+          </span>
+        )}
+
+        {duplicates.strict && (
           <span className="inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-200">
-            Doublon détecté (strict : {duplicates.strict ? "oui" : "non"}, similaire : {duplicates.soft ? "oui" : "non"})
+            ❌ Image déjà présente (identique)
           </span>
         )}
       </div>
 
       {statusDisplay && (
-        <p className={`flex items-center gap-2 text-sm ${statusDisplay.color}`} aria-live="polite">
+        <p className={`flex items-center gap-2 text-sm ${statusDisplay.className}`} aria-live="polite">
           <span>{statusDisplay.icon}</span>
           <span>{statusDisplay.text}</span>
         </p>
