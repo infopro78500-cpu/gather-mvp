@@ -8,8 +8,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { EventData } from "@/types/event";
 
 export default function EditEventPage() {
-  const params = useParams<{ eventId: string }>();
-  const eventId = params.eventId;
+  const params = useParams<{ eventId?: string }>();
+  const eventId = params?.eventId ?? "";
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
