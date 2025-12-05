@@ -7,9 +7,17 @@ import ImageUploader from "@/app/components/ImageUploader";
 import { supabase } from "@/lib/supabaseClient";
 import { EventData } from "@/types/event";
 
+const validateUUID = (value: string | undefined | null): value is string => {
+  if (!value) return false;
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+};
+
 export default function EditEventPage() {
   const params = useParams<{ eventId?: string }>();
-  const eventId = params?.eventId ?? "";
+  const paramEventId = params?.eventId;
+  const eventId = typeof paramEventId === "string" ? paramEventId : "";
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,6 +27,12 @@ export default function EditEventPage() {
     const fetchEvent = async () => {
       if (!eventId) {
         setError("Impossible de récupérer l'identifiant de l'événement.");
+        setLoading(false);
+        return;
+      }
+
+      if (!validateUUID(eventId)) {
+        setError("Identifiant d'événement invalide.");
         setLoading(false);
         return;
       }

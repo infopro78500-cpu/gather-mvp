@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type ChangeEvent, type FormEvent, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 
 export type ImageUploadResponse = {
@@ -17,6 +17,8 @@ export type ImageUploaderProps = {
   eventId?: string;
   className?: string;
 };
+
+type UploadStatus = "idle" | "success" | "fuzzy" | "strict" | "error" | "uploading";
 
 const STATUS_CONFIG = {
   idle: {
@@ -61,9 +63,7 @@ const STATUS_CONFIG = {
     text: "text-sky-200",
     defaultMessage: "Téléversement en cours...",
   },
-} as const;
-
-type UploadStatus = keyof typeof STATUS_CONFIG;
+} as const satisfies Record<UploadStatus, { icon: string; bg: string; border: string; text: string; defaultMessage: string }>;
 
 type AlertState = {
   type: "success" | "warning" | "error" | "info";
@@ -91,11 +91,11 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
     return {
       icon: config.icon,
       className: `${config.text} ${config.bg} ${config.border}`,
-      text: message ?? config.defaultMessage,
+      text: alert.message ?? config.defaultMessage,
     };
   }, [alert, status]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
     setFile(nextFile);
     setStatus("idle");
@@ -103,7 +103,7 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
     setDuplicates({ strict: false, fuzzy: false });
   };
 
-  const handleUpload = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleUpload = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!resolvedEventId) {
