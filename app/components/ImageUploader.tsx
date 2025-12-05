@@ -19,6 +19,13 @@ export type ImageUploaderProps = {
 };
 
 const STATUS_CONFIG = {
+  idle: {
+    icon: "ℹ️",
+    bg: "bg-slate-500/10",
+    border: "border-slate-500/30",
+    text: "text-slate-200",
+    defaultMessage: "Prêt pour un nouveau téléversement",
+  },
   success: {
     icon: "✅",
     bg: "bg-emerald-500/10",
@@ -56,7 +63,7 @@ const STATUS_CONFIG = {
   },
 } as const;
 
-type UploadStatus = "idle" | "uploading" | "success" | "fuzzy" | "strict" | "error";
+type UploadStatus = keyof typeof STATUS_CONFIG;
 
 type AlertState = {
   type: "success" | "warning" | "error" | "info";
@@ -77,16 +84,16 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
   const [alert, setAlert] = useState<AlertState | null>(null);
   const [duplicates, setDuplicates] = useState<DuplicateState>({ strict: false, fuzzy: false });
 
-  const alertDisplay = useMemo(() => {
+  const statusDisplay = useMemo(() => {
     if (!alert) return null;
 
     const config = STATUS_CONFIG[status];
     return {
       icon: config.icon,
       className: `${config.text} ${config.bg} ${config.border}`,
-      text: message ?? config.defaultMessage,
+      text: alert.message ?? config.defaultMessage,
     };
-  }, [message, status]);
+  }, [alert, status]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
