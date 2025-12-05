@@ -18,12 +18,42 @@ export type ImageUploaderProps = {
   className?: string;
 };
 
-const STATUS_ICON = {
-  success: "✅",
-  fuzzy: "⚠️",
-  strict: "❌",
-  error: "❌",
-  uploading: "⏳",
+const STATUS_CONFIG = {
+  success: {
+    icon: "✅",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/30",
+    text: "text-emerald-200",
+    defaultMessage: "Image enregistrée avec succès",
+  },
+  fuzzy: {
+    icon: "⚠️",
+    bg: "bg-amber-500/10",
+    border: "border-amber-400/30",
+    text: "text-amber-200",
+    defaultMessage: "Image similaire détectée",
+  },
+  strict: {
+    icon: "⛔",
+    bg: "bg-red-500/10",
+    border: "border-red-500/30",
+    text: "text-red-200",
+    defaultMessage: "Image identique détectée",
+  },
+  error: {
+    icon: "❌",
+    bg: "bg-rose-500/10",
+    border: "border-rose-500/30",
+    text: "text-rose-200",
+    defaultMessage: "Le téléversement a échoué",
+  },
+  uploading: {
+    icon: "⏳",
+    bg: "bg-sky-500/10",
+    border: "border-sky-500/30",
+    text: "text-sky-200",
+    defaultMessage: "Téléversement en cours...",
+  },
 } as const;
 
 type UploadStatus = "idle" | "uploading" | "success" | "fuzzy" | "strict" | "error";
@@ -45,19 +75,12 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
   const statusDisplay = useMemo(() => {
     if (status === "idle") return null;
 
-    const icon = STATUS_ICON[status];
-    const baseClass =
-      status === "success"
-        ? "text-emerald-400"
-        : status === "fuzzy"
-          ? "text-amber-300"
-          : status === "strict"
-            ? "text-red-400"
-            : status === "uploading"
-              ? "text-sky-300"
-              : "text-red-400";
-
-    return { icon, className: baseClass, text: message };
+    const config = STATUS_CONFIG[status];
+    return {
+      icon: config.icon,
+      className: `${config.text} ${config.bg} ${config.border}`,
+      text: message ?? config.defaultMessage,
+    };
   }, [message, status]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,10 +207,25 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
       </div>
 
       {statusDisplay && (
-        <p className={`flex items-center gap-2 text-sm ${statusDisplay.className}`} aria-live="polite">
-          <span>{statusDisplay.icon}</span>
-          <span>{statusDisplay.text}</span>
-        </p>
+        <div
+          className={`flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-sm shadow-inner shadow-slate-950/40 backdrop-blur ${statusDisplay.className}`}
+          aria-live="polite"
+          role={status === "error" || status === "strict" ? "alert" : "status"}
+        >
+          <span className="text-lg" aria-hidden>
+            {statusDisplay.icon}
+          </span>
+          <div className="flex flex-col gap-1 text-slate-100">
+            <p className="font-semibold capitalize text-slate-50">
+              {status === "success" && "Téléversement réussi"}
+              {status === "fuzzy" && "Similitude détectée"}
+              {status === "strict" && "Doublon détecté"}
+              {status === "error" && "Échec du téléversement"}
+              {status === "uploading" && "Téléversement en cours"}
+            </p>
+            <p className="leading-relaxed text-slate-200">{statusDisplay.text}</p>
+          </div>
+        </div>
       )}
     </form>
   );
