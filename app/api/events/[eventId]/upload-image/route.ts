@@ -13,6 +13,14 @@ type DuplicateCheckResult = {
   soft: boolean;
 };
 
+type UploadResponse = {
+  success: boolean;
+  strictMatch: boolean;
+  fuzzyMatch: boolean;
+  message: string;
+  error?: string;
+};
+
 type PythonRunResult = {
   code: number | null;
   stdout: string;
@@ -116,13 +124,15 @@ async function checkDuplicates(
 
 function buildPaths(eventId: string) {
   const projectRoot = path.resolve(process.cwd(), "ia_local");
-  const imagesDir = path.resolve(projectRoot, "data", "images", `event_${eventId}`);
+  const imagesDir = path.resolve(projectRoot, "data", "images", `${eventId}`);
   const embeddingsDir = path.resolve(projectRoot, "data", "embeddings");
   const csvDir = path.resolve(projectRoot, "data", "csv");
 
-  const embeddingsPath = path.join(embeddingsDir, `event_${eventId}.pkl`);
-  const csvOutputPath = path.join(csvDir, `event_${eventId}.csv`);
-  const hashCsvPath = path.join(csvDir, `event_${eventId}_strict.csv`);
+  const fileBase = `event_${eventId}`;
+
+  const embeddingsPath = path.join(embeddingsDir, `${fileBase}.pkl`);
+  const csvOutputPath = path.join(csvDir, `${fileBase}.csv`);
+  const hashCsvPath = path.join(csvDir, `${fileBase}_strict.csv`);
   const scriptPath = path.resolve(projectRoot, "main.py");
 
   return {
@@ -139,12 +149,12 @@ function buildPaths(eventId: string) {
 
 function buildResponseMessage(result: DuplicateCheckResult): string {
   if (result.strict) {
-    return "Doublon strict détecté";
+    return "Image déjà présente (identique)";
   }
   if (result.soft) {
-    return "Doublon flou détecté";
+    return "Image déjà présente (similaire)";
   }
-  return "Aucun doublon détecté";
+  return "Image enregistrée";
 }
 
 export async function POST(
@@ -247,12 +257,19 @@ export async function POST(
     const duplicates = await checkDuplicates(paths.csvOutputPath, paths.hashCsvPath, storedImagePath);
     const message = buildResponseMessage(duplicates);
 
-    return NextResponse.json({
+    const payload: UploadResponse & {
+      isStrictDuplicate: boolean;
+      isSoftDuplicate: boolean;
+    } = {
       success: true,
+      strictMatch: duplicates.strict,
+      fuzzyMatch: duplicates.soft,
+      message,
       isStrictDuplicate: duplicates.strict,
       isSoftDuplicate: duplicates.soft,
-      message,
-    });
+    };
+
+    return NextResponse.json(payload);
   } catch (error) {
     return NextResponse.json(
       {
