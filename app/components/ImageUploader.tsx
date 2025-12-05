@@ -58,6 +58,11 @@ const STATUS_CONFIG = {
 
 type UploadStatus = "idle" | "uploading" | "success" | "fuzzy" | "strict" | "error";
 
+type AlertState = {
+  type: "success" | "warning" | "error" | "info";
+  message: string;
+};
+
 type DuplicateState = {
   strict: boolean;
   fuzzy: boolean;
@@ -69,11 +74,11 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
 
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<UploadStatus>("idle");
-  const [message, setMessage] = useState<string | null>(null);
+  const [alert, setAlert] = useState<AlertState | null>(null);
   const [duplicates, setDuplicates] = useState<DuplicateState>({ strict: false, fuzzy: false });
 
-  const statusDisplay = useMemo(() => {
-    if (status === "idle") return null;
+  const alertDisplay = useMemo(() => {
+    if (!alert) return null;
 
     const config = STATUS_CONFIG[status];
     return {
@@ -87,7 +92,7 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
     const nextFile = event.target.files?.[0] ?? null;
     setFile(nextFile);
     setStatus("idle");
-    setMessage(null);
+    setAlert(null);
     setDuplicates({ strict: false, fuzzy: false });
   };
 
@@ -96,18 +101,18 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
 
     if (!resolvedEventId) {
       setStatus("error");
-      setMessage("Impossible de déterminer l'identifiant de l'événement.");
+      setAlert({ type: "error", message: "Impossible de déterminer l'identifiant de l'événement." });
       return;
     }
 
     if (!file) {
       setStatus("error");
-      setMessage("Merci de sélectionner une image avant de continuer.");
+      setAlert({ type: "error", message: "Merci de sélectionner une image avant de continuer." });
       return;
     }
 
     setStatus("uploading");
-    setMessage("Envoi de l'image en cours...");
+    setAlert({ type: "info", message: "Envoi de l'image en cours..." });
     setDuplicates({ strict: false, fuzzy: false });
 
     try {
@@ -122,38 +127,41 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
 
       const data: ImageUploadResponse = await response.json();
 
-      if (!response.ok || !data.success) {
-        setStatus("error");
-        setMessage(data.message ?? data.error ?? "Impossible d'uploader l'image.");
-        return;
-      }
-
       const nextDuplicates: DuplicateState = {
         strict: Boolean(data.strictMatch ?? data.isStrictDuplicate),
         fuzzy: Boolean(data.fuzzyMatch ?? data.isSoftDuplicate),
       };
       setDuplicates(nextDuplicates);
 
+      if (!response.ok || !data.success) {
+        setStatus("error");
+        setAlert({
+          type: "error",
+          message: data.error ?? data.message ?? "Échec de l'upload.",
+        });
+        return;
+      }
+
       if (nextDuplicates.strict) {
         setStatus("strict");
-        setMessage(data.message ?? "Image déjà présente (identique)");
+        setAlert({ type: "error", message: data.message ?? "Image déjà présente (identique)." });
         return;
       }
 
       if (nextDuplicates.fuzzy) {
         setStatus("fuzzy");
-        setMessage(data.message ?? "Image déjà présente (similaire)");
+        setAlert({ type: "warning", message: data.message ?? "Image déjà présente (similaire)." });
         return;
       }
 
       setStatus("success");
-      setMessage(data.message ?? "Image enregistrée");
+      setAlert({ type: "success", message: data.message ?? "Image ajoutée avec succès." });
       setFile(null);
       event.currentTarget.reset();
     } catch (error) {
       console.error("Upload error", error);
       setStatus("error");
-      setMessage("Une erreur technique est survenue lors de l'upload.");
+      setAlert({ type: "error", message: "Une erreur technique est survenue lors de l'upload." });
     }
   };
 
