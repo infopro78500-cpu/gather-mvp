@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Fichiers auto-générés
+*.pyc
+*.csv
+*.png
+
+# Dossiers de cache / données
+__pycache__/
+.local/
+.local/data/images/

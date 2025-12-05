@@ -84,7 +84,7 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
     return {
       icon: config.icon,
       className: `${config.text} ${config.bg} ${config.border}`,
-      text: message ?? config.defaultMessage,
+    text: alert?.message ?? config.defaultMessage,
     };
   }, [message, status]);
 
