@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import ImageUploader from "@/app/components/ImageUploader";
 import { supabase } from "@/lib/supabaseClient";
 import { EventData } from "@/types/event";
+import { getExpirationInfo } from "@/lib/eventLifetimes";
 
 const validateUUID = (value: string | undefined | null): value is string => {
   if (!value) return false;
@@ -39,7 +40,7 @@ export default function EditEventPage() {
 
       const { data, error: fetchError } = await supabase
         .from("events")
-        .select("id, name, pin, host_device_id")
+        .select("id, name, pin, host_device_id, host_user_id, expires_at, lifetime_days")
         .eq("id", eventId)
         .maybeSingle<EventData>();
 
@@ -64,6 +65,7 @@ export default function EditEventPage() {
   }, [eventId]);
 
   const title = event?.name ?? "Événement";
+  const expirationInfo = getExpirationInfo(event?.expires_at ?? null);
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 md:px-6 lg:px-0">
@@ -103,10 +105,27 @@ export default function EditEventPage() {
                 <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Identifiant</dt>
                 <dd className="text-base font-semibold text-white">{event.id}</dd>
               </div>
+              <div className="flex flex-col gap-1 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Durée</dt>
+                <dd className="text-base font-semibold text-white">
+                  {event.lifetime_days ? `${event.lifetime_days} jour${event.lifetime_days > 1 ? "s" : ""}` : "Non définie"}
+                </dd>
+                <dd className="text-sm text-slate-300">
+                  {expirationInfo.isExpired
+                    ? expirationInfo.expiredAtLabel
+                    : expirationInfo.remainingLabel}
+                </dd>
+              </div>
               {event.host_device_id && (
                 <div className="flex flex-col gap-1 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
                   <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Hôte</dt>
                   <dd className="text-base font-semibold text-white">{event.host_device_id}</dd>
+                </div>
+              )}
+              {event.host_user_id && (
+                <div className="flex flex-col gap-1 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Utilisateur</dt>
+                  <dd className="text-base font-semibold text-white">{event.host_user_id}</dd>
                 </div>
               )}
             </dl>
