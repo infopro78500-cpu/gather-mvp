@@ -601,7 +601,7 @@ export default function EventPage() {
                     <span className="text-lg" aria-hidden>
                       {isCoffreOpen ? "📖" : "🔒"}
                     </span>
-                    <span className="font-semibold">{isCoffreOpen ? "Coffre ouvert" : "Coffre fermé"}</span>
+                    <span className="font-semibold">{isCoffreOpen ? "Galerie ouverte" : "Galerie masquée"}</span>
                   </span>
                   <span>•</span>
                   <span className="inline-flex items-center gap-2">
