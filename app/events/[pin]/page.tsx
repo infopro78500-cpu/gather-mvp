@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import QRCode from "react-qr-code";
@@ -11,6 +11,7 @@ import { EventData } from "@/types/event";
 import { Photo } from "@/types/photo";
 import { EventHeader } from "@/app/components/events/EventHeader";
 import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
+import { getExpirationInfo } from "@/lib/eventLifetimes";
 
 const BUCKET_NAME = "event-photos";
 const MAX_FILES = 20; // max 20 fichiers à la fois
@@ -83,6 +84,8 @@ export default function EventPage() {
   }, []);
 
   const shareUrl = origin && event ? `${origin}/join?pin=${event.pin}` : null;
+
+  const expirationInfo = getExpirationInfo(event?.expires_at ?? null);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -202,6 +205,14 @@ export default function EventPage() {
     e: React.ChangeEvent<HTMLInputElement>
   ): Promise<void> => {
     const files = e.target.files;
+    if (expirationInfo.isExpired) {
+      alert(
+        "Cet événement est terminé. L'ajout de nouvelles photos n'est plus possible."
+      );
+      e.target.value = "";
+      return;
+    }
+
     if (!files || files.length === 0 || !event) return;
 
     const filesArray = Array.from(files);
@@ -559,6 +570,11 @@ export default function EventPage() {
                   <div className="space-y-1">
                     <p className="text-base font-semibold text-amber-950">Galerie photo commune</p>
                     <p className="text-sm text-amber-800/90">Cliquez pour masquer/afficher la galerie.</p>
+                    <p className="text-xs text-amber-700">
+                      {expirationInfo.isExpired
+                        ? "Cet événement est terminé. Vous pouvez toujours consulter la galerie photo commune."
+                        : expirationInfo.remainingLabel}
+                    </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2">
                     <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-900 shadow-sm">
@@ -594,6 +610,12 @@ export default function EventPage() {
                     )}
                     <span className="text-amber-700">Rafraîchissement auto</span>
                   </span>
+                  <span>•</span>
+                  <span className="text-amber-700">
+                    {expirationInfo.isExpired
+                      ? "Événement terminé"
+                      : expirationInfo.remainingLabel}
+                  </span>
                 </div>
               </div>
 
@@ -610,45 +632,53 @@ export default function EventPage() {
                       <p className="text-xs font-semibold text-emerald-900 uppercase tracking-[0.15em]">Section 1 — Ajout de photos</p>
                       <p className="text-sm text-emerald-900/90 mt-1">Ajoute des souvenirs pour tout le monde.</p>
                       <div className="mt-3 flex flex-col gap-2">
-                        <label
-                          className={`inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold shadow-sm transition ${
-                            uploading
-                              ? "bg-amber-200/80 text-amber-900 cursor-not-allowed border-amber-300"
-                              : "bg-emerald-500 text-emerald-950 border-emerald-600/50 hover:bg-emerald-400"
-                          }`}
-                        >
-                          <span>📤</span>
-                          {uploading ? (
-                            <span className="inline-flex items-center gap-2">
-                              <span className="h-4 w-4 border-2 border-emerald-800 border-t-transparent rounded-full animate-spin" />
-                              {uploadInfo
-                                ? `Upload : ${uploadInfo.processed}/${uploadInfo.total}`
-                                : "Upload en cours..."}
-                            </span>
-                          ) : (
-                            "Ajouter des photos à l’espace commun"
-                          )}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="hidden"
-                            onChange={handleUpload}
-                            disabled={uploading}
-                          />
-                        </label>
-                        <div className="text-[11px] text-emerald-900/80 space-y-1">
-                          {uploadError && <p className="text-red-600">{uploadError}</p>}
-                          {uploadSuccess && <p className="text-emerald-700">{uploadSuccess}</p>}
-                          {uploadInfo && (
-                            <p>
-                              {uploadInfo.processed}/{uploadInfo.total} fichiers traités...
-                            </p>
-                          )}
-                          <p className="text-emerald-900/70">
-                            Limite : {MAX_FILES} fichiers • 10 Mo par fichier • Formats : JPG, PNG...
-                          </p>
-                        </div>
+                        {expirationInfo.isExpired ? (
+                          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm">
+                            Cet événement est terminé. Vous pouvez toujours consulter et télécharger les photos du coffre.
+                          </div>
+                        ) : (
+                          <>
+                            <label
+                              className={`inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold shadow-sm transition ${
+                                uploading
+                                  ? "bg-amber-200/80 text-amber-900 cursor-not-allowed border-amber-300"
+                                  : "bg-emerald-500 text-emerald-950 border-emerald-600/50 hover:bg-emerald-400"
+                              }`}
+                            >
+                              <span>📤</span>
+                              {uploading ? (
+                                <span className="inline-flex items-center gap-2">
+                                  <span className="h-4 w-4 border-2 border-emerald-800 border-t-transparent rounded-full animate-spin" />
+                                  {uploadInfo
+                                    ? `Upload : ${uploadInfo.processed}/${uploadInfo.total}`
+                                    : "Upload en cours..."}
+                                </span>
+                              ) : (
+                                "Ajouter des photos à l’espace commun"
+                              )}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                                onChange={handleUpload}
+                                disabled={uploading || expirationInfo.isExpired}
+                              />
+                            </label>
+                            <div className="text-[11px] text-emerald-900/80 space-y-1">
+                              {uploadError && <p className="text-red-600">{uploadError}</p>}
+                              {uploadSuccess && <p className="text-emerald-700">{uploadSuccess}</p>}
+                              {uploadInfo && (
+                                <p>
+                                  {uploadInfo.processed}/{uploadInfo.total} fichiers traités...
+                                </p>
+                              )}
+                              <p className="text-emerald-900/70">
+                                Limite : {MAX_FILES} fichiers • 10 Mo par fichier • Formats : JPG, PNG...
+                              </p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 

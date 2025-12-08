@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { getDeviceId } from "@/lib/deviceId";
+import { calculateExpiresAt } from "@/lib/eventLifetimes";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 
@@ -9,6 +10,7 @@ export default function CreateEventPage() {
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lifetimeDays, setLifetimeDays] = useState<number>(1);
 
   const generatePin = () => {
     // Génère un PIN à 6 chiffres
@@ -43,11 +45,15 @@ export default function CreateEventPage() {
       }
       // IMPORTANT : on NE bloque PAS si userId est null
 
+      const { expiresAt } = calculateExpiresAt(lifetimeDays);
+
       const { error: insertError } = await supabase.from("events").insert({
         name: name.trim(),
         pin,
         host_device_id: deviceId,
         host_user_id: userId, // peut être null pour le MVP
+        expires_at: expiresAt.toISOString(),
+        lifetime_days: lifetimeDays,
       });
 
       if (insertError) {
@@ -146,6 +152,47 @@ export default function CreateEventPage() {
                 {error && (
                   <p className="text-[11px] text-red-400 mt-1">{error}</p>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-slate-300">
+                  Durée de l&apos;évènement
+                </p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-800 bg-slate-950/80 px-3 py-2 text-sm text-slate-200 shadow-sm transition hover:border-teal-500">
+                    <input
+                      type="radio"
+                      name="lifetime"
+                      value="1"
+                      checked={lifetimeDays === 1}
+                      onChange={() => setLifetimeDays(1)}
+                      className="accent-teal-500"
+                    />
+                    <div className="flex flex-col text-left">
+                      <span className="font-semibold">24h (recommandé)</span>
+                      <span className="text-[11px] text-slate-400">
+                        Coffre express pour vos moments flash.
+                      </span>
+                    </div>
+                  </label>
+
+                  <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-800 bg-slate-950/80 px-3 py-2 text-sm text-slate-200 shadow-sm transition hover:border-teal-500">
+                    <input
+                      type="radio"
+                      name="lifetime"
+                      value="7"
+                      checked={lifetimeDays === 7}
+                      onChange={() => setLifetimeDays(7)}
+                      className="accent-teal-500"
+                    />
+                    <div className="flex flex-col text-left">
+                      <span className="font-semibold">7 jours</span>
+                      <span className="text-[11px] text-slate-400">
+                        Idéal pour un week-end prolongé ou un voyage.
+                      </span>
+                    </div>
+                  </label>
+                </div>
               </div>
 
               <button
