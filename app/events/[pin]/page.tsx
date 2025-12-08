@@ -570,11 +570,6 @@ export default function EventPage() {
                   <div className="space-y-1">
                     <p className="text-base font-semibold text-amber-950">Galerie photo commune</p>
                     <p className="text-sm text-amber-800/90">Cliquez pour masquer/afficher la galerie.</p>
-                    <p className="text-xs text-amber-700">
-                      {expirationInfo.isExpired
-                        ? "Cet événement est terminé. Vous pouvez toujours consulter la galerie photo commune."
-                        : expirationInfo.remainingLabel}
-                    </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2">
                     <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-900 shadow-sm">
@@ -590,31 +585,18 @@ export default function EventPage() {
                       onClick={() => setIsCoffreOpen((prev) => !prev)}
                       className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-200"
                     >
-                      <span>{isCoffreOpen ? "Refermer la galerie" : "Ouvrir la galerie"}</span>
-                      <span>{isCoffreOpen ? "⬆️" : "⬇️"}</span>
+                      <span aria-hidden>{isCoffreOpen ? "📖" : "🔒"}</span>
+                      <span>{isCoffreOpen ? "Galerie ouverte" : "Galerie masquée"}</span>
                     </button>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 text-[11px] text-amber-700">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-white/80 px-2.5 py-1 shadow-sm">
-                    <span className="text-lg" aria-hidden>
-                      {isCoffreOpen ? "📖" : "🔒"}
-                    </span>
-                    <span className="font-semibold">{isCoffreOpen ? "Galerie ouverte" : "Galerie masquée"}</span>
-                  </span>
-                  <span>•</span>
                   <span className="inline-flex items-center gap-2">
                     {isRefreshing && (
                       <span className="h-3 w-3 border-2 border-amber-700 border-t-transparent rounded-full animate-spin" />
                     )}
                     <span className="text-amber-700">Rafraîchissement auto</span>
-                  </span>
-                  <span>•</span>
-                  <span className="text-amber-700">
-                    {expirationInfo.isExpired
-                      ? "Événement terminé"
-                      : expirationInfo.remainingLabel}
                   </span>
                 </div>
               </div>
