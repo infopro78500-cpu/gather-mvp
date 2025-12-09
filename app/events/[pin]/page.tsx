@@ -12,10 +12,14 @@ import { Photo } from "@/types/photo";
 import { EventHeader } from "@/app/components/events/EventHeader";
 import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
+import { ChristmasTreeIcon } from "@/app/components/christmas/ChristmasTreeIcon";
+import { QRCodeGarland } from "@/app/components/christmas/QRCodeGarland";
+import { SnowfallOverlay } from "@/app/components/christmas/SnowfallOverlay";
 
 const BUCKET_NAME = "event-photos";
 const MAX_FILES = 20; // max 20 fichiers à la fois
 const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
+const isChristmasMode = true;
 
 type PhotoItem = Photo & {
   uploaderDeviceId?: string | null;
@@ -490,8 +494,9 @@ export default function EventPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-100 via-rose-50 to-amber-200 text-amber-950 px-4 py-6">
-      <div className="w-full max-w-4xl rounded-3xl bg-white/80 border border-amber-200 p-5 md:p-8 shadow-2xl backdrop-blur-lg space-y-6">
+    <main className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-100 via-rose-50 to-amber-200 text-amber-950 px-4 py-6 overflow-hidden">
+      {isChristmasMode && <SnowfallOverlay />}
+      <div className="w-full max-w-4xl rounded-3xl bg-white/80 border border-amber-200 p-5 md:p-8 shadow-2xl backdrop-blur-lg space-y-6 relative z-10">
         {loading && (
           <p className="text-center text-sm text-amber-700">
             Chargement de l’évènement...
@@ -505,9 +510,13 @@ export default function EventPage() {
         {!loading && event && (
           <>
             <section className="rounded-2xl bg-gradient-to-r from-amber-300/70 via-rose-200/70 to-amber-300/70 border border-amber-200 shadow-inner px-4 py-4 md:px-6 md:py-5 flex items-center gap-4">
-              <div className="text-4xl md:text-5xl" aria-hidden>
-                🎄
-              </div>
+              {isChristmasMode ? (
+                <ChristmasTreeIcon />
+              ) : (
+                <div className="text-4xl md:text-5xl" aria-hidden>
+                  🎄
+                </div>
+              )}
               <div className="flex-1 space-y-1">
                 <p className="text-xs uppercase tracking-[0.2em] text-amber-800">Coffre photo festif</p>
                 <p className="text-sm text-amber-800/90">
@@ -549,8 +558,9 @@ export default function EventPage() {
                   </div>
 
                   <div className="flex items-center justify-center md:justify-end">
-                    <div className="rounded-xl border border-amber-200 bg-white/80 p-3 sm:p-4 shadow-inner">
-                      <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 mx-auto">
+                    <div className="relative inline-block rounded-xl border border-amber-200 bg-white/80 p-3 sm:p-4 shadow-inner">
+                      {isChristmasMode && <QRCodeGarland />}
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 mx-auto relative z-10">
                         <QRCode
                           value={shareUrl}
                           bgColor="transparent"
