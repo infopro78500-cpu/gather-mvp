@@ -159,9 +159,10 @@ function buildResponseMessage(result: DuplicateCheckResult): string {
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
-  const { eventId } = params;
+  // On récupère eventId depuis params (qui est un Promise)
+  const { eventId } = await params;
 
   if (!EVENT_ID_PATTERN.test(eventId)) {
     return NextResponse.json(
@@ -180,7 +181,7 @@ export async function POST(
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "INVALID_FORM_DATA", message: (error as Error).message },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -193,7 +194,7 @@ export async function POST(
         error: "MISSING_IMAGE",
         message: "Aucun fichier image fourni dans la requête (champ 'image').",
       },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -212,7 +213,7 @@ export async function POST(
         error: "DIRECTORY_ERROR",
         message: `Impossible de préparer les dossiers locaux: ${(error as Error).message}`,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 
@@ -226,7 +227,7 @@ export async function POST(
         error: "SAVE_ERROR",
         message: `Impossible d'enregistrer l'image: ${(error as Error).message}`,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 
@@ -253,12 +254,16 @@ export async function POST(
     const message = stderr || "Échec de l'exécution du script Python.";
     return NextResponse.json(
       { success: false, error: "PYTHON_ERROR", message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 
   try {
-    const duplicates = await checkDuplicates(paths.csvOutputPath, paths.hashCsvPath, storedImagePath);
+    const duplicates = await checkDuplicates(
+      paths.csvOutputPath,
+      paths.hashCsvPath,
+      storedImagePath
+    );
     const message = buildResponseMessage(duplicates);
 
     const payload: UploadResponse & {
@@ -281,7 +286,8 @@ export async function POST(
         error: "CSV_PARSE_ERROR",
         message: `Impossible d'analyser les résultats: ${(error as Error).message}`,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
+
