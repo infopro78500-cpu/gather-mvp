@@ -26,8 +26,14 @@ type PhotoItem = Photo & {
 };
 
 export default function EventPage() {
-  const params = useParams<{ pin: string }>();
-  const pin = params.pin;
+const params = useParams<{ pin: string }>();
+
+if (!params?.pin) {
+  throw new Error("PIN manquant dans l’URL");
+}
+
+const pin = params.pin;
+
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
