@@ -168,7 +168,7 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
     } catch (error) {
       console.error("Upload error", error);
       setStatus("error");
-      setAlert({ type: "error", message: "Une erreur technique est survenue lors de l'upload." });
+        setAlert({ type: "error", message: "Une erreur technique est survenue lors de l’upload." });
     }
   };
 
@@ -178,9 +178,9 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
       className={`flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg shadow-slate-950/30 ${className ?? ""}`.trim()}
     >
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-slate-200" htmlFor="event-image">
-          Ajouter une image à l'événement
-        </label>
+          <label className="text-sm font-medium text-slate-200" htmlFor="event-image">
+            Ajouter une image à l’événement
+          </label>
         <input
           id="event-image"
           type="file"
