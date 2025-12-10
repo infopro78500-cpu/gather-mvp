@@ -159,14 +159,18 @@ function buildResponseMessage(result: DuplicateCheckResult): string {
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { eventId: string } },
-): Promise<NextResponse> {
+  { params }: { params: { eventId: string } }
+) {
   const { eventId } = params;
 
   if (!EVENT_ID_PATTERN.test(eventId)) {
     return NextResponse.json(
-      { success: false, error: "INVALID_EVENT_ID", message: "Identifiant d'événement invalide" },
-      { status: 400 },
+      {
+        success: false,
+        error: "INVALID_EVENT_ID",
+        message: "Identifiant d’événement invalide",
+      },
+      { status: 400 }
     );
   }
 
