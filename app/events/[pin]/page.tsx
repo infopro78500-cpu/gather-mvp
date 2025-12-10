@@ -12,9 +12,9 @@ import { Photo } from "@/types/photo";
 import { EventHeader } from "@/app/components/events/EventHeader";
 import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
-import { ChristmasTreeIcon } from "@/app/components/christmas/ChristmasTreeIcon";
 import { QRCodeGarland } from "@/app/components/christmas/QRCodeGarland";
 import { SnowfallOverlay } from "@/app/components/christmas/SnowfallOverlay";
+import { Tree } from "phosphor-react";
 
 const BUCKET_NAME = "event-photos";
 const MAX_FILES = 20; // max 20 fichiers à la fois
@@ -568,15 +568,16 @@ const pin = params.pin;
         {!loading && event && (
           <>
             <section className="rounded-2xl bg-gradient-to-r from-amber-300/70 via-rose-200/70 to-amber-300/70 border border-amber-200 shadow-inner px-4 py-4 md:px-6 md:py-5 flex items-center gap-4">
-              {isChristmasMode ? (
-                <ChristmasTreeIcon />
-              ) : (
-                <div className="text-4xl md:text-5xl" aria-hidden>
-                  🎄
-                </div>
-              )}
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-200/70 bg-white/80 shadow-sm">
+                <Tree
+                  size={26}
+                  weight="fill"
+                  className="text-emerald-600 tree-festive-icon"
+                  aria-hidden="true"
+                />
+              </div>
               <div className="flex-1 space-y-1">
-                <p className="text-xs uppercase tracking-[0.2em] text-amber-800">Coffre photo festif</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800">Coffre photo festif</p>
                 <p className="text-sm text-amber-800/90">
                   Partagez vos photos ici : scannez le QR code, ajoutez-les en quelques clics et profitez du coffre commun.
                 </p>

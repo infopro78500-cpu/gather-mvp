@@ -1,0 +1,15 @@
+{
+  "name": "phosphor-react",
+  "version": "2.1.0-local",
+  "description": "Local subset of Phosphor React icons (offline Tree icon).",
+  "main": "index.js",
+  "module": "index.js",
+  "types": "index.d.ts",
+  "sideEffects": false,
+  "type": "module",
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "license": "MIT"
+}
