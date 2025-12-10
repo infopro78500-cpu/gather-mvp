@@ -14,7 +14,7 @@ import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
 import { QRCodeGarland } from "@/app/components/christmas/QRCodeGarland";
 import { SnowfallOverlay } from "@/app/components/christmas/SnowfallOverlay";
-import { Tree } from "phosphor-react";
+import { TreeEvergreen } from "phosphor-react";
 
 const BUCKET_NAME = "event-photos";
 const MAX_FILES = 20; // max 20 fichiers à la fois
@@ -568,11 +568,11 @@ const pin = params.pin;
         {!loading && event && (
           <>
             <section className="rounded-2xl bg-gradient-to-r from-amber-300/70 via-rose-200/70 to-amber-300/70 border border-amber-200 shadow-inner px-4 py-4 md:px-6 md:py-5 flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-200/70 bg-white/80 shadow-sm">
-                <Tree
-                  size={26}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
+                <TreeEvergreen
+                  size={22}
                   weight="fill"
-                  className="text-emerald-600 tree-festive-icon"
+                  className="text-white sapin-festif-icon"
                   aria-hidden="true"
                 />
               </div>
