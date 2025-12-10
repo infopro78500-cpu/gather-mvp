@@ -571,7 +571,7 @@ const pin = params.pin;
             <section className="rounded-2xl bg-gradient-to-r from-amber-300/70 via-rose-200/70 to-amber-300/70 border border-amber-200 shadow-inner px-4 py-4 md:px-6 md:py-5">
               <div className="flex items-center gap-3">
                 <FestiveTreeIcon
-                  size={36}
+                  size={60}
                   className="sapin-festif-icon"
                   aria-hidden="true"
                 />
