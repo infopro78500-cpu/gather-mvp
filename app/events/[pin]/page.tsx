@@ -12,9 +12,9 @@ import { Photo } from "@/types/photo";
 import { EventHeader } from "@/app/components/events/EventHeader";
 import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
-import { QRCodeGarland } from "@/app/components/christmas/QRCodeGarland";
 import { SnowfallOverlay } from "@/app/components/christmas/SnowfallOverlay";
 import { FestiveTreeIcon } from "@/app/components/christmas/FestiveTreeIcon";
+import { QRCodeGarlandFrame } from "@/app/components/christmas/QRCodeGarlandFrame";
 
 
 const BUCKET_NAME = "event-photos";
@@ -619,9 +619,8 @@ const pin = params.pin;
                   </div>
 
                   <div className="flex items-center justify-center md:justify-end">
-                    <div className="relative inline-block rounded-xl border border-amber-200 bg-white/80 p-3 sm:p-4 shadow-inner">
-                      {isChristmasMode && <QRCodeGarland />}
-                      <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 mx-auto relative z-10">
+                    <QRCodeGarlandFrame>
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 mx-auto">
                         <QRCode
                           value={shareUrl}
                           bgColor="transparent"
@@ -629,7 +628,7 @@ const pin = params.pin;
                           style={{ height: "100%", width: "100%" }}
                         />
                       </div>
-                    </div>
+                    </QRCodeGarlandFrame>
                   </div>
                 </div>
               </section>
