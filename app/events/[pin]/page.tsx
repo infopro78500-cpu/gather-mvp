@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import QRCode from "react-qr-code";
@@ -51,6 +51,10 @@ export default function EventPage() {
 
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
+
+  const [showUploadTooltip, setShowUploadTooltip] = useState(false);
+  const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
@@ -324,6 +328,23 @@ export default function EventPage() {
     }
   };
 
+  const openUploadDialog = () => {
+    if (uploading || expirationInfo.isExpired) return;
+    uploadInputRef.current?.click();
+  };
+
+  const closeSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedPhotos([]);
+  };
+
+  const showTooltipTemporarily = (
+    setter: React.Dispatch<React.SetStateAction<boolean>>
+  ) => {
+    setter(true);
+    window.setTimeout(() => setter(false), 2000);
+  };
+
   const handleDelete = async (photo: PhotoItem): Promise<void> => {
     if (!event) return;
 
@@ -493,6 +514,25 @@ export default function EventPage() {
     );
   };
 
+  const handleDownload = async () => {
+    if (selectionMode && selectedPhotos.length > 0) {
+      await handleDownloadSelected();
+      return;
+    }
+
+    await handleDownloadAll();
+  };
+
+  const downloadButtonLabel =
+    selectionMode && selectedPhotos.length > 0
+      ? "Télécharger la sélection (ZIP)"
+      : "Télécharger toutes les photos (ZIP)";
+
+  const downloadTooltipLabel =
+    selectionMode && selectedPhotos.length > 0
+      ? `Télécharger les ${selectedPhotos.length} photos sélectionnées (ZIP)`
+      : "Télécharger toutes les photos du coffre (ZIP)";
+
   return (
     <main className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-100 via-rose-50 to-amber-200 text-amber-950 px-4 py-6 overflow-hidden">
       {isChristmasMode && <SnowfallOverlay />}
@@ -619,151 +659,164 @@ export default function EventPage() {
                 }`}
               >
                 <div className="space-y-4 pt-2">
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <div className="md:col-span-2 rounded-xl border border-amber-200 bg-emerald-50/80 p-4 shadow-inner">
-                      <p className="text-xs font-semibold text-emerald-900 uppercase tracking-[0.15em]">Section 1 — Ajout de photos</p>
-                      <p className="text-sm text-emerald-900/90 mt-1">Ajoute des souvenirs pour tout le monde.</p>
-                      <div className="mt-3 flex flex-col gap-2">
-                        {expirationInfo.isExpired ? (
-                          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm">
-                            Cet événement est terminé. Vous pouvez toujours consulter et télécharger les photos du coffre.
-                          </div>
-                        ) : (
-                          <>
-                            <label
-                              className={`inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold shadow-sm transition ${
-                                uploading
-                                  ? "bg-amber-200/80 text-amber-900 cursor-not-allowed border-amber-300"
-                                  : "bg-emerald-500 text-emerald-950 border-emerald-600/50 hover:bg-emerald-400"
-                              }`}
-                            >
-                              <span>📤</span>
-                              {uploading ? (
-                                <span className="inline-flex items-center gap-2">
-                                  <span className="h-4 w-4 border-2 border-emerald-800 border-t-transparent rounded-full animate-spin" />
-                                  {uploadInfo
-                                    ? `Upload : ${uploadInfo.processed}/${uploadInfo.total}`
-                                    : "Upload en cours..."}
-                                </span>
-                              ) : (
-                                "Ajouter des photos à l’espace commun"
-                              )}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                className="hidden"
-                                onChange={handleUpload}
-                                disabled={uploading || expirationInfo.isExpired}
-                              />
-                            </label>
-                            <div className="text-[11px] text-emerald-900/80 space-y-1">
-                              {uploadError && <p className="text-red-600">{uploadError}</p>}
-                              {uploadSuccess && <p className="text-emerald-700">{uploadSuccess}</p>}
-                              {uploadInfo && (
-                                <p>
-                                  {uploadInfo.processed}/{uploadInfo.total} fichiers traités...
-                                </p>
-                              )}
-                              <p className="text-emerald-900/70">
-                                Limite : {MAX_FILES} fichiers • 10 Mo par fichier • Formats : JPG, PNG...
-                              </p>
-                            </div>
-                          </>
-                        )}
+                  <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-inner space-y-3">
+                    {expirationInfo.isExpired && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm">
+                        Cet événement est terminé. Vous pouvez toujours consulter et télécharger les photos du coffre.
                       </div>
-                    </div>
+                    )}
 
-                    <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-inner space-y-2">
-                      <p className="text-xs font-semibold text-amber-900 uppercase tracking-[0.15em]">Section 2 — Téléchargements</p>
-                      <p className="text-sm text-amber-800/90">Récupère toutes les photos du coffre.</p>
-                      <div className="flex flex-col gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="relative">
                         <button
                           type="button"
-                          onClick={handleDownloadAll}
-                          disabled={downloading || photos.length === 0}
-                          className="rounded-lg border border-amber-200 bg-amber-500 px-3 py-2 text-sm font-semibold text-amber-950 shadow-sm transition-colors hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                          aria-label="Ajouter des photos"
+                          onClick={() => {
+                            showTooltipTemporarily(setShowUploadTooltip);
+                            openUploadDialog();
+                          }}
+                          onMouseEnter={() => setShowUploadTooltip(true)}
+                          onMouseLeave={() => setShowUploadTooltip(false)}
+                          onFocus={() => setShowUploadTooltip(true)}
+                          onBlur={() => setShowUploadTooltip(false)}
+                          onTouchStart={() => showTooltipTemporarily(setShowUploadTooltip)}
+                          className={`inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold shadow-sm transition ${
+                            uploading || expirationInfo.isExpired
+                              ? "bg-amber-200/80 text-amber-900 cursor-not-allowed border-amber-300"
+                              : "bg-emerald-500 text-emerald-950 border-emerald-600/50 hover:bg-emerald-400"
+                          }`}
+                          disabled={uploading || expirationInfo.isExpired}
                         >
-                          {downloading ? "Préparation du ZIP..." : "Télécharger toutes les photos (ZIP)"}
+                          <span aria-hidden>📤</span>
+                          {uploading ? (
+                            <span className="inline-flex items-center gap-2">
+                              <span className="h-4 w-4 border-2 border-emerald-800 border-t-transparent rounded-full animate-spin" />
+                              {uploadInfo
+                                ? `Upload : ${uploadInfo.processed}/${uploadInfo.total}`
+                                : "Upload en cours..."}
+                            </span>
+                          ) : (
+                            "Ajouter des photos"
+                          )}
+                        </button>
+                        {showUploadTooltip && (
+                          <div className="absolute left-1/2 top-full z-10 mt-2 w-max max-w-[240px] -translate-x-1/2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs text-emerald-900 shadow-lg">
+                            Max 20 fichiers • 10 Mo par photo • Formats : JPG, PNG
+                          </div>
+                        )}
+                        <input
+                          ref={uploadInputRef}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={handleUpload}
+                          disabled={uploading || expirationInfo.isExpired}
+                        />
+                      </div>
+
+                      <div className="relative">
+                        <button
+                          type="button"
+                          aria-label={downloadButtonLabel}
+                          onClick={() => {
+                            showTooltipTemporarily(setShowDownloadTooltip);
+                            void handleDownload();
+                          }}
+                          onMouseEnter={() => setShowDownloadTooltip(true)}
+                          onMouseLeave={() => setShowDownloadTooltip(false)}
+                          onFocus={() => setShowDownloadTooltip(true)}
+                          onBlur={() => setShowDownloadTooltip(false)}
+                          onTouchStart={() => showTooltipTemporarily(setShowDownloadTooltip)}
+                          disabled={downloading || photos.length === 0}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-500 px-4 py-3 text-sm font-semibold text-amber-950 shadow-sm transition-colors hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          <span aria-hidden>⬇️</span>
+                          {downloading ? "Préparation du ZIP..." : downloadButtonLabel}
+                        </button>
+                        {showDownloadTooltip && (
+                          <div className="absolute left-1/2 top-full z-10 mt-2 w-max max-w-[240px] -translate-x-1/2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs text-amber-900 shadow-lg">
+                            {downloadTooltipLabel}
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        aria-label="Basculer le mode sélection"
+                        aria-pressed={selectionMode}
+                        onClick={() => {
+                          if (selectionMode) {
+                            closeSelectionMode();
+                          } else {
+                            setSelectionMode(true);
+                          }
+                        }}
+                        className={`inline-flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold shadow-sm transition-colors ${
+                          selectionMode
+                            ? "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                            : "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                        }`}
+                      >
+                        <span className="h-2.5 w-2.5 rounded-full border border-amber-300 bg-white shadow-inner" />
+                        {selectionMode ? "Mode sélection (actif)" : "Mode sélection"}
+                      </button>
+                    </div>
+
+                    <div className="text-[11px] text-amber-900/80 space-y-1">
+                      {uploadError && <p className="text-red-600">{uploadError}</p>}
+                      {uploadSuccess && <p className="text-emerald-700">{uploadSuccess}</p>}
+                      {uploadInfo && (
+                        <p>
+                          {uploadInfo.processed}/{uploadInfo.total} fichiers traités...
+                        </p>
+                      )}
+                      {!expirationInfo.isExpired && (
+                        <p className="text-amber-800/70">Ajoute des souvenirs en quelques clics.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {selectionMode && (
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50/90 px-4 py-3 shadow-sm transition-all">
+                      <p className="text-sm font-semibold text-emerald-900">
+                        {selectedPhotos.length} photo(s) sélectionnée(s)
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={handleDeleteSelected}
+                          disabled={selectedPhotos.length === 0 || deletingSelected}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {deletingSelected
+                            ? "Suppression en cours..."
+                            : `Supprimer ${selectedPhotos.length || "0"} photo(s)`}
                         </button>
                         <button
                           type="button"
                           onClick={handleDownloadSelected}
-                          disabled={downloading || selectedPhotos.length === 0}
-                          className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                          disabled={selectedPhotos.length === 0 || downloading}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-100 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          {downloading ? "Préparation..." : "Télécharger la sélection"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-inner space-y-3">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-amber-900 uppercase tracking-[0.15em]">Section 3 — Mode sélection</p>
-                        <p className="text-sm text-amber-800/90">Active le mode sélection pour choisir plusieurs photos.</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectionMode((prev) => !prev);
-                            setSelectedPhotos([]);
-                          }}
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition-colors ${
-                            selectionMode
-                              ? "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-                              : "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
-                          }`}
-                        >
-                          <span className="h-2.5 w-2.5 rounded-full border border-amber-300 bg-white shadow-inner" />
-                          {selectionMode ? "Mode sélection activé" : "Activer le mode sélection"}
+                          {downloading ? "Préparation du ZIP..." : "Télécharger"}
                         </button>
                         <button
                           type="button"
-                          onClick={() => setSelectedPhotos([])}
-                          className="text-xs font-semibold text-amber-800 underline-offset-4 hover:underline"
-                          disabled={!selectionMode}
+                          onClick={closeSelectionMode}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-100"
                         >
-                          Réinitialiser la sélection
+                          Quitter
                         </button>
                       </div>
                     </div>
+                  )}
 
-                    {selectionMode && (
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50/90 px-4 py-3 shadow-sm transition-all">
-                        <p className="text-sm font-semibold text-emerald-900">
-                          Mode sélection activé — {selectedPhotos.length} photo(s) sélectionnée(s)
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={handleDeleteSelected}
-                            disabled={selectedPhotos.length === 0 || deletingSelected}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                          >
-                            {deletingSelected
-                              ? "Suppression en cours..."
-                              : `Supprimer ${selectedPhotos.length || "0"} photo(s)`}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSelectionMode(false)}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-100"
-                          >
-                            Quitter le mode sélection
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    <p className="text-[11px] text-amber-700">
-                      {isHost
-                        ? "En tant qu'hôte, vous pouvez supprimer toutes les photos du coffre."
-                        : "Vous pouvez supprimer uniquement vos photos. Seul l'hôte peut supprimer l'ensemble du coffre."}
-                    </p>
-                  </div>
+                  <p className="text-[11px] text-amber-700">
+                    {isHost
+                      ? "En tant qu'hôte, vous pouvez supprimer toutes les photos du coffre."
+                      : "Vous pouvez supprimer uniquement vos photos. Seul l'hôte peut supprimer l'ensemble du coffre."}
+                  </p>
 
                   <section>
                     {photos.length === 0 ? (
