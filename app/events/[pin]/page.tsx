@@ -14,8 +14,7 @@ import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
 import { QRCodeGarland } from "@/app/components/christmas/QRCodeGarland";
 import { SnowfallOverlay } from "@/app/components/christmas/SnowfallOverlay";
-import TreeEvergreen from "phosphor-react";
-
+import { TreeEvergreen } from "phosphor-react";
 
 const BUCKET_NAME = "event-photos";
 const MAX_FILES = 20; // max 20 fichiers à la fois
@@ -568,20 +567,19 @@ const pin = params.pin;
 
         {!loading && event && (
           <>
-            <section className="rounded-2xl bg-gradient-to-r from-amber-300/70 via-rose-200/70 to-amber-300/70 border border-amber-200 shadow-inner px-4 py-4 md:px-6 md:py-5 flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
-                <TreeEvergreen
-                  size={22}
-                  weight="fill"
-                  className="text-white sapin-festif-icon"
-                  aria-hidden="true"
-                />
-              </div>
-              <div className="flex-1 space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800">Coffre photo festif</p>
-                <p className="text-sm text-amber-800/90">
-                  Partagez vos photos ici : scannez le QR code, ajoutez-les en quelques clics et profitez du coffre commun.
-                </p>
+            <section className="rounded-2xl bg-gradient-to-r from-amber-300/70 via-rose-200/70 to-amber-300/70 border border-amber-200 shadow-inner px-4 py-4 md:px-6 md:py-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-sm">
+                  <FestiveTreeIcon size={24} className="sapin-festif-icon" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                    Coffre photo festif
+                  </span>
+                  <span className="text-sm text-amber-900/80">
+                    Partagez vos photos : scannez le QR code et profitez du coffre commun.
+                  </span>
+                </div>
               </div>
             </section>
 
