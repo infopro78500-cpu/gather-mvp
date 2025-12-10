@@ -64,6 +64,7 @@ export default function EventPage() {
   } | null>(null);
 
   const photoCount = photos.length;
+  const selectedCount = selectedPhotos.length;
   const deviceCount = useMemo(() => {
     const uniqueDeviceIds = new Set(
       photos
@@ -499,11 +500,6 @@ export default function EventPage() {
   const handleDownloadSelected = async () => {
     if (!event) return;
 
-    if (selectedPhotos.length === 0) {
-      alert("Sélectionne au moins une photo pour télécharger.");
-      return;
-    }
-
     const photosToDownload = photos.filter((photo) =>
       selectedPhotos.includes(photo.path)
     );
@@ -515,7 +511,13 @@ export default function EventPage() {
   };
 
   const handleDownload = async () => {
-    if (selectionMode && selectedPhotos.length > 0) {
+    if (!hasPhotos) return;
+
+    if (selectionMode && selectedCount === 0) {
+      return;
+    }
+
+    if (selectionMode && selectedCount > 0) {
       await handleDownloadSelected();
       return;
     }
@@ -524,14 +526,24 @@ export default function EventPage() {
   };
 
   const downloadButtonLabel =
-    selectionMode && selectedPhotos.length > 0
-      ? "Télécharger la sélection (ZIP)"
-      : "Télécharger toutes les photos (ZIP)";
+    selectionMode && selectedCount > 0
+      ? `Télécharger ${selectedCount} photo${
+          selectedCount > 1 ? "s" : ""
+        } (ZIP)`
+      : selectionMode
+        ? "Télécharger la sélection (ZIP)"
+        : "Télécharger toutes les photos (ZIP)";
 
-  const downloadTooltipLabel =
-    selectionMode && selectedPhotos.length > 0
-      ? `Télécharger les ${selectedPhotos.length} photos sélectionnées (ZIP)`
-      : "Télécharger toutes les photos du coffre (ZIP)";
+  const downloadTooltipLabel = !hasPhotos
+    ? "Aucune photo à télécharger."
+    : selectionMode && selectedCount > 0
+      ? `Télécharger les ${selectedCount} photos sélectionnées (ZIP)`
+      : selectionMode
+        ? "Sélectionne au moins une photo à télécharger (ZIP)"
+        : "Télécharger toutes les photos du coffre (ZIP)";
+
+  const downloadDisabled =
+    downloading || !hasPhotos || (selectionMode && selectedCount === 0);
 
   return (
     <main className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-100 via-rose-50 to-amber-200 text-amber-950 px-4 py-6 overflow-hidden">
@@ -666,7 +678,7 @@ export default function EventPage() {
                       </div>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end">
                       <div className="relative">
                         <button
                           type="button"
@@ -680,6 +692,7 @@ export default function EventPage() {
                           onFocus={() => setShowUploadTooltip(true)}
                           onBlur={() => setShowUploadTooltip(false)}
                           onTouchStart={() => showTooltipTemporarily(setShowUploadTooltip)}
+                          title="Ajoute des souvenirs en quelques clics. Max 20 fichiers • 10 Mo par photo • Formats JPG/PNG."
                           className={`inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold shadow-sm transition ${
                             uploading || expirationInfo.isExpired
                               ? "bg-amber-200/80 text-amber-900 cursor-not-allowed border-amber-300"
@@ -700,8 +713,8 @@ export default function EventPage() {
                           )}
                         </button>
                         {showUploadTooltip && (
-                          <div className="absolute left-1/2 top-full z-10 mt-2 w-max max-w-[240px] -translate-x-1/2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs text-emerald-900 shadow-lg">
-                            Max 20 fichiers • 10 Mo par photo • Formats : JPG, PNG
+                          <div className="absolute left-1/2 top-full z-10 mt-2 w-max max-w-[260px] -translate-x-1/2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs text-emerald-900 shadow-lg">
+                            Ajoute des souvenirs en quelques clics. Max 20 fichiers • 10 Mo par photo • Formats JPG/PNG.
                           </div>
                         )}
                         <input
@@ -728,7 +741,9 @@ export default function EventPage() {
                           onFocus={() => setShowDownloadTooltip(true)}
                           onBlur={() => setShowDownloadTooltip(false)}
                           onTouchStart={() => showTooltipTemporarily(setShowDownloadTooltip)}
-                          disabled={downloading || photos.length === 0}
+                          disabled={downloadDisabled}
+                          aria-disabled={downloadDisabled}
+                          title={downloadTooltipLabel}
                           className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-500 px-4 py-3 text-sm font-semibold text-amber-950 shadow-sm transition-colors hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           <span aria-hidden>⬇️</span>
@@ -743,7 +758,11 @@ export default function EventPage() {
 
                       <button
                         type="button"
-                        aria-label="Basculer le mode sélection"
+                        aria-label={
+                          selectionMode
+                            ? "Désactiver le mode sélection"
+                            : "Activer le mode sélection"
+                        }
                         aria-pressed={selectionMode}
                         onClick={() => {
                           if (selectionMode) {
@@ -770,9 +789,6 @@ export default function EventPage() {
                         <p>
                           {uploadInfo.processed}/{uploadInfo.total} fichiers traités...
                         </p>
-                      )}
-                      {!expirationInfo.isExpired && (
-                        <p className="text-amber-800/70">Ajoute des souvenirs en quelques clics.</p>
                       )}
                     </div>
                   </div>
@@ -868,16 +884,23 @@ export default function EventPage() {
                               </button>
 
                               {!selectionMode && canDeletePhoto(photo) && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDelete(photo)}
-                                  disabled={deletingPath === photo.path}
-                                  className="mt-auto text-xs bg-red-500 hover:bg-red-600 disabled:opacity-60 py-2 text-center transition-colors rounded-b-lg text-white"
-                                >
-                                  {deletingPath === photo.path
-                                    ? "Suppression..."
-                                    : "Supprimer de l’espace commun"}
-                                </button>
+                                <div className="absolute top-2 right-2">
+                                  <button
+                                    type="button"
+                                    aria-label="Supprimer cette photo"
+                                    title="Supprimer cette photo de l’espace commun"
+                                    onClick={() => handleDelete(photo)}
+                                    disabled={deletingPath === photo.path}
+                                    className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white/90 px-2 py-1 text-[11px] font-semibold text-red-600 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                                  >
+                                    <span aria-hidden>🗑️</span>
+                                    <span className="hidden sm:inline">
+                                      {deletingPath === photo.path
+                                        ? "Suppression..."
+                                        : "Supprimer"}
+                                    </span>
+                                  </button>
+                                </div>
                               )}
                             </div>
                           );
