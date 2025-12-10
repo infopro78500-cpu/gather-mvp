@@ -70,21 +70,21 @@ export default function EditEventPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 md:px-6 lg:px-0">
       <header className="flex flex-col gap-2">
-        <p className="text-xs uppercase tracking-[0.2em] text-teal-300">Gestion d'événement</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-teal-300">Gestion d’événement</p>
         <h1 className="text-3xl font-semibold text-white md:text-4xl">{title}</h1>
         <p className="text-sm text-slate-300">
-          Ajoutez ou mettez à jour les informations de l'événement puis téléversez des images contrôlées par l'IA locale pour
-          éviter les doublons.
+            Ajoutez ou mettez à jour les informations de l’événement puis téléversez des images contrôlées par l’IA locale pour
+            éviter les doublons.
         </p>
       </header>
 
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1.2fr]">
         <div className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg shadow-slate-950/30">
           <div className="flex flex-col gap-1">
-            <h2 className="text-lg font-semibold text-white">Informations de l'événement</h2>
+              <h2 className="text-lg font-semibold text-white">Informations de l’événement</h2>
             <p className="text-sm text-slate-300">
-              Ces informations proviennent de Supabase. Les champs sont pré-remplis pour vous aider à vérifier que vous modifiez
-              le bon événement.
+                Ces informations proviennent de Supabase. Les champs sont pré-remplis pour vous aider à vérifier que vous modifiez
+                le bon événement.
             </p>
           </div>
 
@@ -111,9 +111,12 @@ export default function EditEventPage() {
                   {event.lifetime_days ? `${event.lifetime_days} jour${event.lifetime_days > 1 ? "s" : ""}` : "Non définie"}
                 </dd>
                 <dd className="text-sm text-slate-300">
-                  {expirationInfo.isExpired
-                    ? expirationInfo.expiredAtLabel
-                    : expirationInfo.remainingLabel}
+                  {expirationInfo.statusLabel}
+                  {expirationInfo.isExpired && (
+                    <span className="mt-0.5 block text-xs text-slate-400">
+                      {expirationInfo.expiredAtLabel}
+                    </span>
+                  )}
                 </dd>
               </div>
               {event.host_device_id && (

@@ -32,7 +32,9 @@ export const getExpirationInfo = (
   isExpired: boolean;
   remainingMs: number;
   remainingLabel: string;
+  statusLabel: string;
   expiredAtLabel: string;
+  diffDays: number;
 } => {
   const parsed = parseExpiresAt(expiresAt);
 
@@ -41,31 +43,36 @@ export const getExpirationInfo = (
       isExpired: false,
       remainingMs: Number.POSITIVE_INFINITY,
       remainingLabel: "Durée indéfinie",
+      statusLabel: "Durée indéfinie",
       expiredAtLabel: "Durée d'expiration non définie",
+      diffDays: Number.POSITIVE_INFINITY,
     };
   }
 
   const diffMs = parsed.getTime() - now.getTime();
   const remainingMs = Math.max(0, diffMs);
-  const isExpired = remainingMs === 0;
+  const diffDays = Math.ceil(diffMs / MS_IN_DAY);
+  const isExpired = diffMs < 0;
 
-  let remainingLabel = "Événement terminé";
-  if (!isExpired) {
-    const remainingHours = remainingMs / (1000 * 60 * 60);
-    if (remainingHours < 24) {
-      remainingLabel = `Expire dans ${Math.ceil(remainingHours)} heures`;
-    } else {
-      const remainingDays = remainingMs / MS_IN_DAY;
-      remainingLabel = `Expire dans ${Math.ceil(remainingDays)} jours`;
-    }
+  let statusLabel: string;
+  if (diffDays < 0 || isExpired) {
+    statusLabel = "Coffre expiré";
+  } else if (diffDays === 0) {
+    statusLabel = "Expire aujourd’hui";
+  } else if (diffDays === 1) {
+    statusLabel = "Expire dans 1 jour";
+  } else {
+    statusLabel = `Expire dans ${diffDays} jours`;
   }
 
-  const expiredAtLabel = `Événement terminé le ${formatDateLabel(parsed)}`;
+  const expiredAtLabel = `Coffre expiré le ${formatDateLabel(parsed)}`;
 
   return {
     isExpired,
     remainingMs,
-    remainingLabel,
+    remainingLabel: statusLabel,
+    statusLabel,
     expiredAtLabel,
+    diffDays,
   };
 };

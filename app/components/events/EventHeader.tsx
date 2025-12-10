@@ -10,9 +10,7 @@ type Props = {
 
 export function EventHeader({ event }: Props) {
   const expirationInfo = getExpirationInfo(event.expires_at ?? null);
-  const expirationLabel = expirationInfo.isExpired
-    ? expirationInfo.expiredAtLabel
-    : expirationInfo.remainingLabel;
+  const expirationLabel = expirationInfo.statusLabel;
   const expirationStyle = expirationInfo.isExpired
     ? "bg-red-100 border-red-200 text-red-800"
     : "bg-emerald-100 border-emerald-200 text-emerald-800";
