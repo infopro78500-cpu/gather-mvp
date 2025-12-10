@@ -14,7 +14,8 @@ import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
 import { QRCodeGarland } from "@/app/components/christmas/QRCodeGarland";
 import { SnowfallOverlay } from "@/app/components/christmas/SnowfallOverlay";
-import { TreeEvergreen } from "phosphor-react";
+import { FestiveTreeIcon } from "@/app/components/christmas/FestiveTreeIcon";
+
 
 const BUCKET_NAME = "event-photos";
 const MAX_FILES = 20; // max 20 fichiers à la fois
