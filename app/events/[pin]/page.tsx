@@ -570,9 +570,11 @@ const pin = params.pin;
           <>
             <section className="rounded-2xl bg-gradient-to-r from-amber-300/70 via-rose-200/70 to-amber-300/70 border border-amber-200 shadow-inner px-4 py-4 md:px-6 md:py-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-sm">
-                  <FestiveTreeIcon size={24} className="sapin-festif-icon" />
-                </div>
+                <FestiveTreeIcon
+                  size={36}
+                  className="sapin-festif-icon"
+                  aria-hidden="true"
+                />
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold uppercase tracking-wide text-amber-700">
                     Coffre photo festif
