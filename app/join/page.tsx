@@ -8,7 +8,7 @@ function JoinPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const initialPin = (searchParams.get("pin") ?? "").slice(0, 6);
+  const initialPin = (searchParams?.get("pin") ?? "").slice(0, 6);
 
   const [pin, setPin] = useState(initialPin);
   const [error, setError] = useState<string | null>(null);
