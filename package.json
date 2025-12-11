@@ -2,15 +2,14 @@
   "name": "gather-mvp",
   "version": "0.1.0",
   "private": true,
-"scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "lint": "eslint .",
-
-  "cap:sync": "npx cap sync",
-  "cap:android": "npx cap open android"
-},
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "cap:sync": "npx cap sync",
+    "cap:android": "npx cap open android"
+  },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
     "@capacitor/core": "^6.2.0",
@@ -18,7 +17,7 @@
     "@supabase/supabase-js": "^2.85.0",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
-    "next": "16.0.3",
+    "next": "^16.0.9",
     "phosphor-react": "file:lib/phosphor-react",
     "react": "19.2.0",
     "react-dom": "19.2.0",
