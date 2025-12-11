@@ -82,11 +82,12 @@ export default function CreateEventPage() {
             <div className="mb-4 flex items-center gap-3">
               <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center overflow-hidden">
                 <Image
-                  src="/gather-logo.svg"
-                  alt="Logo Gather"
-                  width={56}
-                  height={56}
-                  className="object-cover"
+                  src="/gather-logo.png"
+                  alt="Gather logo"
+                  width={48}
+                  height={48}
+                  priority
+                  className="object-contain"
                 />
               </div>
               <div className="flex flex-col">
