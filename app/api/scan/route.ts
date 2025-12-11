@@ -41,6 +41,9 @@ export async function POST() {
     });
 
     pythonProcess.on("close", () => {
+      if (stderr) {
+        console.error("Erreur script Python (scan):", stderr);
+      }
       try {
         let doublons = 0;
 
