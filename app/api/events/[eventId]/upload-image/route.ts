@@ -159,11 +159,9 @@ function buildResponseMessage(result: DuplicateCheckResult): string {
 
 export async function POST(
   req: NextRequest,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  context: any
+  context: { params: Promise<{ eventId: string }> }
 ) {
-  const params = await context.params;
-  const { eventId } = params as { eventId: string };
+  const { eventId } = (await context.params) as { eventId: string };
 
   if (!EVENT_ID_PATTERN.test(eventId)) {
     return NextResponse.json(
