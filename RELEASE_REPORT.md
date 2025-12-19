@@ -6,8 +6,7 @@
 ## Commandes à lancer
 ```bash
 npm i
-npm run check:release
-npm run smoke
+npm run release:verify
 ```
 
 ## Routes testées + statut
@@ -17,6 +16,9 @@ npm run smoke
 
 ## Points à surveiller (non bloquants)
 - **Expiration**: le smoke test signale si une page testée contient `Invalid Date` ou `NaN`. Les pages d’événement dynamiques ne sont pas testées sans données.
+- **Tester Vercel**:
+  - PowerShell: `$env:SMOKE_BASE_URL="https://<ton-url>"; npm run smoke`
+  - CMD: `set SMOKE_BASE_URL=https://<ton-url> && npm run smoke`
 - **Vercel/runtimes**:
   - `pages/api/scan-hash.ts`: `child_process.spawn` (exécute Python). Assurer un runtime Node compatible.
   - `app/api/scan/scan.ts`: `child_process.spawn` (exécute Python). Assurer un runtime Node compatible.

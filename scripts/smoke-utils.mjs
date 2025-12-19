@@ -62,15 +62,49 @@ const startLocalServer = async () => {
 
   const stop = async () =>
     new Promise((resolve) => {
-      if (child.killed) {
+      if (child.killed || child.exitCode !== null) {
         resolve();
         return;
       }
-      child.once("exit", () => resolve());
-      child.kill("SIGTERM");
-      setTimeout(() => {
-        if (!child.killed) child.kill("SIGKILL");
-      }, 5000);
+      let settled = false;
+      const timeoutMs = 5000;
+      let timer;
+      const settle = () => {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        resolve();
+      };
+
+      child.once("exit", settle);
+
+      try {
+        child.kill();
+      } catch {}
+
+      timer = setTimeout(() => {
+        if (settled) return;
+        if (process.platform === "win32") {
+          if (!child.pid) {
+            settle();
+            return;
+          }
+          try {
+            const killer = spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
+              stdio: "ignore",
+            });
+            killer.once("exit", settle);
+            killer.once("error", settle);
+          } catch {
+            settle();
+          }
+          return;
+        }
+        try {
+          child.kill("SIGKILL");
+        } catch {}
+        settle();
+      }, timeoutMs);
     });
 
   return { baseUrl, stop, local: true };
