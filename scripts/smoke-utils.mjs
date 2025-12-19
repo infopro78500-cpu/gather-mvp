@@ -1,11 +1,44 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
+import fs from "node:fs";
 import { createServer } from "node:net";
+import path from "node:path";
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const normalizeBaseUrl = (value) => value.replace(/\/$/, "");
+
+const run = (cmd, args, opts = {}) =>
+  new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, opts);
+    let settled = false;
+    const settle = (error) => {
+      if (settled) return;
+      settled = true;
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    };
+
+    child.once("error", (error) => {
+      const message = `Command failed: ${cmd} ${args.join(" ")} (code: null, signal: null)`;
+      console.error(message);
+      settle(new Error(message, { cause: error }));
+    });
+
+    child.once("close", (code, signal) => {
+      if (code === 0) {
+        settle();
+        return;
+      }
+      const message = `Command failed: ${cmd} ${args.join(" ")} (code: ${code}, signal: ${signal ?? "null"})`;
+      console.error(message);
+      settle(new Error(message));
+    });
+  });
 
 const getAvailablePort = () =>
   new Promise((resolve, reject) => {
@@ -39,13 +72,12 @@ const waitForHealth = async (baseUrl, timeoutMs = 30000) => {
 };
 
 const startLocalServer = async () => {
-  const buildResult = spawnSync(npmCommand, ["run", "build"], {
-    stdio: "inherit",
-    env: process.env,
-  });
-
-  if (buildResult.status !== 0) {
-    throw new Error("npm run build failed");
+  const buildIdPath = path.join(process.cwd(), ".next", "BUILD_ID");
+  if (!fs.existsSync(buildIdPath)) {
+    await run(npmCommand, ["run", "build"], {
+      stdio: "inherit",
+      env: process.env,
+    });
   }
 
   const port = await getAvailablePort();
