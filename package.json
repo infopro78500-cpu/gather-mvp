@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "check:release": "npm run lint && npm run typecheck && npm run build",
+    "release:verify": "npm run check:release && npm run test:health && npm run smoke",
     "smoke": "node scripts/smoke.mjs",
     "test:health": "node scripts/health.test.mjs",
     "cap:sync": "npx cap sync",
