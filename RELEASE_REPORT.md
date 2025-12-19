@@ -27,8 +27,10 @@ npm run release:verify
 
 ## Modifications
 - ESLint ignore désormais les environnements Python et caches, et le lint est ciblé sur Next.js via `next lint` pour éviter les scans hors projet.
+- Les smoke tests réutilisent un build existant et interprètent mieux les codes de sortie pour fiabiliser `test:health`/`smoke`.
 
 ## Fichiers modifiés
 - `eslint.config.mjs`
 - `package.json`
 - `.gitignore`
+- `scripts/smoke-utils.mjs`
