@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "eslint app pages lib scripts --ext .js,.jsx,.ts,.tsx",
     "typecheck": "tsc --noEmit",
     "check:release": "npm run lint && npm run typecheck && npm run build",
     "release:verify": "npm run check:release && npm run test:health && npm run smoke",

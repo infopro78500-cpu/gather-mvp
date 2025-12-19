@@ -24,3 +24,11 @@ npm run release:verify
   - `app/api/scan/scan.ts`: `child_process.spawn` (exécute Python). Assurer un runtime Node compatible.
   - `app/api/scan/route.ts`: `child_process.spawn` (exécute Python). Assurer un runtime Node compatible.
   - `app/api/events/[eventId]/upload-image/route.ts`: `fs.promises.mkdir`/`writeFile` + `child_process.spawn`. Écriture disque à vérifier (préférer `/tmp` sur Vercel).
+
+## Modifications
+- ESLint ignore désormais les environnements Python et caches, et le lint est ciblé sur Next.js via `next lint` pour éviter les scans hors projet.
+
+## Fichiers modifiés
+- `eslint.config.mjs`
+- `package.json`
+- `.gitignore`
