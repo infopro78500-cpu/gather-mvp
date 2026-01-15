@@ -3,7 +3,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import QRCode from "react-qr-code";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -53,6 +53,7 @@ if (!params?.pin) {
 
 const pin = params.pin;
 
+  const supabase = getSupabaseClient();
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -150,6 +151,12 @@ const pin = params.pin;
   const expirationInfo = getExpirationInfo(event?.expires_at ?? null);
 
   useEffect(() => {
+    if (!supabase) {
+      setError("Supabase n'est pas configuré.");
+      setLoading(false);
+      return;
+    }
+
     const fetchEvent = async () => {
       const { data, error: eventError } = await supabase
         .from("events")
@@ -177,7 +184,7 @@ const pin = params.pin;
     if (pin) {
       fetchEvent();
     }
-  }, [pin]);
+  }, [pin, supabase]);
 
   useEffect(() => {
     if (!event || !event.contest_enabled || !voterId) {
