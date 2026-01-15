@@ -4,4 +4,17 @@ android/app/build/
 android/capacitor-cordova-android-plugins/
 android/.idea/
 *.iml
-node_modules
+node_modules/
+# Next build outputs (root)
+.next/
+out/
+build/
+
+# If Next runs inside /www
+www/.next/
+www/out/
+www/build/
+www/dev/
+
+# Logs
+*.log
