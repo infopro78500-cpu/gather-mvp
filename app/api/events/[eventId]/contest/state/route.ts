@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -22,6 +22,16 @@ export async function GET(
   req: NextRequest,
   context: { params: Promise<{ eventId: string }> }
 ) {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    console.error("[Supabase] Client not available for contest state route.");
+    return NextResponse.json(
+      { error: "SUPABASE_NOT_CONFIGURED" },
+      { status: 500 }
+    );
+  }
+
   const { eventId } = (await context.params) as { eventId: string };
 
   if (!UUID_REGEX.test(eventId)) {

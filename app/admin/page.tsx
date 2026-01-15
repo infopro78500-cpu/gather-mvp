@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import { LocalScanIA } from "@/app/components/LocalScanIA";
 
 type Lead = {
@@ -13,6 +13,17 @@ type Lead = {
 };
 
 export default async function AdminPage() {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    console.error("[Supabase] Client not available for admin page.");
+    return (
+      <main className="min-h-screen bg-slate-950 text-slate-50 px-6 py-10 flex justify-center">
+        <p>Supabase n'est pas configuré.</p>
+      </main>
+    );
+  }
+
   const { data, error } = await supabase
     .from("leads_landing")
     .select("*")

@@ -2,11 +2,12 @@
 
 import { useState, type FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 function JoinPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const supabase = getSupabaseClient();
 
   const initialPin = (searchParams?.get("pin") ?? "").slice(0, 6);
 
@@ -17,6 +18,11 @@ function JoinPageInner() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+
+    if (!supabase) {
+      setError("Supabase n'est pas configuré. Contacte l'équipe.");
+      return;
+    }
 
     const trimmed = pin.trim();
 
