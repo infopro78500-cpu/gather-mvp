@@ -3,7 +3,7 @@
 import { useState, FormEvent } from "react";
 import { getDeviceId } from "@/lib/deviceId";
 import { calculateExpiresAt } from "@/lib/eventLifetimes";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import Image from "next/image";
 
 export default function CreateEventPage() {
@@ -11,6 +11,7 @@ export default function CreateEventPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lifetimeDays, setLifetimeDays] = useState<number>(1);
+  const supabase = getSupabaseClient();
 
   const generatePin = () => {
     // Génère un PIN à 6 chiffres
@@ -23,6 +24,11 @@ export default function CreateEventPage() {
 
     if (!name.trim()) {
       setError("Donne un nom à ton évènement.");
+      return;
+    }
+
+    if (!supabase) {
+      setError("Supabase n'est pas configuré. Contacte l'équipe.");
       return;
     }
 

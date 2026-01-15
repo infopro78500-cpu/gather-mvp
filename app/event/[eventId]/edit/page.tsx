@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 import ImageUploader from "@/app/components/ImageUploader";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import { EventData } from "@/types/event";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
 
@@ -19,6 +19,7 @@ export default function EditEventPage() {
   const params = useParams<{ eventId?: string }>();
   const paramEventId = params?.eventId;
   const eventId = typeof paramEventId === "string" ? paramEventId : "";
+  const supabase = getSupabaseClient();
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +47,12 @@ export default function EditEventPage() {
 
   useEffect(() => {
     const fetchEvent = async () => {
+      if (!supabase) {
+        setError("Supabase n'est pas configuré.");
+        setLoading(false);
+        return;
+      }
+
       if (!eventId) {
         setError("Impossible de récupérer l'identifiant de l'événement.");
         setLoading(false);
@@ -86,13 +93,18 @@ export default function EditEventPage() {
     };
 
     fetchEvent();
-  }, [eventId]);
+  }, [eventId, supabase]);
 
   const title = event?.name ?? "Événement";
   const expirationInfo = getExpirationInfo(event?.expires_at ?? null);
 
   const handleContestSave = async () => {
     if (!event) return;
+
+    if (!supabase) {
+      setContestError("Supabase n'est pas configuré.");
+      return;
+    }
 
     setContestSaving(true);
     setContestError(null);
