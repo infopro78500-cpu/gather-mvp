@@ -1,16 +1,17 @@
-import type { CapacitorConfig } from "@capacitor/cli";
-
-const config: CapacitorConfig = {
-  appId: "com.gather.mvp",
-  appName: "Gather",
-  webDir: "public",
-  bundledWebRuntime: false,
-  server: {
-    // ⚠️ Mets ici ton URL Vercel en prod
-  url: "https://gather-mvp.vercel.app",
-    androidScheme: "https",
-  },
+// Configuration Capacitor minimaliste pour la sortie Next.js mobile
+// Typée localement pour éviter la dépendance au CLI pendant les builds.
+type CapacitorConfig = {
+  appId: string;
+  appName: string;
+  webDir: string;
+  bundledWebRuntime?: boolean;
 };
 
-export default config;
+const config = {
+  appId: "com.gather.app",
+  appName: "Gather",
+  webDir: "www",
+  bundledWebRuntime: false,
+} satisfies CapacitorConfig;
 
+export default config;
