@@ -23,6 +23,26 @@ export default function EditEventPage() {
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [contestEnabled, setContestEnabled] = useState(false);
+  const [contestEndsAt, setContestEndsAt] = useState<string>("");
+  const [contestSaving, setContestSaving] = useState(false);
+  const [contestMessage, setContestMessage] = useState<string | null>(null);
+  const [contestError, setContestError] = useState<string | null>(null);
+
+  const toDateTimeLocalValue = (value: string | null | undefined) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const offset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  };
+
+  const toIsoString = (value: string) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toISOString();
+  };
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -40,7 +60,9 @@ export default function EditEventPage() {
 
       const { data, error: fetchError } = await supabase
         .from("events")
-        .select("id, name, pin, host_device_id, host_user_id, expires_at, lifetime_days")
+        .select(
+          "id, name, pin, host_device_id, host_user_id, expires_at, lifetime_days, contest_enabled, contest_ends_at"
+        )
         .eq("id", eventId)
         .maybeSingle<EventData>();
 
@@ -58,6 +80,8 @@ export default function EditEventPage() {
       }
 
       setEvent(data);
+      setContestEnabled(Boolean(data.contest_enabled));
+      setContestEndsAt(toDateTimeLocalValue(data.contest_ends_at ?? null));
       setLoading(false);
     };
 
@@ -66,6 +90,49 @@ export default function EditEventPage() {
 
   const title = event?.name ?? "Événement";
   const expirationInfo = getExpirationInfo(event?.expires_at ?? null);
+
+  const handleContestSave = async () => {
+    if (!event) return;
+
+    setContestSaving(true);
+    setContestError(null);
+    setContestMessage(null);
+
+    const contestEndsAtIso = toIsoString(contestEndsAt);
+
+    if (contestEndsAt && !contestEndsAtIso) {
+      setContestError("Date de fin invalide.");
+      setContestSaving(false);
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from("events")
+      .update({
+        contest_enabled: contestEnabled,
+        contest_ends_at: contestEndsAtIso,
+      })
+      .eq("id", event.id);
+
+    if (updateError) {
+      console.error("Erreur lors de la mise à jour du concours", updateError);
+      setContestError("Impossible d'enregistrer les paramètres du concours.");
+      setContestSaving(false);
+      return;
+    }
+
+    setEvent((prev) =>
+      prev
+        ? {
+            ...prev,
+            contest_enabled: contestEnabled,
+            contest_ends_at: contestEndsAtIso,
+          }
+        : prev
+    );
+    setContestMessage("Paramètres du concours enregistrés ✅");
+    setContestSaving(false);
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 md:px-6 lg:px-0">
@@ -136,6 +203,56 @@ export default function EditEventPage() {
         </div>
 
         <ImageUploader eventId={eventId} />
+      </section>
+
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg shadow-slate-950/30">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold text-white">Concours</h2>
+          <p className="text-sm text-slate-300">
+            Activez le mode concours pour autoriser les votes sur les photos et définir une date de fin.
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-[1fr_1.2fr]">
+          <label className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-sm text-slate-200">
+            <input
+              type="checkbox"
+              checked={contestEnabled}
+              onChange={(event) => setContestEnabled(event.target.checked)}
+              className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-teal-400"
+            />
+            <span>Activer le mode concours</span>
+          </label>
+
+          <label className="flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-sm text-slate-200">
+            <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Fin du vote (optionnel)</span>
+            <input
+              type="datetime-local"
+              value={contestEndsAt}
+              onChange={(event) => setContestEndsAt(event.target.value)}
+              disabled={!contestEnabled}
+              className="rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            />
+            <span className="text-xs text-slate-400">
+              Laissez vide pour un concours sans date de fin.
+            </span>
+          </label>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleContestSave}
+            disabled={contestSaving || loading}
+            className="inline-flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {contestSaving ? "Sauvegarde..." : "Enregistrer le concours"}
+          </button>
+          {contestMessage && (
+            <span className="text-sm text-emerald-400">{contestMessage}</span>
+          )}
+          {contestError && <span className="text-sm text-red-400">{contestError}</span>}
+        </div>
       </section>
     </div>
   );

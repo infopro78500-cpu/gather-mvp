@@ -6,4 +6,6 @@ export type EventData = {
   host_user_id?: string | null;
   expires_at?: string | null;
   lifetime_days?: number | null;
+  contest_enabled?: boolean;
+  contest_ends_at?: string | null;
 };

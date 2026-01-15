@@ -16,6 +16,9 @@ import { getExpirationInfo } from "@/lib/eventLifetimes";
 import { SnowfallOverlay } from "@/app/components/christmas/SnowfallOverlay";
 import { FestiveTreeIcon } from "@/app/components/christmas/FestiveTreeIcon";
 import { QRCodeGarlandFrame } from "@/app/components/christmas/QRCodeGarlandFrame";
+import { getVoterId } from "@/lib/voterId";
+import { getContestPhotoId } from "@/lib/photoId";
+import { ContestCountdown } from "@/app/components/contest/ContestCountdown";
 
 
 const BUCKET_NAME = "event-photos";
@@ -25,6 +28,20 @@ const isChristmasMode = true;
 
 type PhotoItem = Photo & {
   uploaderDeviceId?: string | null;
+  contestPhotoId?: string;
+};
+
+type ContestLikeInfo = {
+  count: number;
+  likedByMe: boolean;
+};
+
+type ContestState = {
+  contestEnabled: boolean;
+  contestEndsAt: string | null;
+  isVotingClosed: boolean;
+  likesByPhoto: Record<string, ContestLikeInfo>;
+  leaderboard: Array<{ photoId: string; count: number }>;
 };
 
 export default function EventPage() {
@@ -60,6 +77,12 @@ const pin = params.pin;
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
 
+  const [voterId, setVoterId] = useState<string | null>(null);
+  const [contestState, setContestState] = useState<ContestState | null>(null);
+  const [contestLoading, setContestLoading] = useState(false);
+  const [contestError, setContestError] = useState<string | null>(null);
+  const [likeLoadingPhotoId, setLikeLoadingPhotoId] = useState<string | null>(null);
+
   const [showUploadTooltip, setShowUploadTooltip] = useState(false);
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
@@ -81,11 +104,33 @@ const pin = params.pin;
     );
     return uniqueDeviceIds.size;
   }, [photos]);
+
+  const contestLeaderboard = useMemo(() => {
+    if (!contestState?.contestEnabled) return [];
+    return contestState.leaderboard.map((entry) => ({
+      ...entry,
+      photo: photos.find((photo) => photo.contestPhotoId === entry.photoId) ?? null,
+    }));
+  }, [contestState?.contestEnabled, contestState?.leaderboard, photos]);
   const hasPhotos = photoCount > 0;
+  const isContestEnabled = Boolean(event?.contest_enabled);
+  const contestEndsAt = contestState?.contestEndsAt ?? event?.contest_ends_at ?? null;
+  const contestIsVotingClosed = Boolean(contestState?.isVotingClosed);
+  const contestReady = Boolean(contestState?.contestEnabled);
+
+  const buildLeaderboard = (likes: Record<string, ContestLikeInfo>) =>
+    Object.entries(likes)
+      .map(([photoId, value]) => ({ photoId, count: value.count }))
+      .sort((a, b) => b.count - a.count);
 
   useEffect(() => {
     const id = getEventDeviceId();
     setDeviceId(id);
+  }, []);
+
+  useEffect(() => {
+    const id = getVoterId();
+    setVoterId(id);
   }, []);
 
   useEffect(() => {
@@ -134,6 +179,70 @@ const pin = params.pin;
     }
   }, [pin]);
 
+  useEffect(() => {
+    if (!event || !event.contest_enabled || !voterId) {
+      setContestState(null);
+      setContestError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetchContestState = async () => {
+      setContestLoading(true);
+      setContestError(null);
+
+      try {
+        const response = await fetch(
+          `/api/events/${event.id}/contest/state?voterId=${encodeURIComponent(voterId)}`,
+          { signal: controller.signal }
+        );
+        const payload = await response.json();
+
+        if (!response.ok) {
+          setContestError("Impossible de charger l'état du concours.");
+          setContestState(null);
+          return;
+        }
+
+        setContestState(payload as ContestState);
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        console.error("Erreur lors du chargement du concours", err);
+        setContestError("Impossible de charger l'état du concours.");
+        setContestState(null);
+      } finally {
+        setContestLoading(false);
+      }
+    };
+
+    fetchContestState();
+
+    return () => {
+      controller.abort();
+    };
+  }, [event, voterId]);
+
+  useEffect(() => {
+    if (!contestState?.contestEnabled || !contestState?.contestEndsAt) return;
+
+    const endsAtMs = new Date(contestState.contestEndsAt).getTime();
+    if (!Number.isFinite(endsAtMs)) return;
+
+    const intervalId = window.setInterval(() => {
+      setContestState((prev) => {
+        if (!prev) return prev;
+        const isClosed = endsAtMs <= Date.now();
+        if (prev.isVotingClosed === isClosed) return prev;
+        return { ...prev, isVotingClosed: isClosed };
+      });
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [contestState?.contestEnabled, contestState?.contestEndsAt]);
+
   const refreshPhotos = async (evt: EventData, silent = false): Promise<void> => {
     try {
       if (!silent) {
@@ -154,34 +263,47 @@ const pin = params.pin;
       }
 
       const safeFiles = files ?? [];
+      const shouldComputeContestIds = Boolean(evt.contest_enabled);
 
-      const photosWithUrl: PhotoItem[] = safeFiles
-        .map((file): PhotoItem | null => {
-          if (!file) return null;
+      const photosWithUrl = (
+        await Promise.all(
+          safeFiles.map(async (file): Promise<PhotoItem | null> => {
+            if (!file) return null;
 
-          const path = `${evt.id}/${file.name}`;
-          const filename = file.name || "";
+            const path = `${evt.id}/${file.name}`;
+            const filename = file.name || "";
 
-          const uploaderDeviceId = filename.includes("__")
-            ? filename.split("__")[0]
-            : undefined;
+            const uploaderDeviceId = filename.includes("__")
+              ? filename.split("__")[0]
+              : undefined;
 
-          const { data: publicData } = supabase.storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(path);
+            const { data: publicData } = supabase.storage
+              .from(BUCKET_NAME)
+              .getPublicUrl(path);
 
-          if (!publicData?.publicUrl) {
-            return null;
-          }
+            if (!publicData?.publicUrl) {
+              return null;
+            }
 
-          return {
-            name: file.name,
-            path,
-            url: publicData.publicUrl,
-            uploaderDeviceId,
-          };
-        })
-        .filter((p): p is PhotoItem => p !== null);
+            let contestPhotoId: string | undefined;
+            if (shouldComputeContestIds) {
+              try {
+                contestPhotoId = await getContestPhotoId(path);
+              } catch (err) {
+                console.error("Impossible de générer l'identifiant concours", err);
+              }
+            }
+
+            return {
+              name: file.name,
+              path,
+              url: publicData.publicUrl,
+              uploaderDeviceId,
+              contestPhotoId,
+            };
+          })
+        )
+      ).filter((p): p is PhotoItem => p !== null);
 
       setPhotos(photosWithUrl);
     } catch (err) {
@@ -216,6 +338,63 @@ const pin = params.pin;
     if (!deviceId) return false;
     if (isHost) return true;
     return photo.uploaderDeviceId === deviceId;
+  };
+
+  const handleToggleLike = async (photo: PhotoItem): Promise<void> => {
+    if (!event || !contestState?.contestEnabled || !voterId) return;
+    if (!photo.contestPhotoId) return;
+    if (contestState.isVotingClosed) return;
+
+    setLikeLoadingPhotoId(photo.contestPhotoId);
+    setContestError(null);
+
+    try {
+      const response = await fetch(
+        `/api/events/${event.id}/contest/photos/${photo.contestPhotoId}/toggle-like`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ voterId }),
+        }
+      );
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          setContestState((prev) =>
+            prev ? { ...prev, isVotingClosed: true } : prev
+          );
+          setContestError("Le vote est désormais terminé.");
+          return;
+        }
+        setContestError("Impossible d'enregistrer votre vote.");
+        return;
+      }
+
+      setContestState((prev) => {
+        if (!prev) return prev;
+
+        const likesByPhoto = {
+          ...prev.likesByPhoto,
+          [photo.contestPhotoId as string]: {
+            count: payload.likesCount ?? 0,
+            likedByMe: payload.liked ?? false,
+          },
+        };
+
+        return {
+          ...prev,
+          likesByPhoto,
+          leaderboard: buildLeaderboard(likesByPhoto),
+        };
+      });
+    } catch (err) {
+      console.error("Erreur lors du vote", err);
+      setContestError("Impossible d'enregistrer votre vote.");
+    } finally {
+      setLikeLoadingPhotoId(null);
+    }
   };
 
   const handleUpload = async (
@@ -635,6 +814,75 @@ const pin = params.pin;
               </section>
             )}
 
+            {isContestEnabled && (
+              <section className="rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-amber-700 font-semibold">Mode concours</p>
+                    <p className="text-base font-semibold text-amber-950">
+                      Votez pour vos photos préférées ❤️
+                    </p>
+                    <p className="text-sm text-amber-800/90">
+                      Chaque participant peut liker une photo une fois. Le classement se met à jour en direct.
+                    </p>
+                  </div>
+                  {contestEndsAt && (
+                    <div className="self-start">
+                      <ContestCountdown endsAt={contestEndsAt} />
+                    </div>
+                  )}
+                </div>
+
+                {contestLoading && (
+                  <p className="text-sm text-amber-700">Chargement du concours...</p>
+                )}
+                {contestError && (
+                  <p className="text-sm text-red-600">{contestError}</p>
+                )}
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-amber-900">Classement</p>
+                  {contestLeaderboard.length === 0 ? (
+                    <p className="text-sm text-amber-700">
+                      Aucun vote pour le moment. Soyez le premier à liker une photo !
+                    </p>
+                  ) : (
+                    <ol className="space-y-2">
+                      {contestLeaderboard.map((entry, index) => (
+                        <li
+                          key={entry.photoId}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-sm text-amber-900"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-900">
+                              {index + 1}
+                            </span>
+                            {entry.photo?.url ? (
+                              <img
+                                src={entry.photo.url}
+                                alt={entry.photo.name}
+                                className="h-10 w-10 rounded-md object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-100 text-xs text-amber-700">
+                                —
+                              </div>
+                            )}
+                            <span className="text-xs text-amber-800">
+                              {entry.photo?.name ?? "Photo"}
+                            </span>
+                          </div>
+                          <span className="text-sm font-semibold text-amber-900">
+                            {entry.count} vote{entry.count > 1 ? "s" : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              </section>
+            )}
+
             <section className="rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-4">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -852,6 +1100,19 @@ const pin = params.pin;
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
                         {photos.map((photo) => {
                           const isSelected = selectedPhotos.includes(photo.path);
+                          const likeInfo = photo.contestPhotoId
+                            ? contestState?.likesByPhoto[photo.contestPhotoId]
+                            : undefined;
+                          const likeCount = likeInfo?.count ?? 0;
+                          const likedByMe = likeInfo?.likedByMe ?? false;
+                          const isLikePending =
+                            likeLoadingPhotoId === photo.contestPhotoId;
+                          const likeDisabled =
+                            !contestReady ||
+                            contestLoading ||
+                            contestIsVotingClosed ||
+                            !photo.contestPhotoId ||
+                            isLikePending;
 
                           return (
                             <div
@@ -891,6 +1152,31 @@ const pin = params.pin;
                                   )}
                                 </div>
                               </button>
+
+                              {isContestEnabled && (
+                                <div className="flex items-center justify-between border-t border-amber-100 bg-white/90 px-2 py-2 text-[11px] text-amber-900">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleLike(photo)}
+                                    disabled={likeDisabled}
+                                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 font-semibold transition-colors ${
+                                      likedByMe
+                                        ? "border-rose-200 bg-rose-100 text-rose-700"
+                                        : "border-amber-200 bg-amber-50 text-amber-900"
+                                    } ${likeDisabled ? "opacity-60 cursor-not-allowed" : "hover:bg-amber-100"}`}
+                                  >
+                                    <span aria-hidden>❤️</span>
+                                    {isLikePending
+                                      ? "Envoi..."
+                                      : likedByMe
+                                        ? "Aimé"
+                                        : "J'aime"}
+                                  </button>
+                                  <span>
+                                    {likeCount} vote{likeCount > 1 ? "s" : ""}
+                                  </span>
+                                </div>
+                              )}
 
                               {!selectionMode && canDeletePhoto(photo) && (
                                 <div className="absolute top-2 right-2">
