@@ -1,0 +1,309 @@
+{
+  "stack": {
+    "frontend": ["Next.js 16 App Router", "React 19", "Tailwind CSS"],
+    "backend": ["Next.js API routes", "Node.js"],
+    "database": ["Supabase Postgres"],
+    "storage": ["Supabase Storage bucket: event-photos"],
+    "auth": ["Supabase Auth (OTP magic link)", "Anonymous device/voter IDs"],
+    "hosting": ["Vercel (implied via analytics)", "Capacitor (iOS/Android wrappers)"]
+  },
+  "run_instructions": {
+    "install": "npm install",
+    "dev": "npm run dev",
+    "build": "npm run build",
+    "start": "npm run start",
+    "lint": "npm run lint",
+    "typecheck": "npm run typecheck",
+    "smoke": "npm run smoke",
+    "health_test": "npm run test:health",
+    "env_vars": ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]
+  },
+  "features": [
+    {
+      "name": "Event creation",
+      "description": "Create a new event with name, PIN, and expiration; stored in Supabase.",
+      "evidence": {
+        "files": ["app/page.tsx", "lib/eventLifetimes.ts", "lib/deviceId.ts"],
+        "functions": ["CreateEventPage", "handleSubmit", "calculateExpiresAt", "getDeviceId"],
+        "routes": ["/"]
+      },
+      "status": "done",
+      "dependencies": ["events table", "Supabase client", "deviceId localStorage"],
+      "user_value": "Users create a shared photo vault and receive a PIN/QR to invite others.",
+      "flow": ["Enter name + lifetime", "Generate PIN", "Insert event", "Redirect to /events/[pin]"]
+    },
+    {
+      "name": "Join event via PIN",
+      "description": "Find event by 6-digit PIN and redirect to the event gallery.",
+      "evidence": {
+        "files": ["app/join/page.tsx"],
+        "functions": ["JoinPageInner", "handleSubmit"],
+        "routes": ["/join", "/events/[pin]"]
+      },
+      "status": "done",
+      "dependencies": ["events.pin lookup"],
+      "user_value": "Guests can join without accounts using a PIN.",
+      "flow": ["Enter PIN", "Validate", "Lookup events", "Navigate to event"]
+    },
+    {
+      "name": "Event gallery & expiration",
+      "description": "Load event details, show expiration status, and display gallery.",
+      "evidence": {
+        "files": ["app/events/[pin]/page.tsx", "app/components/events/EventHeader.tsx", "lib/eventLifetimes.ts"],
+        "functions": ["fetchEvent", "EventHeader", "getExpirationInfo"],
+        "routes": ["/events/[pin]"]
+      },
+      "status": "done",
+      "dependencies": ["events table"],
+      "user_value": "Participants see event context and expiry rules.",
+      "flow": ["Load event", "Compute expiration", "Render event header"]
+    },
+    {
+      "name": "Share link + QR",
+      "description": "Generate a shareable URL and QR code to invite guests.",
+      "evidence": {
+        "files": ["app/events/[pin]/page.tsx"],
+        "functions": ["shareUrl"],
+        "routes": ["/events/[pin]"]
+      },
+      "status": "done",
+      "dependencies": ["window.location.origin"],
+      "user_value": "Quick sharing without accounts.",
+      "flow": ["Open event", "Copy link or scan QR"]
+    },
+    {
+      "name": "Photo upload",
+      "description": "Upload photos directly to Supabase Storage with client-side limits.",
+      "evidence": {
+        "files": ["app/events/[pin]/page.tsx"],
+        "functions": ["handleUpload"],
+        "routes": ["/events/[pin]"]
+      },
+      "status": "done",
+      "dependencies": ["Supabase Storage bucket event-photos"],
+      "user_value": "Guests contribute photos quickly.",
+      "flow": ["Select files", "Upload to storage", "Refresh gallery"]
+    },
+    {
+      "name": "Download ZIP",
+      "description": "Download all or selected photos as a ZIP file.",
+      "evidence": {
+        "files": ["app/events/[pin]/page.tsx"],
+        "functions": ["downloadPhotos"],
+        "routes": ["/events/[pin]"]
+      },
+      "status": "done",
+      "dependencies": ["JSZip", "file-saver"],
+      "user_value": "Everyone can retrieve the full collection.",
+      "flow": ["Select photos", "Generate ZIP", "Download"]
+    },
+    {
+      "name": "Contest voting",
+      "description": "Enable likes/leaderboard per event with optional end date.",
+      "evidence": {
+        "files": ["app/events/[pin]/page.tsx", "app/api/events/[eventId]/contest/state/route.ts", "app/api/events/[eventId]/contest/photos/[photoId]/toggle-like/route.ts", "supabase/migrations/20250305120000_add_event_contest_mode.sql"],
+        "functions": ["handleToggleLike", "GET", "POST"],
+        "routes": ["/api/events/[eventId]/contest/state", "/api/events/[eventId]/contest/photos/[photoId]/toggle-like"]
+      },
+      "status": "done",
+      "dependencies": ["events.contest_enabled", "events.contest_ends_at", "photo_likes table"],
+      "user_value": "Engagement via voting on photos.",
+      "flow": ["Fetch contest state", "Like/unlike", "Update leaderboard"]
+    },
+    {
+      "name": "Lead capture",
+      "description": "Capture emails and interests for early access.",
+      "evidence": {
+        "files": ["app/coming-soon/page.tsx", "app/components/LandingForm.tsx", "app/api/lead/route.ts"],
+        "functions": ["LandingForm", "POST"],
+        "routes": ["/coming-soon", "/api/lead"]
+      },
+      "status": "done",
+      "dependencies": ["leads_landing table"],
+      "user_value": "Collects early interest and segmentation.",
+      "flow": ["Submit form", "Insert lead", "Redirect to info pages"]
+    },
+    {
+      "name": "Admin dashboard",
+      "description": "View recent leads and counts by interest.",
+      "evidence": {
+        "files": ["app/admin/page.tsx"],
+        "functions": ["AdminPage"],
+        "routes": ["/admin"]
+      },
+      "status": "partial",
+      "dependencies": ["leads_landing table", "no auth gating"],
+      "user_value": "Internal visibility on demand.",
+      "flow": ["Open dashboard", "Fetch leads", "Render stats"]
+    },
+    {
+      "name": "Local AI duplicate detection",
+      "description": "Local Python scripts detect duplicate images via admin UI.",
+      "evidence": {
+        "files": ["app/components/LocalScanIA.tsx", "app/api/scan/route.ts", "pages/api/scan-hash.ts", "ia_local/main.py"],
+        "functions": ["handleScan", "handleStrictScan"],
+        "routes": ["/api/scan", "/api/scan-hash"]
+      },
+      "status": "partial",
+      "dependencies": ["Python runtime", "ia_local data directory"],
+      "user_value": "Detects duplicates in a local workflow.",
+      "flow": ["Trigger scan", "Run Python", "Read CSV results"]
+    }
+  ],
+  "journeys": [
+    {
+      "name": "Create event",
+      "screens": ["/"],
+      "backend_calls": ["Supabase events insert"],
+      "steps": ["Enter name + lifetime", "Generate PIN", "Insert event", "Redirect to /events/[pin]"]
+    },
+    {
+      "name": "Join event",
+      "screens": ["/join", "/events/[pin]"],
+      "backend_calls": ["Supabase events lookup"],
+      "steps": ["Enter PIN", "Validate", "Redirect to event"]
+    },
+    {
+      "name": "Upload photos",
+      "screens": ["/events/[pin]"],
+      "backend_calls": ["Supabase Storage upload", "Storage list"],
+      "steps": ["Select files", "Upload", "Refresh gallery"]
+    },
+    {
+      "name": "Contest voting",
+      "screens": ["/events/[pin]"],
+      "backend_calls": ["GET /api/events/[eventId]/contest/state", "POST /api/events/[eventId]/contest/photos/[photoId]/toggle-like"],
+      "steps": ["Fetch contest state", "Like/unlike", "Leaderboard updates"]
+    },
+    {
+      "name": "Lead capture",
+      "screens": ["/coming-soon", "/infos/investisseur-v2", "/infos/investissement-fonctionnement"],
+      "backend_calls": ["POST /api/lead"],
+      "steps": ["Submit form", "Insert lead", "Redirect to info"]
+    }
+  ],
+  "api_endpoints": [
+    {
+      "method": "GET",
+      "route": "/api/health",
+      "auth": "none",
+      "purpose": "Health/version metadata",
+      "response": "{ ok, ts, env, version }"
+    },
+    {
+      "method": "POST",
+      "route": "/api/lead",
+      "auth": "none",
+      "purpose": "Insert lead",
+      "request": "{ email, full_name, interest_investing, interest_contributing, interest_ambassador, interest_beta_tester, message, source }",
+      "response": "{ success }"
+    },
+    {
+      "method": "POST",
+      "route": "/api/scan",
+      "auth": "none",
+      "purpose": "Run local AI scan",
+      "response": "{ success, doublons }"
+    },
+    {
+      "method": "POST",
+      "route": "/api/scan-hash",
+      "auth": "none",
+      "purpose": "Run strict hash scan",
+      "response": "{ success, doublons }"
+    },
+    {
+      "method": "POST",
+      "route": "/api/events/[eventId]/upload-image",
+      "auth": "none",
+      "purpose": "Upload image for duplicate check",
+      "request": "multipart/form-data (image)",
+      "response": "{ success, strictMatch, fuzzyMatch, message }"
+    },
+    {
+      "method": "GET",
+      "route": "/api/events/[eventId]/contest/state",
+      "auth": "none",
+      "purpose": "Contest state + likes",
+      "request": "?voterId=...",
+      "response": "{ contestEnabled, contestEndsAt, isVotingClosed, likesByPhoto, leaderboard }"
+    },
+    {
+      "method": "POST",
+      "route": "/api/events/[eventId]/contest/photos/[photoId]/toggle-like",
+      "auth": "none",
+      "purpose": "Toggle like",
+      "request": "{ voterId }",
+      "response": "{ liked, likesCount }"
+    }
+  ],
+  "data_models": [
+    {
+      "name": "events",
+      "type": "table",
+      "fields": ["id", "name", "pin", "host_device_id", "host_user_id", "expires_at", "lifetime_days", "contest_enabled", "contest_ends_at"],
+      "relationships": ["1:N with photo_likes"],
+      "evidence": ["app/page.tsx", "app/events/[pin]/page.tsx", "app/event/[eventId]/edit/page.tsx"]
+    },
+    {
+      "name": "photo_likes",
+      "type": "table",
+      "fields": ["id", "event_id", "photo_id", "voter_id", "created_at"],
+      "relationships": ["N:1 with events"],
+      "evidence": ["supabase/migrations/20250305120000_add_event_contest_mode.sql"]
+    },
+    {
+      "name": "leads_landing",
+      "type": "table",
+      "fields": ["email", "full_name", "interest_investing", "interest_contributing", "interest_ambassador", "interest_beta_tester", "message", "source"],
+      "relationships": [],
+      "evidence": ["app/api/lead/route.ts", "app/admin/page.tsx"]
+    },
+    {
+      "name": "event-photos",
+      "type": "storage_bucket",
+      "fields": ["path", "url", "metadata"],
+      "relationships": ["associated to events by folder path event.id"],
+      "evidence": ["app/events/[pin]/page.tsx"]
+    }
+  ],
+  "risks": [
+    "events and leads_landing base schema not defined in migrations",
+    "admin routes lack authentication/authorization gating",
+    "storage access relies on public URLs and client-side permissions",
+    "missing info routes referenced by LandingForm",
+    "local AI workflows require Python runtime and local filesystem"
+  ],
+  "next_actions": [
+    {
+      "task": "Add full Supabase schema migrations for events and leads_landing",
+      "theme": "Dev",
+      "estimate": "0.5-1d",
+      "rationale": "Current schema is inferred and lacks constraints/indexes."
+    },
+    {
+      "task": "Define RLS policies for events and storage buckets",
+      "theme": "Dev",
+      "estimate": "0.5-1d",
+      "rationale": "Core tables/storage lack visible access rules."
+    },
+    {
+      "task": "Require Supabase auth for admin pages",
+      "theme": "Dev",
+      "estimate": "1-2d",
+      "rationale": "Prevent public access to lead data and admin tools."
+    },
+    {
+      "task": "Create missing info pages or adjust redirect logic",
+      "theme": "Product/UX",
+      "estimate": "0.5-1d",
+      "rationale": "LandingForm redirects to routes that do not exist."
+    },
+    {
+      "task": "Add storage cleanup for expired events",
+      "theme": "Ops",
+      "estimate": "1-2d",
+      "rationale": "Expired events currently remain accessible."
+    }
+  ]
+}
