@@ -1,0 +1,9 @@
+kpi,value,unit,notes
+events_count,,count,SUPABASE_URL / SUPABASE_* key not set in environment
+avg_users_per_event,,users/event,SUPABASE_URL / SUPABASE_* key not set in environment
+avg_photos_per_event,,photos/event,SUPABASE_URL / SUPABASE_* key not set in environment
+avg_photo_size_mb,,MB/photo,SUPABASE_URL / SUPABASE_* key not set in environment
+total_storage_per_event_mb,,MB/event,SUPABASE_URL / SUPABASE_* key not set in environment
+upload_errors_rate,,rate,No upload error logs available in the database
+session_completion_rate,,rate,No session tracking available in the database
+active_users,,users,SUPABASE_URL / SUPABASE_* key not set in environment
