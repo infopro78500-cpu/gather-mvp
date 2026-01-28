@@ -18,3 +18,5 @@ www/dev/
 
 # Logs
 *.log
+
+.env.local
