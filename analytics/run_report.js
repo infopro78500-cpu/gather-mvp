@@ -1,6 +1,18 @@
-const fs = require("fs/promises");
+const fs = require("fs");
+const fsPromises = require("fs/promises");
 const path = require("path");
+const dotenv = require("dotenv");
 const { createClient } = require("@supabase/supabase-js");
+
+const resolveEnvPath = () => {
+  const repoRoot = path.resolve(__dirname, "..");
+  const repoEnvPath = path.resolve(repoRoot, ".env.local");
+  const cwdEnvPath = path.resolve(process.cwd(), ".env.local");
+  return fs.existsSync(repoEnvPath) ? repoEnvPath : cwdEnvPath;
+};
+
+const ENV_PATH = resolveEnvPath();
+dotenv.config({ path: ENV_PATH });
 
 const OUTPUT_DIR = path.resolve(process.cwd(), "analytics_output");
 const BUCKET_NAME = "event-photos";
@@ -24,34 +36,63 @@ const formatNumber = (value, digits = 2) => {
   return Number(value).toFixed(digits);
 };
 
-const buildSupabaseConfig = () => {
+const getSupabaseEnvConfig = () => {
   const supabaseUrl =
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  const supabaseKey =
+  const serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
     process.env.SUPABASE_SERVICE_ROLE ||
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     "";
+  const anonKey =
+    process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-  if (!supabaseUrl || !supabaseKey) {
+  return { supabaseUrl, serviceRoleKey, anonKey };
+};
+
+const validateSupabaseEnv = ({ supabaseUrl, serviceRoleKey }) => {
+  const missing = [];
+
+  if (!supabaseUrl) {
+    missing.push("SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL)");
+  }
+
+  if (!serviceRoleKey) {
+    missing.push(
+      "SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SERVICE_KEY / SUPABASE_SERVICE_ROLE)"
+    );
+  }
+
+  return missing;
+};
+
+const buildSupabaseConfig = ({ supabaseUrl, serviceRoleKey }) => {
+  if (!supabaseUrl || !serviceRoleKey) {
     return null;
   }
 
-  return { supabaseUrl, supabaseKey };
+  return { supabaseUrl, supabaseKey: serviceRoleKey };
 };
 
 const ensureOutputDir = async () => {
-  await fs.mkdir(OUTPUT_DIR, { recursive: true });
+  await fsPromises.mkdir(OUTPUT_DIR, { recursive: true });
 };
 
 const writeCsv = async (filename, header, rows) => {
   const lines = [header.join(","), ...rows.map((row) => row.join(","))];
-  await fs.writeFile(path.join(OUTPUT_DIR, filename), lines.join("\n"), "utf-8");
+  await fsPromises.writeFile(
+    path.join(OUTPUT_DIR, filename),
+    lines.join("\n"),
+    "utf-8"
+  );
 };
 
 const writeReport = async (content) => {
-  await fs.writeFile(path.join(OUTPUT_DIR, "report.md"), content, "utf-8");
+  await fsPromises.writeFile(
+    path.join(OUTPUT_DIR, "report.md"),
+    content,
+    "utf-8"
+  );
 };
 
 const listAllFiles = async (supabase, eventId) => {
@@ -145,7 +186,9 @@ const parseUploaderDeviceId = (filename) => {
 const runReport = async () => {
   await ensureOutputDir();
 
-  const config = buildSupabaseConfig();
+  const envConfig = getSupabaseEnvConfig();
+  const missingEnv = validateSupabaseEnv(envConfig);
+  const config = buildSupabaseConfig(envConfig);
   if (!config) {
     await writeCsv(
       "analysis_table.csv",
@@ -251,6 +294,13 @@ Ajoutez les variables d’environnement Supabase puis relancez :
 node analytics/run_report.js
 \`\`\`
 `);
+    console.error(
+      `[analytics] Missing environment variables: ${missingEnv.join(", ")}`
+    );
+    console.error(
+      `[analytics] Loaded .env.local: ${fs.existsSync(ENV_PATH) ? "true" : "false"}`
+    );
+    process.exit(1);
     return;
   }
 

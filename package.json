@@ -13,7 +13,8 @@
     "smoke": "node scripts/smoke.mjs",
     "test:health": "node scripts/health.test.mjs",
     "cap:sync": "npx cap sync",
-    "cap:android": "npx cap open android"
+    "cap:android": "npx cap open android",
+    "analytics:report": "node analytics/run_report.js"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
@@ -27,7 +28,8 @@
     "phosphor-react": "file:lib/phosphor-react",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "react-qr-code": "^2.0.18"
+    "react-qr-code": "^2.0.18",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.2.0",
