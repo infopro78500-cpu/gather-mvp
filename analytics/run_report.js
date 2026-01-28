@@ -1,13 +1,11 @@
-import 'dotenv/config'
 // @ts-check
+import fs from "node:fs";
+import path from "node:path";
+import dotenv from "dotenv";
+import { DateTime } from "luxon";
+import { createClient } from "@supabase/supabase-js";
 
-const fs = require("fs");
-const path = require("path");
-const dotenv = require("dotenv");
-const { DateTime } = require("luxon");
-const { createClient } = require("@supabase/supabase-js");
-
-dotenv.config({ path: path.join(process.cwd(), ".env") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
 const OUTPUT_DIR = path.join(process.cwd(), "analytics_output");
 const PAGE_SIZE = 1000;
@@ -44,18 +42,24 @@ function writeCsv(filePath, headers, rows) {
   fs.writeFileSync(filePath, [headerLine, ...lines].join("\n"), "utf8");
 }
 
-function requireEnv(name) {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+function getSupabaseConfig() {
+  const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
+  const missing = required.filter((name) => !process.env[name]);
+
+  if (missing.length) {
+    console.error("[analytics] Missing required environment variables:", missing.join(", "));
+    console.error("[analytics] Define them in .env.local or your shell environment, then rerun the report.");
+    return null;
   }
-  return value;
+
+  return {
+    supabaseUrl: process.env.SUPABASE_URL,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  };
 }
 
-function createSupabaseClient() {
-  const supabaseUrl = requireEnv("SUPABASE_URL");
-  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-  return createClient(supabaseUrl, serviceRoleKey, {
+function createSupabaseClient(config) {
+  return createClient(config.supabaseUrl, config.serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
@@ -169,8 +173,15 @@ function buildDailySeries(entries, fields) {
 
 async function main() {
   ensureDir(OUTPUT_DIR);
+  console.log("[analytics] Running analytics report...");
 
-  const supabase = createSupabaseClient();
+  const config = getSupabaseConfig();
+  if (!config) {
+    process.exitCode = 1;
+    return;
+  }
+
+  const supabase = createSupabaseClient(config);
   console.log("[analytics] Using SUPABASE_SERVICE_ROLE_KEY for admin access.");
 
   for (const table of REQUIRED_TABLES) {
@@ -332,6 +343,7 @@ async function main() {
   console.log(`- ${analysisPath}`);
   console.log(`- ${dailyPath}`);
   console.log(`- ${reportPath}`);
+  console.log("[analytics] Report completed.");
 }
 
 main().catch((error) => {
