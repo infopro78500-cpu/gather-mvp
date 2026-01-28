@@ -1,3 +1,4 @@
+import 'dotenv/config'
 // @ts-check
 
 const fs = require("fs");
