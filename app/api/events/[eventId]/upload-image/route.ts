@@ -14,6 +14,7 @@ type DuplicateCheckResult = {
 };
 
 type UploadResponse = {
+  ok: boolean;
   success: boolean;
   strictMatch: boolean;
   fuzzyMatch: boolean;
@@ -26,6 +27,27 @@ type PythonRunResult = {
   stdout: string;
   stderr: string;
 };
+
+const isDev = process.env.NODE_ENV !== "production";
+
+function logUploadError(context: string, error: unknown, details?: Record<string, unknown>) {
+  if (!isDev) return;
+  const normalizedError = error instanceof Error ? error : new Error(String(error));
+  console.error(`[upload-image] ${context}`, {
+    ...details,
+    message: normalizedError.message,
+    stack: normalizedError.stack,
+  });
+}
+
+function buildErrorResponse(error: string, message: string) {
+  return {
+    ok: false,
+    success: false,
+    error,
+    message,
+  };
+}
 
 function sanitizeFileName(originalName: string): string {
   const baseName = path.basename(originalName);
@@ -164,12 +186,9 @@ export async function POST(
   const { eventId } = (await context.params) as { eventId: string };
 
   if (!EVENT_ID_PATTERN.test(eventId)) {
+    logUploadError("invalid_event_id", new Error("Invalid eventId"), { eventId });
     return NextResponse.json(
-      {
-        success: false,
-        error: "INVALID_EVENT_ID",
-        message: "Identifiant d’événement invalide",
-      },
+      buildErrorResponse("INVALID_EVENT_ID", "Identifiant d’événement invalide"),
       { status: 400 }
     );
   }
@@ -178,8 +197,9 @@ export async function POST(
   try {
     formData = await req.formData();
   } catch (error) {
+    logUploadError("formdata_parse_failed", error);
     return NextResponse.json(
-      { success: false, error: "INVALID_FORM_DATA", message: (error as Error).message },
+      buildErrorResponse("INVALID_FORM_DATA", (error as Error).message),
       { status: 400 }
     );
   }
@@ -187,12 +207,12 @@ export async function POST(
   const imageEntry = formData.get("image") ?? formData.get("file");
 
   if (!(imageEntry instanceof File)) {
+    logUploadError("missing_image", new Error("No image file in form data"));
     return NextResponse.json(
-      {
-        success: false,
-        error: "MISSING_IMAGE",
-        message: "Aucun fichier image fourni dans la requête (champ 'image').",
-      },
+      buildErrorResponse(
+        "MISSING_IMAGE",
+        "Aucun fichier image fourni dans la requête (champ 'image')."
+      ),
       { status: 400 }
     );
   }
@@ -206,12 +226,12 @@ export async function POST(
       ensureDirectoryExists(paths.csvDir),
     ]);
   } catch (error) {
+    logUploadError("directory_prepare_failed", error, { paths });
     return NextResponse.json(
-      {
-        success: false,
-        error: "DIRECTORY_ERROR",
-        message: `Impossible de préparer les dossiers locaux: ${(error as Error).message}`,
-      },
+      buildErrorResponse(
+        "DIRECTORY_ERROR",
+        `Impossible de préparer les dossiers locaux: ${(error as Error).message}`
+      ),
       { status: 500 }
     );
   }
@@ -220,12 +240,12 @@ export async function POST(
   try {
     storedImagePath = await saveUploadedFile(imageEntry, paths.imagesDir);
   } catch (error) {
+    logUploadError("save_failed", error, { destination: paths.imagesDir });
     return NextResponse.json(
-      {
-        success: false,
-        error: "SAVE_ERROR",
-        message: `Impossible d'enregistrer l'image: ${(error as Error).message}`,
-      },
+      buildErrorResponse(
+        "SAVE_ERROR",
+        `Impossible d'enregistrer l'image: ${(error as Error).message}`
+      ),
       { status: 500 }
     );
   }
@@ -251,8 +271,9 @@ export async function POST(
 
   if (code !== 0) {
     const message = stderr || "Échec de l'exécution du script Python.";
+    logUploadError("python_failed", new Error(message), { code });
     return NextResponse.json(
-      { success: false, error: "PYTHON_ERROR", message },
+      buildErrorResponse("PYTHON_ERROR", message),
       { status: 500 }
     );
   }
@@ -269,6 +290,7 @@ export async function POST(
       isStrictDuplicate: boolean;
       isSoftDuplicate: boolean;
     } = {
+      ok: true,
       success: true,
       strictMatch: duplicates.strict,
       fuzzyMatch: duplicates.soft,
@@ -279,14 +301,13 @@ export async function POST(
 
     return NextResponse.json(payload);
   } catch (error) {
+    logUploadError("csv_parse_failed", error, { storedImagePath });
     return NextResponse.json(
-      {
-        success: false,
-        error: "CSV_PARSE_ERROR",
-        message: `Impossible d'analyser les résultats: ${(error as Error).message}`,
-      },
+      buildErrorResponse(
+        "CSV_PARSE_ERROR",
+        `Impossible d'analyser les résultats: ${(error as Error).message}`
+      ),
       { status: 500 }
     );
   }
 }
-

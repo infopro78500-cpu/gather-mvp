@@ -1,9 +1,10 @@
 "use client";
 
-import { type ChangeEvent, type FormEvent, useMemo, useState } from "react";
+import { type ChangeEvent, type FormEvent, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
 export type ImageUploadResponse = {
+  ok?: boolean;
   success: boolean;
   strictMatch?: boolean;
   fuzzyMatch?: boolean;
@@ -79,6 +80,9 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
   const params = useParams<{ eventId?: string }>();
   const resolvedEventId = eventId ?? params?.eventId ?? "";
 
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [alert, setAlert] = useState<AlertState | null>(null);
@@ -132,7 +136,13 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
         cache: "no-store",
       });
 
-      const data: ImageUploadResponse = await response.json();
+      let data: ImageUploadResponse;
+      try {
+        data = (await response.json()) as ImageUploadResponse;
+      } catch (jsonError) {
+        console.error("Upload response parse error", jsonError);
+        data = { success: false, ok: false, error: "Réponse invalide du serveur." };
+      }
 
       const nextDuplicates: DuplicateState = {
         strict: Boolean(data.strictMatch ?? data.isStrictDuplicate),
@@ -140,7 +150,7 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
       };
       setDuplicates(nextDuplicates);
 
-      if (!response.ok || !data.success) {
+      if (!response.ok || (!data.success && !data.ok)) {
         setStatus("error");
         setAlert({
           type: "error",
@@ -164,28 +174,33 @@ export default function ImageUploader({ eventId, className }: ImageUploaderProps
       setStatus("success");
       setAlert({ type: "success", message: data.message ?? "Image ajoutée avec succès." });
       setFile(null);
-      event.currentTarget.reset();
+      formRef.current?.reset();
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
     } catch (error) {
       console.error("Upload error", error);
       setStatus("error");
-        setAlert({ type: "error", message: "Une erreur technique est survenue lors de l’upload." });
+      setAlert({ type: "error", message: "Une erreur technique est survenue lors de l’upload." });
     }
   };
 
   return (
     <form
+      ref={formRef}
       onSubmit={handleUpload}
       className={`flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg shadow-slate-950/30 ${className ?? ""}`.trim()}
     >
       <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-slate-200" htmlFor="event-image">
-            Ajouter une image à l’événement
-          </label>
+        <label className="text-sm font-medium text-slate-200" htmlFor="event-image">
+          Ajouter une image à l’événement
+        </label>
         <input
           id="event-image"
           type="file"
           name="file"
           accept="image/*"
+          ref={inputRef}
           onChange={handleFileChange}
           className="block w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 file:mr-4 file:rounded-md file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-100 hover:border-teal-400 focus:border-teal-400 focus:outline-none"
         />
