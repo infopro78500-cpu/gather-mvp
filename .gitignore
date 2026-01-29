@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# generated / local outputs
+ia_local/data/
+ia_local/images/
+ia_local/embeddings/
+ia_local/__pycache__/
+*.pyc
+www/dev/
