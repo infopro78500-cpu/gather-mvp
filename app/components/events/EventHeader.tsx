@@ -12,14 +12,14 @@ export function EventHeader({ event }: Props) {
   const expirationInfo = getExpirationInfo(event.expires_at ?? null);
   const expirationLabel = expirationInfo.statusLabel;
   const expirationStyle = expirationInfo.isExpired
-    ? "bg-red-100 border-red-200 text-red-800"
-    : "bg-emerald-100 border-emerald-200 text-emerald-800";
+    ? "bg-red-500/10 border-red-500/40 text-red-200"
+    : "bg-emerald-500/10 border-emerald-500/40 text-emerald-200";
 
   return (
     <div className="flex flex-col items-start sm:items-end gap-1 text-left sm:text-right">
-      <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900 shadow-sm">
+      <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-semibold text-slate-200 shadow-sm">
         PIN
-        <span className="ml-1 font-semibold tracking-widest text-amber-800">
+        <span className="ml-1 font-semibold tracking-widest text-slate-100">
           {event.pin}
         </span>
       </span>
