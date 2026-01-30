@@ -13,9 +13,6 @@ import { Photo } from "@/types/photo";
 import { EventHeader } from "@/app/components/events/EventHeader";
 import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
-import { SnowfallOverlay } from "@/app/components/christmas/SnowfallOverlay";
-import { FestiveTreeIcon } from "@/app/components/christmas/FestiveTreeIcon";
-import { QRCodeGarlandFrame } from "@/app/components/christmas/QRCodeGarlandFrame";
 import { getVoterId } from "@/lib/voterId";
 import { getContestPhotoId } from "@/lib/photoId";
 import { ContestCountdown } from "@/app/components/contest/ContestCountdown";
@@ -24,7 +21,6 @@ import { ContestCountdown } from "@/app/components/contest/ContestCountdown";
 const BUCKET_NAME = "event-photos";
 const MAX_FILES = 20; // max 20 fichiers à la fois
 const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
-const isChristmasMode = true;
 
 type PhotoItem = Photo & {
   uploaderDeviceId?: string | null;
@@ -739,12 +735,16 @@ const pin = params.pin;
   const downloadDisabled =
     downloading || !hasPhotos || (selectionMode && selectedCount === 0);
 
+  const galleryToggleLabel = isCoffreOpen
+    ? "Masquer la galerie"
+    : "Afficher la galerie";
+  const galleryToggleIcon = isCoffreOpen ? "🙈" : "👁️";
+
   return (
-    <main className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-100 via-rose-50 to-amber-200 text-amber-950 px-4 py-6 overflow-hidden">
-      {isChristmasMode && <SnowfallOverlay />}
-      <div className="w-full max-w-4xl rounded-3xl bg-white/80 border border-amber-200 p-5 md:p-8 shadow-2xl backdrop-blur-lg space-y-6 relative z-10">
+    <main className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 px-4 py-6">
+      <div className="w-full max-w-4xl rounded-3xl bg-slate-900/80 border border-slate-800 p-5 md:p-8 shadow-2xl space-y-6">
         {loading && (
-          <p className="text-center text-sm text-amber-700">
+          <p className="text-center text-sm text-slate-400">
             Chargement de l’évènement...
           </p>
         )}
@@ -755,174 +755,55 @@ const pin = params.pin;
 
         {!loading && event && (
           <>
-            <section className="rounded-2xl bg-gradient-to-r from-amber-300/70 via-rose-200/70 to-amber-300/70 border border-amber-200 shadow-inner px-4 py-4 md:px-6 md:py-5">
-              <div className="flex items-center gap-3">
-                <FestiveTreeIcon
-                  size={60}
-                  className="sapin-festif-icon"
-                  aria-hidden="true"
-                />
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-                    Coffre photo festif
-                  </span>
-                  <span className="text-sm text-amber-900/80">
-                    Partagez vos photos : scannez le QR code et profitez du coffre commun.
-                  </span>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-3">
+            <section className="rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-5 shadow-md space-y-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-1">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-amber-700 font-semibold">Évènement</p>
-                  <p className="text-lg font-semibold text-amber-950">{event.name || "Photos"}</p>
-                  <p className="text-sm text-amber-800/80">Ce coffre regroupe toutes les photos de votre groupe.</p>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Évènement</p>
+                  <p className="text-lg font-semibold text-slate-50">{event.name || "Photos"}</p>
+                  <p className="text-sm text-slate-400">Ce coffre regroupe toutes les photos de votre groupe.</p>
                 </div>
                 <EventHeader event={event} />
               </div>
             </section>
 
-            {shareUrl && (
-              <section className="rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-4">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div className="space-y-2 flex-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-amber-700 font-semibold">Partage de l’évènement</p>
-                    <p className="text-base font-semibold text-amber-950">Invitez votre groupe à rejoindre ce coffre.</p>
-                    <p className="text-sm text-amber-800/90">Copie le lien ou scanne le QR code pour partager rapidement.</p>
-                    <div className="mt-3 space-y-2">
-                      <div className="w-full overflow-hidden rounded-lg border border-amber-200 bg-white px-3 py-2.5 text-[12px] text-amber-900 shadow-inner">
-                        {shareUrl}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleCopyLink}
-                        className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-700 shadow-sm"
-                      >
-                        📋 Copier le lien
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-center md:justify-end">
-                    <QRCodeGarlandFrame>
-                      <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 mx-auto">
-                        <QRCode
-                          value={shareUrl}
-                          bgColor="transparent"
-                          fgColor="#0f172a"
-                          style={{ height: "100%", width: "100%" }}
-                        />
-                      </div>
-                    </QRCodeGarlandFrame>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {isContestEnabled && (
-              <section className="rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-amber-700 font-semibold">Mode concours</p>
-                    <p className="text-base font-semibold text-amber-950">
-                      Votez pour vos photos préférées ❤️
-                    </p>
-                    <p className="text-sm text-amber-800/90">
-                      Chaque participant peut liker une photo une fois. Le classement se met à jour en direct.
-                    </p>
-                  </div>
-                  {contestEndsAt && (
-                    <div className="self-start">
-                      <ContestCountdown endsAt={contestEndsAt} />
-                    </div>
-                  )}
-                </div>
-
-                {contestLoading && (
-                  <p className="text-sm text-amber-700">Chargement du concours...</p>
-                )}
-                {contestError && (
-                  <p className="text-sm text-red-600">{contestError}</p>
-                )}
-
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-amber-900">Classement</p>
-                  {contestLeaderboard.length === 0 ? (
-                    <p className="text-sm text-amber-700">
-                      Aucun vote pour le moment. Soyez le premier à liker une photo !
-                    </p>
-                  ) : (
-                    <ol className="space-y-2">
-                      {contestLeaderboard.map((entry, index) => (
-                        <li
-                          key={entry.photoId}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-sm text-amber-900"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-900">
-                              {index + 1}
-                            </span>
-                            {entry.photo?.url ? (
-                              <img
-                                src={entry.photo.url}
-                                alt={entry.photo.name}
-                                className="h-10 w-10 rounded-md object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-100 text-xs text-amber-700">
-                                —
-                              </div>
-                            )}
-                            <span className="text-xs text-amber-800">
-                              {entry.photo?.name ?? "Photo"}
-                            </span>
-                          </div>
-                          <span className="text-sm font-semibold text-amber-900">
-                            {entry.count} vote{entry.count > 1 ? "s" : ""}
-                          </span>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </div>
-              </section>
-            )}
-
-            <section className="rounded-2xl border border-amber-200 bg-white/70 px-5 py-5 shadow-md space-y-4">
+            <section className="rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-5 shadow-md space-y-4">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="text-base font-semibold text-amber-950">Galerie photo commune</p>
-                    <p className="text-sm text-amber-800/90">Cliquez pour masquer/afficher la galerie.</p>
+                    <p className="text-base font-semibold text-slate-50">Galerie photo commune</p>
+                    <p className="text-sm text-slate-400">
+                      Cliquez pour afficher ou masquer la galerie.
+                    </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2">
-                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-900 shadow-sm">
+                    <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-200 shadow-sm">
                       {photoCount} photo{photoCount > 1 ? "s" : ""}
                     </span>
-                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-800 shadow-sm">
+                    <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-200 shadow-sm">
                       {deviceCount > 0
                         ? `${deviceCount} contributeur${deviceCount > 1 ? "s" : ""}`
                         : "En attente des premiers invités"}
                     </span>
+                    <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-200 shadow-sm">
+                      {isCoffreOpen ? "Galerie ouverte" : "Galerie masquée"}
+                    </span>
                     <button
                       type="button"
                       onClick={() => setIsCoffreOpen((prev) => !prev)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-200"
+                      className="inline-flex items-center gap-2 rounded-lg border border-teal-500/60 bg-teal-500/20 px-3 py-2 text-sm font-semibold text-teal-100 shadow-sm transition-colors hover:bg-teal-500/30"
                     >
-                      <span aria-hidden>{isCoffreOpen ? "📖" : "🔒"}</span>
-                      <span>{isCoffreOpen ? "Galerie ouverte" : "Galerie masquée"}</span>
+                      <span aria-hidden>{galleryToggleIcon}</span>
+                      <span>{galleryToggleLabel}</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-[11px] text-amber-700">
+                <div className="flex items-center gap-2 text-[11px] text-slate-400">
                   <span className="inline-flex items-center gap-2">
                     {isRefreshing && (
-                      <span className="h-3 w-3 border-2 border-amber-700 border-t-transparent rounded-full animate-spin" />
+                      <span className="h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
                     )}
-                    <span className="text-amber-700">Rafraîchissement auto</span>
+                    <span className="text-slate-400">Rafraîchissement auto</span>
                   </span>
                 </div>
               </div>
@@ -935,9 +816,9 @@ const pin = params.pin;
                 }`}
               >
                 <div className="space-y-4 pt-2">
-                  <div className="rounded-xl border border-amber-200 bg-white/80 p-4 shadow-inner space-y-3">
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 shadow-inner space-y-3">
                     {expirationInfo.isExpired && (
-                      <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm">
+                      <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200 shadow-sm">
                         Cet événement est terminé. Vous pouvez toujours consulter et télécharger les photos du coffre.
                       </div>
                     )}
@@ -959,8 +840,8 @@ const pin = params.pin;
                           title="Ajoute des souvenirs en quelques clics. Max 20 fichiers • 10 Mo par photo • Formats JPG/PNG."
                           className={`inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold shadow-sm transition ${
                             uploading || expirationInfo.isExpired
-                              ? "bg-amber-200/80 text-amber-900 cursor-not-allowed border-amber-300"
-                              : "bg-emerald-500 text-emerald-950 border-emerald-600/50 hover:bg-emerald-400"
+                              ? "bg-slate-800 text-slate-400 cursor-not-allowed border-slate-700"
+                              : "bg-emerald-500/80 text-emerald-100 border-emerald-500/70 hover:bg-emerald-500"
                           }`}
                           disabled={uploading || expirationInfo.isExpired}
                         >
@@ -977,7 +858,7 @@ const pin = params.pin;
                           )}
                         </button>
                         {showUploadTooltip && (
-                          <div className="absolute left-1/2 top-full z-10 mt-2 w-max max-w-[260px] -translate-x-1/2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs text-emerald-900 shadow-lg">
+                          <div className="absolute left-1/2 top-full z-10 mt-2 w-max max-w-[260px] -translate-x-1/2 rounded-lg border border-emerald-500/40 bg-slate-950 px-3 py-2 text-xs text-emerald-100 shadow-lg">
                             Ajoute des souvenirs en quelques clics. Max 20 fichiers • 10 Mo par photo • Formats JPG/PNG.
                           </div>
                         )}
@@ -1008,13 +889,13 @@ const pin = params.pin;
                           disabled={downloadDisabled}
                           aria-disabled={downloadDisabled}
                           title={downloadTooltipLabel}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-500 px-4 py-3 text-sm font-semibold text-amber-950 shadow-sm transition-colors hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           <span aria-hidden>⬇️</span>
                           {downloading ? "Préparation du ZIP..." : downloadButtonLabel}
                         </button>
                         {showDownloadTooltip && (
-                          <div className="absolute left-1/2 top-full z-10 mt-2 w-max max-w-[240px] -translate-x-1/2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs text-amber-900 shadow-lg">
+                          <div className="absolute left-1/2 top-full z-10 mt-2 w-max max-w-[240px] -translate-x-1/2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-200 shadow-lg">
                             {downloadTooltipLabel}
                           </div>
                         )}
@@ -1037,18 +918,18 @@ const pin = params.pin;
                         }}
                         className={`inline-flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold shadow-sm transition-colors ${
                           selectionMode
-                            ? "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-                            : "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                            ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30"
+                            : "border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700"
                         }`}
                       >
-                        <span className="h-2.5 w-2.5 rounded-full border border-amber-300 bg-white shadow-inner" />
+                        <span className="h-2.5 w-2.5 rounded-full border border-slate-600 bg-slate-100 shadow-inner" />
                         {selectionMode ? "Mode sélection (actif)" : "Mode sélection"}
                       </button>
                     </div>
 
-                    <div className="text-[11px] text-amber-900/80 space-y-1">
+                    <div className="text-[11px] text-slate-300 space-y-1">
                       {uploadError && <p className="text-red-600">{uploadError}</p>}
-                      {uploadSuccess && <p className="text-emerald-700">{uploadSuccess}</p>}
+                      {uploadSuccess && <p className="text-emerald-300">{uploadSuccess}</p>}
                       {uploadInfo && (
                         <p>
                           {uploadInfo.processed}/{uploadInfo.total} fichiers traités...
@@ -1058,8 +939,8 @@ const pin = params.pin;
                   </div>
 
                   {selectionMode && (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50/90 px-4 py-3 shadow-sm transition-all">
-                      <p className="text-sm font-semibold text-emerald-900">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 shadow-sm transition-all">
+                      <p className="text-sm font-semibold text-emerald-100">
                         {selectedPhotos.length} photo(s) sélectionnée(s)
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -1077,14 +958,14 @@ const pin = params.pin;
                           type="button"
                           onClick={handleDownloadSelected}
                           disabled={selectedPhotos.length === 0 || downloading}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           {downloading ? "Préparation du ZIP..." : "Télécharger"}
                         </button>
                         <button
                           type="button"
                           onClick={closeSelectionMode}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm transition-colors hover:bg-amber-100"
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800"
                         >
                           Quitter
                         </button>
@@ -1092,7 +973,7 @@ const pin = params.pin;
                     </div>
                   )}
 
-                  <p className="text-[11px] text-amber-700">
+                  <p className="text-[11px] text-slate-400">
                     {isHost
                       ? "En tant qu'hôte, vous pouvez supprimer toutes les photos du coffre."
                       : "Vous pouvez supprimer uniquement vos photos. Seul l'hôte peut supprimer l'ensemble du coffre."}
@@ -1100,7 +981,7 @@ const pin = params.pin;
 
                   <section>
                     {photos.length === 0 ? (
-                      <p className="text-sm text-amber-700 text-center mb-4">
+                      <p className="text-sm text-slate-400 text-center mb-4">
                         Aucune photo pour l’instant. Ajoute la première ✨
                       </p>
                     ) : (
@@ -1124,10 +1005,10 @@ const pin = params.pin;
                           return (
                             <div
                               key={photo.path}
-                              className={`group relative flex flex-col rounded-lg border overflow-hidden bg-white/80 shadow-sm transition-all duration-200 ${
+                              className={`group relative flex flex-col rounded-lg border overflow-hidden bg-slate-950/40 shadow-sm transition-all duration-200 ${
                                 isSelected
                                   ? "border-emerald-400 scale-[1.01]"
-                                  : "border-amber-200 hover:border-emerald-400 hover:shadow-md"
+                                  : "border-slate-800 hover:border-emerald-400 hover:shadow-md"
                               }`}
                             >
                               <button
@@ -1161,16 +1042,16 @@ const pin = params.pin;
                               </button>
 
                               {isContestEnabled && (
-                                <div className="flex items-center justify-between border-t border-amber-100 bg-white/90 px-2 py-2 text-[11px] text-amber-900">
+                                <div className="flex items-center justify-between border-t border-slate-800 bg-slate-950/80 px-2 py-2 text-[11px] text-slate-200">
                                   <button
                                     type="button"
                                     onClick={() => handleToggleLike(photo)}
                                     disabled={likeDisabled}
                                     className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 font-semibold transition-colors ${
                                       likedByMe
-                                        ? "border-rose-200 bg-rose-100 text-rose-700"
-                                        : "border-amber-200 bg-amber-50 text-amber-900"
-                                    } ${likeDisabled ? "opacity-60 cursor-not-allowed" : "hover:bg-amber-100"}`}
+                                        ? "border-rose-400/40 bg-rose-500/20 text-rose-100"
+                                        : "border-slate-700 bg-slate-900 text-slate-100"
+                                    } ${likeDisabled ? "opacity-60 cursor-not-allowed" : "hover:bg-slate-800"}`}
                                   >
                                     <span aria-hidden>❤️</span>
                                     {isLikePending
@@ -1193,7 +1074,7 @@ const pin = params.pin;
                                     title="Supprimer cette photo de l’espace commun"
                                     onClick={() => handleDelete(photo)}
                                     disabled={deletingPath === photo.path}
-                                    className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white/90 px-2 py-1 text-[11px] font-semibold text-red-600 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center gap-1 rounded-full border border-red-500/40 bg-slate-950/90 px-2 py-1 text-[11px] font-semibold text-red-200 shadow-sm transition-colors hover:bg-red-500/10 disabled:opacity-60 disabled:cursor-not-allowed"
                                   >
                                     <span aria-hidden>🗑️</span>
                                     <span className="hidden sm:inline">
@@ -1238,7 +1119,113 @@ const pin = params.pin;
               </div>
             </section>
 
-            <p className="text-center text-sm text-amber-900 font-semibold">
+            {shareUrl && (
+              <section className="rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-5 shadow-md space-y-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-2 flex-1">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Partage de l’évènement</p>
+                    <p className="text-base font-semibold text-slate-50">Invitez votre groupe à rejoindre ce coffre.</p>
+                    <p className="text-sm text-slate-400">Copie le lien ou scanne le QR code pour partager rapidement.</p>
+                    <div className="mt-3 space-y-2">
+                      <div className="w-full overflow-hidden rounded-lg border border-slate-800 bg-slate-950/80 px-3 py-2.5 text-[12px] text-slate-100 shadow-inner">
+                        {shareUrl}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyLink}
+                        className="inline-flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-teal-400 shadow-sm"
+                      >
+                        📋 Copier le lien
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-center md:justify-end">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-inner">
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 mx-auto">
+                        <QRCode
+                          value={shareUrl}
+                          bgColor="transparent"
+                          fgColor="#e2e8f0"
+                          style={{ height: "100%", width: "100%" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {isContestEnabled && (
+              <section className="rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-5 shadow-md space-y-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Mode concours</p>
+                    <p className="text-base font-semibold text-slate-50">
+                      Votez pour vos photos préférées ❤️
+                    </p>
+                    <p className="text-sm text-slate-400">
+                      Chaque participant peut liker une photo une fois. Le classement se met à jour en direct.
+                    </p>
+                  </div>
+                  {contestEndsAt && (
+                    <div className="self-start">
+                      <ContestCountdown endsAt={contestEndsAt} />
+                    </div>
+                  )}
+                </div>
+
+                {contestLoading && (
+                  <p className="text-sm text-slate-400">Chargement du concours...</p>
+                )}
+                {contestError && (
+                  <p className="text-sm text-red-600">{contestError}</p>
+                )}
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-slate-100">Classement</p>
+                  {contestLeaderboard.length === 0 ? (
+                    <p className="text-sm text-slate-400">
+                      Aucun vote pour le moment. Soyez le premier à liker une photo !
+                    </p>
+                  ) : (
+                    <ol className="space-y-2">
+                      {contestLeaderboard.map((entry, index) => (
+                        <li
+                          key={entry.photoId}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950/80 px-3 py-2 text-sm text-slate-100"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-slate-100">
+                              {index + 1}
+                            </span>
+                            {entry.photo?.url ? (
+                              <img
+                                src={entry.photo.url}
+                                alt={entry.photo.name}
+                                className="h-10 w-10 rounded-md object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-800 text-xs text-slate-400">
+                                —
+                              </div>
+                            )}
+                            <span className="text-xs text-slate-300">
+                              {entry.photo?.name ?? "Photo"}
+                            </span>
+                          </div>
+                          <span className="text-sm font-semibold text-slate-100">
+                            {entry.count} vote{entry.count > 1 ? "s" : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              </section>
+            )}
+
+            <p className="text-center text-sm text-slate-200 font-semibold">
               Merci d’avoir partagé vos souvenirs ❤️ {hasPhotos && "— de nouvelles photos arrivent en continu !"}
             </p>
           </>
