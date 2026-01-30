@@ -19,3 +19,7 @@ __pycache__/
 # Logs
 *.log
 www/
+
+# generated analytics output
+analytics_output/*.csv
+
