@@ -249,7 +249,7 @@ const pin = params.pin;
 
   const refreshPhotos = async (
     evt: EventData,
-    _silent = false
+    silent = false
   ): Promise<void> => {
     try {
       if (!supabase) {
