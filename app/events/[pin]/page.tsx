@@ -56,6 +56,7 @@ const pin = params.pin;
   const [error, setError] = useState<string | null>(null);
 
   const [uploading, setUploading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [deletingSelected, setDeletingSelected] = useState(false);
@@ -320,6 +321,8 @@ const pin = params.pin;
       console.error("Erreur inattendue lors du chargement des photos", err);
       setError("Erreur lors du chargement des photos.");
       setPhotos([]);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
