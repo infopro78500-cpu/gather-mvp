@@ -848,7 +848,7 @@ const pin = params.pin;
                               </div>
                             )}
                             <span className="text-xs text-slate-300">
-                              {entry.photo?.name ?? "Photo"}
+                              {`Photo #${index + 1}`}
                             </span>
                           </div>
                           <span className="text-sm font-semibold text-slate-100">
