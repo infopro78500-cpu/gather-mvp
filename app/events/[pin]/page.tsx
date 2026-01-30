@@ -21,6 +21,8 @@ import { ContestCountdown } from "@/app/components/contest/ContestCountdown";
 const BUCKET_NAME = "event-photos";
 const MAX_FILES = 20; // max 20 fichiers à la fois
 const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
+const INITIAL_VISIBLE_COUNT = 8;
+const VISIBLE_INCREMENT = 8;
 
 type PhotoItem = Photo & {
   uploaderDeviceId?: string | null;
@@ -38,6 +40,37 @@ type ContestState = {
   isVotingClosed: boolean;
   likesByPhoto: Record<string, ContestLikeInfo>;
   leaderboard: Array<{ photoId: string; count: number }>;
+};
+
+const getFilenameTimestamp = (filename: string | null | undefined): number => {
+  if (!filename) return 0;
+  const match = filename.match(/__(\d+)/);
+  if (match) {
+    const timestamp = Number(match[1]);
+    if (Number.isFinite(timestamp)) {
+      return timestamp;
+    }
+  }
+  return 0;
+};
+
+const getFileSortValue = (file: {
+  name?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}): number => {
+  const nameTimestamp = getFilenameTimestamp(file.name ?? "");
+  if (nameTimestamp) {
+    return nameTimestamp;
+  }
+  const dateValue = file.created_at ?? file.updated_at ?? null;
+  if (dateValue) {
+    const parsed = Date.parse(dateValue);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return 0;
 };
 
 export default function EventPage() {
@@ -92,9 +125,24 @@ const pin = params.pin;
     processed: number;
     total: number;
   } | null>(null);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
 
   const photoCount = photos.length;
   const selectedCount = selectedPhotos.length;
+  const sortedPhotos = useMemo(
+    () =>
+      [...photos].sort((a, b) => {
+        const timestampDiff =
+          getFilenameTimestamp(b.name) - getFilenameTimestamp(a.name);
+        if (timestampDiff !== 0) return timestampDiff;
+        return b.name.localeCompare(a.name);
+      }),
+    [photos]
+  );
+  const visiblePhotos = useMemo(
+    () => sortedPhotos.slice(0, visibleCount),
+    [sortedPhotos, visibleCount]
+  );
   const deviceCount = useMemo(() => {
     const uniqueDeviceIds = new Set(
       photos
@@ -274,11 +322,16 @@ const pin = params.pin;
       }
 
       const safeFiles = files ?? [];
+      const sortedFiles = [...safeFiles].sort((a, b) => {
+        const timestampDiff = getFileSortValue(b) - getFileSortValue(a);
+        if (timestampDiff !== 0) return timestampDiff;
+        return (b.name ?? "").localeCompare(a.name ?? "");
+      });
       const shouldComputeContestIds = Boolean(evt.contest_enabled);
 
       const photosWithUrl = (
         await Promise.all(
-          safeFiles.map(async (file): Promise<PhotoItem | null> => {
+          sortedFiles.map(async (file): Promise<PhotoItem | null> => {
             if (!file) return null;
 
             const path = `${evt.id}/${file.name}`;
@@ -331,6 +384,10 @@ const pin = params.pin;
       refreshPhotos(event);
     }
   }, [event]);
+
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE_COUNT);
+  }, [event?.id]);
 
   // Auto-refresh de la galerie toutes les 8s. On nettoie l'interval au démontage pour éviter les fuites.
   useEffect(() => {
@@ -1100,7 +1157,7 @@ const pin = params.pin;
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                        {photos.map((photo) => {
+                        {visiblePhotos.map((photo) => {
                           const isSelected = selectedPhotos.includes(photo.path);
                           const likeInfo = photo.contestPhotoId
                             ? contestState?.likesByPhoto[photo.contestPhotoId]
@@ -1205,6 +1262,20 @@ const pin = params.pin;
                       </div>
                     )}
                   </section>
+
+                  {sortedPhotos.length > visibleCount && (
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setVisibleCount((prev) => prev + VISIBLE_INCREMENT)
+                        }
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800"
+                      >
+                        Afficher plus
+                      </button>
+                    </div>
+                  )}
 
                   {isLightboxOpen && selectedPhoto && (
                     <div
