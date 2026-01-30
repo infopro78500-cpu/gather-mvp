@@ -248,6 +248,9 @@ const pin = params.pin;
 
   const refreshPhotos = async (evt: EventData, silent = false): Promise<void> => {
     try {
+      if (!supabase) {
+        throw new Error("Supabase n'est pas configuré.");
+      }
       if (!silent) {
         setIsRefreshing(true);
       }
@@ -413,6 +416,9 @@ const pin = params.pin;
     }
 
     if (!files || files.length === 0 || !event) return;
+    if (!supabase) {
+      throw new Error("Supabase n'est pas configuré.");
+    }
 
     const filesArray = Array.from(files);
 
@@ -538,6 +544,9 @@ const pin = params.pin;
 
   const handleDelete = async (photo: PhotoItem): Promise<void> => {
     if (!event) return;
+    if (!supabase) {
+      throw new Error("Supabase n'est pas configuré.");
+    }
 
     if (!canDeletePhoto(photo)) return;
 
@@ -578,6 +587,9 @@ const pin = params.pin;
 
   const handleDeleteSelected = async (): Promise<void> => {
     if (!event || selectedPhotos.length === 0 || deletingSelected) return;
+    if (!supabase) {
+      throw new Error("Supabase n'est pas configuré.");
+    }
 
     const allowedPaths = selectedPhotos.filter((path) => {
       const photo = photos.find((p) => p.path === path);
