@@ -60,7 +60,8 @@ const pin = params.pin;
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [deletingSelected, setDeletingSelected] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showAdvancedActions, setShowAdvancedActions] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   const [isCoffreOpen, setIsCoffreOpen] = useState(false);
   const [origin, setOrigin] = useState<string | null>(null);
@@ -246,11 +247,11 @@ const pin = params.pin;
     };
   }, [contestState?.contestEnabled, contestState?.contestEndsAt]);
 
-  const refreshPhotos = async (evt: EventData, silent = false): Promise<void> => {
+  const refreshPhotos = async (
+    evt: EventData,
+    _silent = false
+  ): Promise<void> => {
     try {
-      if (!silent) {
-        setIsRefreshing(true);
-      }
       const { data: files, error: listError } = await supabase.storage
         .from(BUCKET_NAME)
         .list(evt.id, {
@@ -313,8 +314,6 @@ const pin = params.pin;
       console.error("Erreur inattendue lors du chargement des photos", err);
       setError("Erreur lors du chargement des photos.");
       setPhotos([]);
-    } finally {
-      setIsRefreshing(false);
     }
   };
 
@@ -527,6 +526,14 @@ const pin = params.pin;
   const closeSelectionMode = () => {
     setSelectionMode(false);
     setSelectedPhotos([]);
+  };
+
+  const toggleAdvancedActions = () => {
+    if (selectionMode) {
+      setShowAdvancedActions(true);
+      return;
+    }
+    setShowAdvancedActions((prev) => !prev);
   };
 
   const showTooltipTemporarily = (
@@ -760,37 +767,97 @@ const pin = params.pin;
                 <div className="space-y-1">
                   <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Évènement</p>
                   <p className="text-lg font-semibold text-slate-50">{event.name || "Photos"}</p>
-                  <p className="text-sm text-slate-400">Ce coffre regroupe toutes les photos de votre groupe.</p>
+                  <p className="text-sm text-slate-400">
+                    Toutes les photos du groupe sont réunies ici.
+                  </p>
                 </div>
                 <EventHeader event={event} />
               </div>
             </section>
 
+            {isContestEnabled && (
+              <section className="rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-5 shadow-md space-y-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Mode concours</p>
+                    <p className="text-base font-semibold text-slate-50">
+                      Votez pour vos photos préférées ❤️
+                    </p>
+                    <p className="text-sm text-slate-400">
+                      Chaque participant peut liker une photo une fois. Le classement se met à jour en direct.
+                    </p>
+                  </div>
+                  {contestEndsAt && (
+                    <div className="self-start">
+                      <ContestCountdown endsAt={contestEndsAt} />
+                    </div>
+                  )}
+                </div>
+
+                {contestLoading && (
+                  <p className="text-sm text-slate-400">Chargement du concours...</p>
+                )}
+                {contestError && (
+                  <p className="text-sm text-red-600">{contestError}</p>
+                )}
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-slate-100">Classement</p>
+                  {contestLeaderboard.length === 0 ? (
+                    <p className="text-sm text-slate-400">
+                      Aucun vote pour le moment. Soyez le premier à liker une photo !
+                    </p>
+                  ) : (
+                    <ol className="space-y-2">
+                      {contestLeaderboard.map((entry, index) => (
+                        <li
+                          key={entry.photoId}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950/80 px-3 py-2 text-sm text-slate-100"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-slate-100">
+                              {index + 1}
+                            </span>
+                            {entry.photo?.url ? (
+                              <img
+                                src={entry.photo.url}
+                                alt={entry.photo.name}
+                                className="h-10 w-10 rounded-md object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-800 text-xs text-slate-400">
+                                —
+                              </div>
+                            )}
+                            <span className="text-xs text-slate-300">
+                              {entry.photo?.name ?? "Photo"}
+                            </span>
+                          </div>
+                          <span className="text-sm font-semibold text-slate-100">
+                            {entry.count} vote{entry.count > 1 ? "s" : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              </section>
+            )}
+
             <section className="rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-5 shadow-md space-y-4">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="text-base font-semibold text-slate-50">Galerie photo commune</p>
+                    <p className="text-base font-semibold text-slate-50">Photos du groupe</p>
                     <p className="text-sm text-slate-400">
-                      Cliquez pour afficher ou masquer la galerie.
+                      Retrouvez et ajoutez les souvenirs partagés par tous.
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2">
-                    <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-200 shadow-sm">
-                      {photoCount} photo{photoCount > 1 ? "s" : ""}
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-200 shadow-sm">
-                      {deviceCount > 0
-                        ? `${deviceCount} contributeur${deviceCount > 1 ? "s" : ""}`
-                        : "En attente des premiers invités"}
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-200 shadow-sm">
-                      {isCoffreOpen ? "Galerie ouverte" : "Galerie masquée"}
-                    </span>
                     <button
                       type="button"
                       onClick={() => setIsCoffreOpen((prev) => !prev)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-teal-500/60 bg-teal-500/20 px-3 py-2 text-sm font-semibold text-teal-100 shadow-sm transition-colors hover:bg-teal-500/30"
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-600 px-3 py-2 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-900/60"
                     >
                       <span aria-hidden>{galleryToggleIcon}</span>
                       <span>{galleryToggleLabel}</span>
@@ -798,12 +865,12 @@ const pin = params.pin;
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                  <span className="inline-flex items-center gap-2">
-                    {isRefreshing && (
-                      <span className="h-3 w-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-                    )}
-                    <span className="text-slate-400">Rafraîchissement auto</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-200 shadow-sm">
+                    {photoCount} photo{photoCount > 1 ? "s" : ""}
+                  </span>
+                  <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-200 shadow-sm">
+                    {isCoffreOpen ? "Galerie ouverte" : "Galerie masquée"}
                   </span>
                 </div>
               </div>
@@ -823,7 +890,7 @@ const pin = params.pin;
                       </div>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="relative">
                         <button
                           type="button"
@@ -872,59 +939,11 @@ const pin = params.pin;
                           disabled={uploading || expirationInfo.isExpired}
                         />
                       </div>
-
-                      <div className="relative">
-                        <button
-                          type="button"
-                          aria-label={downloadButtonLabel}
-                          onClick={() => {
-                            showTooltipTemporarily(setShowDownloadTooltip);
-                            void handleDownload();
-                          }}
-                          onMouseEnter={() => setShowDownloadTooltip(true)}
-                          onMouseLeave={() => setShowDownloadTooltip(false)}
-                          onFocus={() => setShowDownloadTooltip(true)}
-                          onBlur={() => setShowDownloadTooltip(false)}
-                          onTouchStart={() => showTooltipTemporarily(setShowDownloadTooltip)}
-                          disabled={downloadDisabled}
-                          aria-disabled={downloadDisabled}
-                          title={downloadTooltipLabel}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          <span aria-hidden>⬇️</span>
-                          {downloading ? "Préparation du ZIP..." : downloadButtonLabel}
-                        </button>
-                        {showDownloadTooltip && (
-                          <div className="absolute left-1/2 top-full z-10 mt-2 w-max max-w-[240px] -translate-x-1/2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-200 shadow-lg">
-                            {downloadTooltipLabel}
-                          </div>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        aria-label={
-                          selectionMode
-                            ? "Désactiver le mode sélection"
-                            : "Activer le mode sélection"
-                        }
-                        aria-pressed={selectionMode}
-                        onClick={() => {
-                          if (selectionMode) {
-                            closeSelectionMode();
-                          } else {
-                            setSelectionMode(true);
-                          }
-                        }}
-                        className={`inline-flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold shadow-sm transition-colors ${
-                          selectionMode
-                            ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30"
-                            : "border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700"
-                        }`}
-                      >
-                        <span className="h-2.5 w-2.5 rounded-full border border-slate-600 bg-slate-100 shadow-inner" />
-                        {selectionMode ? "Mode sélection (actif)" : "Mode sélection"}
-                      </button>
+                      <p className="text-[11px] text-slate-400">
+                        {deviceCount > 0
+                          ? `${deviceCount} contributeur${deviceCount > 1 ? "s" : ""} actifs`
+                          : "En attente des premiers invités"}
+                      </p>
                     </div>
 
                     <div className="text-[11px] text-slate-300 space-y-1">
@@ -936,48 +955,125 @@ const pin = params.pin;
                         </p>
                       )}
                     </div>
-                  </div>
 
-                  {selectionMode && (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 shadow-sm transition-all">
-                      <p className="text-sm font-semibold text-emerald-100">
-                        {selectedPhotos.length} photo(s) sélectionnée(s)
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={handleDeleteSelected}
-                          disabled={selectedPhotos.length === 0 || deletingSelected}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          {deletingSelected
-                            ? "Suppression en cours..."
-                            : `Supprimer ${selectedPhotos.length || "0"} photo(s)`}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleDownloadSelected}
-                          disabled={selectedPhotos.length === 0 || downloading}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          {downloading ? "Préparation du ZIP..." : "Télécharger"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={closeSelectionMode}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800"
-                        >
-                          Quitter
-                        </button>
-                      </div>
+                    <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+                      <button
+                        type="button"
+                        onClick={toggleAdvancedActions}
+                        className="flex w-full items-center justify-between text-xs font-semibold text-slate-200"
+                        aria-expanded={showAdvancedActions}
+                      >
+                        <span>Actions avancées</span>
+                        <span aria-hidden className="text-sm">
+                          {showAdvancedActions ? "−" : "+"}
+                        </span>
+                      </button>
+                      {showAdvancedActions && (
+                        <div className="mt-3 space-y-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="relative">
+                              <button
+                                type="button"
+                                aria-label={downloadButtonLabel}
+                                onClick={() => {
+                                  showTooltipTemporarily(setShowDownloadTooltip);
+                                  void handleDownload();
+                                }}
+                                onMouseEnter={() => setShowDownloadTooltip(true)}
+                                onMouseLeave={() => setShowDownloadTooltip(false)}
+                                onFocus={() => setShowDownloadTooltip(true)}
+                                onBlur={() => setShowDownloadTooltip(false)}
+                                onTouchStart={() =>
+                                  showTooltipTemporarily(setShowDownloadTooltip)
+                                }
+                                disabled={downloadDisabled}
+                                aria-disabled={downloadDisabled}
+                                title={downloadTooltipLabel}
+                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                              >
+                                <span aria-hidden>⬇️</span>
+                                {downloading ? "Préparation du ZIP..." : downloadButtonLabel}
+                              </button>
+                              {showDownloadTooltip && (
+                                <div className="absolute left-1/2 top-full z-10 mt-2 w-max max-w-[240px] -translate-x-1/2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-200 shadow-lg">
+                                  {downloadTooltipLabel}
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              aria-label={
+                                selectionMode
+                                  ? "Désactiver le mode sélection"
+                                  : "Activer le mode sélection"
+                              }
+                              aria-pressed={selectionMode}
+                              onClick={() => {
+                                if (selectionMode) {
+                                  closeSelectionMode();
+                                } else {
+                                  setSelectionMode(true);
+                                  setShowAdvancedActions(true);
+                                }
+                              }}
+                              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-semibold shadow-sm transition-colors ${
+                                selectionMode
+                                  ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30"
+                                  : "border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                              }`}
+                            >
+                              <span className="h-2.5 w-2.5 rounded-full border border-slate-600 bg-slate-100 shadow-inner" />
+                              {selectionMode ? "Mode sélection (actif)" : "Mode sélection"}
+                            </button>
+                          </div>
+
+                          {selectionMode && (
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 shadow-sm transition-all">
+                              <p className="text-sm font-semibold text-emerald-100">
+                                {selectedPhotos.length} photo(s) sélectionnée(s)
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={handleDeleteSelected}
+                                  disabled={
+                                    selectedPhotos.length === 0 || deletingSelected
+                                  }
+                                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                  {deletingSelected
+                                    ? "Suppression en cours..."
+                                    : `Supprimer ${selectedPhotos.length || "0"} photo(s)`}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleDownloadSelected}
+                                  disabled={selectedPhotos.length === 0 || downloading}
+                                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                  {downloading ? "Préparation du ZIP..." : "Télécharger"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={closeSelectionMode}
+                                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800"
+                                >
+                                  Quitter
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          <p className="text-[11px] text-slate-400">
+                            {isHost
+                              ? "Info hôte : vous pouvez supprimer toutes les photos du groupe."
+                              : "Vous pouvez supprimer uniquement vos photos. L'hôte gère l'ensemble du coffre."}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  )}
-
-                  <p className="text-[11px] text-slate-400">
-                    {isHost
-                      ? "En tant qu'hôte, vous pouvez supprimer toutes les photos du coffre."
-                      : "Vous pouvez supprimer uniquement vos photos. Seul l'hôte peut supprimer l'ensemble du coffre."}
-                  </p>
+                  </div>
 
                   <section>
                     {photos.length === 0 ? (
@@ -1141,8 +1237,8 @@ const pin = params.pin;
                   </div>
 
                   <div className="flex items-center justify-center md:justify-end">
-                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-inner">
-                      <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 mx-auto">
+                    <div className="flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-inner">
+                      <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-28 md:h-28 mx-auto">
                         <QRCode
                           value={shareUrl}
                           bgColor="transparent"
@@ -1150,79 +1246,50 @@ const pin = params.pin;
                           style={{ height: "100%", width: "100%" }}
                         />
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsQrModalOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800"
+                      >
+                        Agrandir le QR
+                      </button>
                     </div>
                   </div>
                 </div>
               </section>
             )}
 
-            {isContestEnabled && (
-              <section className="rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-5 shadow-md space-y-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Mode concours</p>
-                    <p className="text-base font-semibold text-slate-50">
-                      Votez pour vos photos préférées ❤️
-                    </p>
-                    <p className="text-sm text-slate-400">
-                      Chaque participant peut liker une photo une fois. Le classement se met à jour en direct.
-                    </p>
+            {isQrModalOpen && shareUrl && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
+                onClick={() => setIsQrModalOpen(false)}
+              >
+                <div
+                  className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-950/95 p-5 shadow-2xl"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-slate-100">QR code</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsQrModalOpen(false)}
+                      className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                    >
+                      Fermer
+                    </button>
                   </div>
-                  {contestEndsAt && (
-                    <div className="self-start">
-                      <ContestCountdown endsAt={contestEndsAt} />
+                  <div className="mt-4 flex items-center justify-center">
+                    <div className="h-56 w-56 sm:h-64 sm:w-64">
+                      <QRCode
+                        value={shareUrl}
+                        bgColor="transparent"
+                        fgColor="#e2e8f0"
+                        style={{ height: "100%", width: "100%" }}
+                      />
                     </div>
-                  )}
+                  </div>
                 </div>
-
-                {contestLoading && (
-                  <p className="text-sm text-slate-400">Chargement du concours...</p>
-                )}
-                {contestError && (
-                  <p className="text-sm text-red-600">{contestError}</p>
-                )}
-
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-slate-100">Classement</p>
-                  {contestLeaderboard.length === 0 ? (
-                    <p className="text-sm text-slate-400">
-                      Aucun vote pour le moment. Soyez le premier à liker une photo !
-                    </p>
-                  ) : (
-                    <ol className="space-y-2">
-                      {contestLeaderboard.map((entry, index) => (
-                        <li
-                          key={entry.photoId}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950/80 px-3 py-2 text-sm text-slate-100"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-slate-100">
-                              {index + 1}
-                            </span>
-                            {entry.photo?.url ? (
-                              <img
-                                src={entry.photo.url}
-                                alt={entry.photo.name}
-                                className="h-10 w-10 rounded-md object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-800 text-xs text-slate-400">
-                                —
-                              </div>
-                            )}
-                            <span className="text-xs text-slate-300">
-                              {entry.photo?.name ?? "Photo"}
-                            </span>
-                          </div>
-                          <span className="text-sm font-semibold text-slate-100">
-                            {entry.count} vote{entry.count > 1 ? "s" : ""}
-                          </span>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </div>
-              </section>
+              </div>
             )}
 
             <p className="text-center text-sm text-slate-200 font-semibold">
