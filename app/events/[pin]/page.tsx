@@ -39,6 +39,7 @@ type ContestLikeInfo = {
 
 type ContestState = {
   contestEnabled: boolean;
+  contestEligible: boolean;
   contestEndsAt: string | null;
   isVotingClosed: boolean;
   likesByPhoto: Record<string, ContestLikeInfo>;
