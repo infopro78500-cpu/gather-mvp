@@ -25,6 +25,8 @@ const BUCKET_NAME = "event-photos";
 const MAX_FILES = 20; // max 20 fichiers à la fois
 const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
 const isChristmasMode = true;
+const DEFAULT_VISIBLE = 3;
+const MAX_VISIBLE = 10;
 
 type PhotoItem = Photo & {
   uploaderDeviceId?: string | null;
@@ -82,6 +84,7 @@ const pin = params.pin;
   const [contestLoading, setContestLoading] = useState(false);
   const [contestError, setContestError] = useState<string | null>(null);
   const [likeLoadingPhotoId, setLikeLoadingPhotoId] = useState<string | null>(null);
+  const [showMoreRanking, setShowMoreRanking] = useState(false);
 
   const [showUploadTooltip, setShowUploadTooltip] = useState(false);
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
@@ -112,6 +115,10 @@ const pin = params.pin;
       photo: photos.find((photo) => photo.contestPhotoId === entry.photoId) ?? null,
     }));
   }, [contestState?.contestEnabled, contestState?.leaderboard, photos]);
+  const visibleContestLeaderboard = contestLeaderboard.slice(
+    0,
+    showMoreRanking ? MAX_VISIBLE : DEFAULT_VISIBLE
+  );
   const hasPhotos = photoCount > 0;
   const isContestEnabled = Boolean(event?.contest_enabled);
   const contestEndsAt = contestState?.contestEndsAt ?? event?.contest_ends_at ?? null;
@@ -847,37 +854,52 @@ const pin = params.pin;
                       Aucun vote pour le moment. Soyez le premier à liker une photo !
                     </p>
                   ) : (
-                    <ol className="space-y-2">
-                      {contestLeaderboard.map((entry, index) => (
-                        <li
-                          key={entry.photoId}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-sm text-amber-900"
+                    <div className="space-y-3">
+                      <ol className="space-y-2">
+                        {visibleContestLeaderboard.map((entry, index) => (
+                          <li
+                            key={entry.photoId}
+                            className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-sm text-amber-900"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-900">
+                                {index + 1}
+                              </span>
+                              {entry.photo?.url ? (
+                                <img
+                                  src={entry.photo.url}
+                                  alt={entry.photo.name}
+                                  className="h-10 w-10 rounded-md object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-100 text-xs text-amber-700">
+                                  —
+                                </div>
+                              )}
+                              <span className="text-xs text-amber-800">
+                                {entry.photo?.name ?? "Photo"}
+                              </span>
+                            </div>
+                            <span className="text-sm font-semibold text-amber-900">
+                              {entry.count} vote{entry.count > 1 ? "s" : ""}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
+                      {contestLeaderboard.length > DEFAULT_VISIBLE && (
+                        <button
+                          type="button"
+                          onClick={() => setShowMoreRanking((prev) => !prev)}
+                          className="text-xs font-semibold text-amber-700 transition-colors hover:text-amber-900"
                         >
-                          <div className="flex items-center gap-3">
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-900">
-                              {index + 1}
-                            </span>
-                            {entry.photo?.url ? (
-                              <img
-                                src={entry.photo.url}
-                                alt={entry.photo.name}
-                                className="h-10 w-10 rounded-md object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-100 text-xs text-amber-700">
-                                —
-                              </div>
-                            )}
-                            <span className="text-xs text-amber-800">
-                              {entry.photo?.name ?? "Photo"}
-                            </span>
-                          </div>
-                          <span className="text-sm font-semibold text-amber-900">
-                            {entry.count} vote{entry.count > 1 ? "s" : ""}
-                          </span>
-                        </li>
-                      ))}
-                    </ol>
+                          {showMoreRanking
+                            ? "Afficher moins"
+                            : contestLeaderboard.length <= MAX_VISIBLE
+                              ? `Afficher plus (${contestLeaderboard.length - DEFAULT_VISIBLE})`
+                              : `Afficher plus (${MAX_VISIBLE - DEFAULT_VISIBLE})`}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </section>
