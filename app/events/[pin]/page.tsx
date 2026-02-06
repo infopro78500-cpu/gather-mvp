@@ -27,6 +27,7 @@ const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
 const isChristmasMode = true;
 const DEFAULT_VISIBLE = 3;
 const MAX_VISIBLE = 10;
+const PODIUM_MEDALS = ["🥇", "🥈", "🥉"];
 
 type PhotoItem = Photo & {
   uploaderDeviceId?: string | null;
@@ -123,6 +124,7 @@ const pin = params.pin;
       ),
     [contestLeaderboard, showMoreRanking]
   );
+  const podiumEntries = contestLeaderboard.slice(0, PODIUM_MEDALS.length);
   const hasPhotos = photoCount > 0;
   const isContestEnabled = Boolean(event?.contest_enabled);
   const contestEndsAt = contestState?.contestEndsAt ?? event?.contest_ends_at ?? null;
@@ -859,6 +861,45 @@ const pin = params.pin;
                     </p>
                   ) : (
                     <div className="space-y-3">
+                      {podiumEntries.length > 0 && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 shadow-inner">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+                              Podium
+                            </p>
+                            <span className="text-[11px] text-amber-600">Top 3</span>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {podiumEntries.map((entry, index) => (
+                              <div
+                                key={`podium-${entry.photoId}`}
+                                className="flex min-w-[150px] flex-1 items-center gap-2 rounded-lg border border-amber-200 bg-white/90 px-2 py-2 text-xs text-amber-900 shadow-sm"
+                              >
+                                <span className="text-lg">{PODIUM_MEDALS[index]}</span>
+                                {entry.photo?.url ? (
+                                  <img
+                                    src={entry.photo.url}
+                                    alt={entry.photo.name}
+                                    className="h-9 w-9 rounded-md object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-amber-100 text-[10px] text-amber-700">
+                                    —
+                                  </div>
+                                )}
+                                <div className="min-w-0">
+                                  <p className="truncate font-semibold text-amber-900">
+                                    {entry.photo?.name ?? `Photo #${index + 1}`}
+                                  </p>
+                                  <p className="text-[11px] text-amber-700">
+                                    {entry.count} vote{entry.count > 1 ? "s" : ""}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <ol className="space-y-2">
                         {visibleContestLeaderboard.map((entry, index) => (
                           <li
