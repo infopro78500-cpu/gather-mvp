@@ -648,6 +648,17 @@ const pin = params.pin;
     uploadInputRef.current?.click();
   };
 
+  const handleHeaderAddPhotos = () => {
+    if (!isCoffreOpen) {
+      setIsCoffreOpen(true);
+      window.setTimeout(() => {
+        openUploadDialog();
+      }, 0);
+      return;
+    }
+    openUploadDialog();
+  };
+
   const closeSelectionMode = () => {
     setSelectionMode(false);
     setSelectedPhotos([]);
@@ -1049,6 +1060,20 @@ const pin = params.pin;
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2">
+                    <button
+                      type="button"
+                      aria-label="Ajouter des photos"
+                      onClick={handleHeaderAddPhotos}
+                      disabled={uploading || expirationInfo.isExpired}
+                      className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold shadow-sm transition ${
+                        uploading || expirationInfo.isExpired
+                          ? "bg-slate-800 text-slate-400 cursor-not-allowed border-slate-700"
+                          : "bg-emerald-500/80 text-emerald-100 border-emerald-500/70 hover:bg-emerald-500"
+                      }`}
+                    >
+                      <span aria-hidden>📤</span>
+                      Ajouter des photos
+                    </button>
                     <button
                       type="button"
                       onClick={() => setIsCoffreOpen((prev) => !prev)}
