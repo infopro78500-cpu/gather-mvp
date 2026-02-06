@@ -23,6 +23,9 @@ const MAX_FILES = 20; // max 20 fichiers à la fois
 const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
 const INITIAL_VISIBLE_COUNT = 8;
 const VISIBLE_INCREMENT = 8;
+const DEFAULT_VISIBLE = 3;
+const MAX_VISIBLE = 10;
+const PODIUM_MEDALS = ["🥇", "🥈", "🥉"];
 
 type PhotoItem = Photo & {
   uploaderDeviceId?: string | null;
@@ -115,6 +118,7 @@ const pin = params.pin;
   const [contestLoading, setContestLoading] = useState(false);
   const [contestError, setContestError] = useState<string | null>(null);
   const [likeLoadingPhotoId, setLikeLoadingPhotoId] = useState<string | null>(null);
+  const [showMoreRanking, setShowMoreRanking] = useState(false);
 
   const [showUploadTooltip, setShowUploadTooltip] = useState(false);
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
@@ -160,6 +164,15 @@ const pin = params.pin;
       photo: photos.find((photo) => photo.contestPhotoId === entry.photoId) ?? null,
     }));
   }, [contestState?.contestEnabled, contestState?.leaderboard, photos]);
+  const visibleContestLeaderboard = useMemo(
+    () =>
+      contestLeaderboard.slice(
+        0,
+        showMoreRanking ? MAX_VISIBLE : DEFAULT_VISIBLE
+      ),
+    [contestLeaderboard, showMoreRanking]
+  );
+  const podiumEntries = contestLeaderboard.slice(0, PODIUM_MEDALS.length);
   const hasPhotos = photoCount > 0;
   const isContestEnabled = Boolean(event?.contest_enabled);
   const contestEndsAt = contestState?.contestEndsAt ?? event?.contest_ends_at ?? null;
@@ -896,10 +909,10 @@ const pin = params.pin;
                       {contestLeaderboard.map((entry, index) => (
                         <li
                           key={entry.photoId}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950/80 px-3 py-2 text-sm text-slate-100"
+                          className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-sm text-amber-900"
                         >
                           <div className="flex items-center gap-3">
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-slate-100">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-900">
                               {index + 1}
                             </span>
                             {entry.photo?.url ? (
@@ -909,15 +922,15 @@ const pin = params.pin;
                                 className="h-10 w-10 rounded-md object-cover"
                               />
                             ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-800 text-xs text-slate-400">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-100 text-xs text-amber-700">
                                 —
                               </div>
                             )}
-                            <span className="text-xs text-slate-300">
-                              {`Photo #${index + 1}`}
+                            <span className="text-xs text-amber-800">
+                              {entry.photo?.name ?? "Photo"}
                             </span>
                           </div>
-                          <span className="text-sm font-semibold text-slate-100">
+                          <span className="text-sm font-semibold text-amber-900">
                             {entry.count} vote{entry.count > 1 ? "s" : ""}
                           </span>
                         </li>
