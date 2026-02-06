@@ -1,6 +1,11 @@
+import { Suspense } from "react";
+
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { LocalScanIA } from "@/app/components/LocalScanIA";
 import { getAdminContestStats } from "@/lib/adminStats";
+import StorageKpiSection, {
+  StorageKpiSectionSkeleton,
+} from "@/app/admin/components/StorageKpiSection";
 
 type Lead = {
   id: string;
@@ -95,6 +100,10 @@ export default async function AdminPage() {
             <p className="text-2xl font-bold text-emerald-400">{betas}</p>
           </div>
         </section>
+
+        <Suspense fallback={<StorageKpiSectionSkeleton />}>
+          <StorageKpiSection />
+        </Suspense>
 
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">KPI concours</h2>
