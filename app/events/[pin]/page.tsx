@@ -76,6 +76,44 @@ const getFileSortValue = (file: {
   return 0;
 };
 
+type ContestLeaderboardEntry = {
+  photoId: string;
+  count: number;
+  photo: PhotoItem | null;
+};
+
+const looksLikeStorageFilename = (filename: string): boolean => {
+  const trimmed = filename.trim();
+  if (!trimmed) return false;
+  const hasUuid =
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(
+      trimmed
+    );
+  const hasLongHash = /[0-9a-f]{20,}/i.test(trimmed);
+  const hasTimestamp = /__?\d{10,}/.test(trimmed) || /\d{13}/.test(trimmed);
+  const hasImageExtension = /\.(jpe?g|png)$/i.test(trimmed);
+  const isVeryLong = trimmed.length > 32;
+  return (
+    hasUuid ||
+    hasLongHash ||
+    hasTimestamp ||
+    (hasImageExtension && isVeryLong)
+  );
+};
+
+const formatPhotoLabel = (
+  entry: ContestLeaderboardEntry | null | undefined,
+  index: number
+): string => {
+  const fallback = `Photo #${index + 1}`;
+  const name = entry?.photo?.name?.trim();
+  if (!name) return fallback;
+  if (looksLikeStorageFilename(name)) return fallback;
+  const maxLength = 28;
+  if (name.length <= maxLength) return name;
+  return `${name.slice(0, maxLength - 1)}…`;
+};
+
 export default function EventPage() {
 const params = useParams<{ pin: string }>();
 
@@ -157,7 +195,7 @@ const pin = params.pin;
     return uniqueDeviceIds.size;
   }, [photos]);
 
-  const contestLeaderboard = useMemo(() => {
+  const contestLeaderboard = useMemo<ContestLeaderboardEntry[]>(() => {
     if (!contestState?.contestEnabled) return [];
     return contestState.leaderboard.map((entry) => ({
       ...entry,
@@ -905,37 +943,92 @@ const pin = params.pin;
                       Aucun vote pour le moment. Soyez le premier à liker une photo !
                     </p>
                   ) : (
-                    <ol className="space-y-2">
-                      {contestLeaderboard.map((entry, index) => (
-                        <li
-                          key={entry.photoId}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-sm text-amber-900"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-900">
-                              {index + 1}
-                            </span>
-                            {entry.photo?.url ? (
-                              <img
-                                src={entry.photo.url}
-                                alt={entry.photo.name}
-                                className="h-10 w-10 rounded-md object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-100 text-xs text-amber-700">
-                                —
+                    <div className="space-y-3">
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {PODIUM_MEDALS.map((medal, index) => {
+                          const entry = podiumEntries[index] ?? null;
+                          const label = formatPhotoLabel(entry, index);
+                          return (
+                            <div
+                              key={medal}
+                              className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-950/70 px-3 py-2 text-xs text-slate-200"
+                            >
+                              <span className="text-lg" aria-hidden>
+                                {medal}
+                              </span>
+                              {entry?.photo?.url ? (
+                                <img
+                                  src={entry.photo.url}
+                                  alt={label}
+                                  className="h-10 w-10 rounded-md object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-800 text-xs text-slate-400">
+                                  —
+                                </div>
+                              )}
+                              <div className="min-w-0 space-y-0.5">
+                                <p className="truncate text-xs font-semibold text-slate-100">
+                                  {label}
+                                </p>
+                                <p className="text-[11px] text-slate-400">
+                                  {entry
+                                    ? `${entry.count} vote${entry.count > 1 ? "s" : ""}`
+                                    : "En attente"}
+                                </p>
                               </div>
-                            )}
-                            <span className="text-xs text-amber-800">
-                              {entry.photo?.name ?? "Photo"}
-                            </span>
-                          </div>
-                          <span className="text-sm font-semibold text-amber-900">
-                            {entry.count} vote{entry.count > 1 ? "s" : ""}
-                          </span>
-                        </li>
-                      ))}
-                    </ol>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <ol className="space-y-2">
+                        {visibleContestLeaderboard.map((entry, index) => {
+                          const label = formatPhotoLabel(entry, index);
+                          return (
+                            <li
+                              key={entry.photoId}
+                              className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950/70 px-3 py-2 text-sm text-slate-100"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-xs font-semibold text-slate-200">
+                                  {index + 1}
+                                </span>
+                                {entry.photo?.url ? (
+                                  <img
+                                    src={entry.photo.url}
+                                    alt={label}
+                                    className="h-10 w-10 rounded-md object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-800 text-xs text-slate-400">
+                                    —
+                                  </div>
+                                )}
+                                <span className="truncate text-xs text-slate-200">
+                                  {label}
+                                </span>
+                              </div>
+                              <span className="text-sm font-semibold text-slate-100">
+                                {entry.count} vote{entry.count > 1 ? "s" : ""}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ol>
+
+                      {contestLeaderboard.length > DEFAULT_VISIBLE && (
+                        <div className="flex justify-center">
+                          <button
+                            type="button"
+                            onClick={() => setShowMoreRanking((prev) => !prev)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800"
+                          >
+                            {showMoreRanking ? "Afficher moins" : "Afficher plus"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </section>
