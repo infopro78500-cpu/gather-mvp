@@ -115,9 +115,13 @@ const pin = params.pin;
       photo: photos.find((photo) => photo.contestPhotoId === entry.photoId) ?? null,
     }));
   }, [contestState?.contestEnabled, contestState?.leaderboard, photos]);
-  const visibleContestLeaderboard = contestLeaderboard.slice(
-    0,
-    showMoreRanking ? MAX_VISIBLE : DEFAULT_VISIBLE
+  const visibleContestLeaderboard = useMemo(
+    () =>
+      contestLeaderboard.slice(
+        0,
+        showMoreRanking ? MAX_VISIBLE : DEFAULT_VISIBLE
+      ),
+    [contestLeaderboard, showMoreRanking]
   );
   const hasPhotos = photoCount > 0;
   const isContestEnabled = Boolean(event?.contest_enabled);
