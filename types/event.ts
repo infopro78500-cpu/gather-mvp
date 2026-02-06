@@ -7,5 +7,7 @@ export type EventData = {
   expires_at?: string | null;
   lifetime_days?: number | null;
   contest_enabled?: boolean;
+  contest_enabled_at?: string | null;
+  contest_enabled_by?: string | null;
   contest_ends_at?: string | null;
 };

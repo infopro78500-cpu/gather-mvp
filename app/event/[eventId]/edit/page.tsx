@@ -68,7 +68,7 @@ export default function EditEventPage() {
       const { data, error: fetchError } = await supabase
         .from("events")
         .select(
-          "id, name, pin, host_device_id, host_user_id, expires_at, lifetime_days, contest_enabled, contest_ends_at"
+          "id, name, pin, host_device_id, host_user_id, expires_at, lifetime_days, contest_enabled, contest_enabled_at, contest_ends_at"
         )
         .eq("id", eventId)
         .maybeSingle<EventData>();
@@ -111,6 +111,11 @@ export default function EditEventPage() {
     setContestMessage(null);
 
     const contestEndsAtIso = toIsoString(contestEndsAt);
+    const shouldSetContestEnabledAt =
+      contestEnabled && !event.contest_enabled_at;
+    const contestEnabledAtIso = shouldSetContestEnabledAt
+      ? new Date().toISOString()
+      : event.contest_enabled_at ?? null;
 
     if (contestEndsAt && !contestEndsAtIso) {
       setContestError("Date de fin invalide.");
@@ -118,12 +123,18 @@ export default function EditEventPage() {
       return;
     }
 
+    const updatePayload: Partial<EventData> = {
+      contest_enabled: contestEnabled,
+      contest_ends_at: contestEndsAtIso,
+    };
+
+    if (shouldSetContestEnabledAt) {
+      updatePayload.contest_enabled_at = contestEnabledAtIso;
+    }
+
     const { error: updateError } = await supabase
       .from("events")
-      .update({
-        contest_enabled: contestEnabled,
-        contest_ends_at: contestEndsAtIso,
-      })
+      .update(updatePayload)
       .eq("id", event.id);
 
     if (updateError) {
@@ -138,6 +149,7 @@ export default function EditEventPage() {
         ? {
             ...prev,
             contest_enabled: contestEnabled,
+            contest_enabled_at: contestEnabledAtIso,
             contest_ends_at: contestEndsAtIso,
           }
         : prev

@@ -1,5 +1,6 @@
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { LocalScanIA } from "@/app/components/LocalScanIA";
+import { getAdminContestStats } from "@/lib/adminStats";
 
 type Lead = {
   id: string;
@@ -56,6 +57,16 @@ export default async function AdminPage() {
   const ambassadors = leads.filter((l) => l.interest_ambassador).length;
   const betas = leads.filter((l) => l.interest_beta_tester).length;
 
+  const { data: contestStats, error: contestStatsError } =
+    await getAdminContestStats(supabase);
+
+  if (contestStatsError) {
+    console.error("Erreur lors du chargement des KPI concours:", contestStatsError);
+  }
+
+  const formatStat = (value?: number | null) =>
+    typeof value === "number" ? value.toLocaleString("fr-FR") : "—";
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50 px-6 py-10 flex justify-center">
       <div className="w-full max-w-6xl space-y-8">
@@ -82,6 +93,44 @@ export default async function AdminPage() {
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Bêta-testeurs</p>
             <p className="text-2xl font-bold text-emerald-400">{betas}</p>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">KPI concours</h2>
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                Events total
+              </p>
+              <p className="text-2xl font-bold text-emerald-400">
+                {formatStat(contestStats?.eventsTotal)}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                Events concours activé
+              </p>
+              <p className="text-2xl font-bold text-emerald-400">
+                {formatStat(contestStats?.eventsContestEnabled)}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                Events avec votes (sur activés)
+              </p>
+              <p className="text-2xl font-bold text-emerald-400">
+                {formatStat(contestStats?.eventsWithVotes)}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                Likes total (sur activés)
+              </p>
+              <p className="text-2xl font-bold text-emerald-400">
+                {formatStat(contestStats?.likesTotal)}
+              </p>
+            </div>
           </div>
         </section>
 

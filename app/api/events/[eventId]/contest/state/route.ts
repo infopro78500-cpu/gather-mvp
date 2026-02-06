@@ -12,6 +12,7 @@ type LikeRow = {
 
 type ContestStateResponse = {
   contestEnabled: boolean;
+  contestEligible: boolean;
   contestEndsAt: string | null;
   isVotingClosed: boolean;
   likesByPhoto: Record<string, { count: number; likedByMe: boolean }>;
@@ -43,7 +44,7 @@ export async function GET(
 
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, contest_enabled, contest_ends_at")
+    .select("id, contest_enabled, contest_enabled_at, contest_ends_at")
     .eq("id", eventId)
     .maybeSingle();
 
@@ -57,6 +58,7 @@ export async function GET(
   }
 
   const contestEnabled = Boolean(event.contest_enabled);
+  const contestEligible = Boolean(event.contest_enabled_at);
   const contestEndsAt = event.contest_ends_at ?? null;
   const isVotingClosed =
     contestEndsAt !== null && new Date(contestEndsAt).getTime() <= Date.now();
@@ -64,6 +66,7 @@ export async function GET(
   if (!contestEnabled) {
     const payload: ContestStateResponse = {
       contestEnabled: false,
+      contestEligible,
       contestEndsAt,
       isVotingClosed,
       likesByPhoto: {},
@@ -105,6 +108,7 @@ export async function GET(
 
   const payload: ContestStateResponse = {
     contestEnabled,
+    contestEligible,
     contestEndsAt,
     isVotingClosed,
     likesByPhoto,
