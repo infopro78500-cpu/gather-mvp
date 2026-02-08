@@ -7,6 +7,7 @@ import type {
   ProductEventKpi,
   ProductGlobalKpis,
   ProductTimeseriesDaily,
+  VercelEventVisibilityRow,
   VercelWebMetricDaily,
 } from "@/app/lib/analyticsProduct";
 import type { StorageEventKpi, StorageGlobalKpis } from "@/lib/storageKpis";
@@ -35,6 +36,8 @@ type ProductKpiDashboardProps = {
   events: ProductEventKpi[];
   timeseries: ProductTimeseriesDaily[];
   vercelMetrics: VercelWebMetricDaily[];
+  vercelEventVisibility: Record<"30d" | "90d", VercelEventVisibilityRow[]>;
+  vercelEventVisibilityErrors: Record<"30d" | "90d", string | null>;
   storageGlobalKpis: StorageGlobalKpis | null;
   storageEvents: StorageEventKpi[];
   storageError: string | null;
@@ -178,6 +181,12 @@ const getContestFilterLabel = (filter: ContestFilter) => {
 const getRangeLabel = (value: number) => `${value} jours`;
 
 const hasValue = (value: number | null | undefined) => (value ?? 0) > 0;
+
+const getVisibilityStatus = (visits: number) => {
+  if (visits === 0) return "Jamais consulté";
+  if (visits < 5) return "Peu consulté";
+  return "Consulté";
+};
 
 const isActiveDay = (entry: ProductTimeseriesDaily) =>
   [
@@ -342,6 +351,8 @@ export default function ProductKpiDashboard({
   events,
   timeseries,
   vercelMetrics,
+  vercelEventVisibility,
+  vercelEventVisibilityErrors,
   storageGlobalKpis,
   storageEvents,
   storageError,
@@ -426,6 +437,14 @@ export default function ProductKpiDashboard({
   }, [globalKpis, rangeDays]);
 
   const latestVercelMetric = sortedVercelMetrics[0];
+
+  const selectedVisibilityKey = `${rangeDays}d` as "30d" | "90d";
+  const visibilityRows = vercelEventVisibility[selectedVisibilityKey] ?? [];
+  const visibilityError = vercelEventVisibilityErrors[selectedVisibilityKey] ?? null;
+
+  const sortedVisibilityRows = useMemo(() => {
+    return [...visibilityRows].sort((a, b) => b.visits - a.visits);
+  }, [visibilityRows]);
 
   const activeDaysCount = activeTimeseries.length;
 
@@ -1037,6 +1056,55 @@ export default function ProductKpiDashboard({
               configuration des métriques côté Vercel.
             </div>
           )}
+
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h4 className="text-sm font-semibold text-slate-200">
+                Visibilité des événements (Trafic Vercel)
+              </h4>
+            </div>
+            <p className="text-xs text-slate-500">
+              Basé sur les consultations des pages /events/:id
+            </p>
+            {visibilityError && (
+              <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
+                Trafic Vercel indisponible pour la visibilité des événements.
+              </div>
+            )}
+            {sortedVisibilityRows.length > 0 ? (
+              <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-900">
+                    <tr className="text-left text-slate-400">
+                      <th className="px-4 py-2">Événement</th>
+                      <th className="px-4 py-2">Visites</th>
+                      <th className="px-4 py-2">Dernière visite</th>
+                      <th className="px-4 py-2">Visibilité</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedVisibilityRows.map((row) => (
+                      <tr
+                        key={row.event_id}
+                        className="border-t border-slate-800 text-slate-300 odd:bg-slate-950/40"
+                      >
+                        <td className="px-4 py-2 font-medium text-slate-100">
+                          {row.event_name || "—"}
+                        </td>
+                        <td className="px-4 py-2">{formatCount(row.visits)}</td>
+                        <td className="px-4 py-2">{formatDate(row.last_visit)}</td>
+                        <td className="px-4 py-2">{getVisibilityStatus(row.visits)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-400">
+                Aucun événement consulté sur cette période.
+              </div>
+            )}
+          </div>
         </div>
       </CollapsibleSection>
     </div>
