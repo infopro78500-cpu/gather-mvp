@@ -46,6 +46,7 @@ type CollapsibleSectionProps = {
   initiallyOpen?: boolean;
   collapsible?: boolean;
   actions?: ReactNode;
+  badge?: ReactNode;
   children: ReactNode;
 };
 
@@ -178,7 +179,7 @@ const getRangeLabel = (value: number) => `${value} jours`;
 
 const hasValue = (value: number | null | undefined) => (value ?? 0) > 0;
 
-const isDayActive = (entry: ProductTimeseriesDaily) =>
+const isActiveDay = (entry: ProductTimeseriesDaily) =>
   [
     entry.events,
     entry.members,
@@ -187,8 +188,13 @@ const isDayActive = (entry: ProductTimeseriesDaily) =>
     entry.contests_enabled,
   ].some(hasValue);
 
-const isEventActive = (event: ProductEventKpi) =>
+const hasActivityEvent = (event: ProductEventKpi) =>
   [event.photos, event.members, event.votes].some(hasValue);
+
+const getDefaultSort = (): SortState => ({
+  key: "last_photo_at",
+  direction: "desc",
+});
 
 function CollapsibleSection({
   title,
@@ -196,6 +202,7 @@ function CollapsibleSection({
   initiallyOpen = false,
   collapsible = true,
   actions,
+  badge,
   children,
 }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(initiallyOpen);
@@ -204,7 +211,7 @@ function CollapsibleSection({
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-1">
           {collapsible ? (
             <button
               type="button"
@@ -213,14 +220,24 @@ function CollapsibleSection({
               aria-expanded={isExpanded}
             >
               <span className="text-base font-semibold">{title}</span>
+              {badge && (
+                <span className="rounded-full border border-slate-700 bg-slate-900/60 px-2 py-0.5 text-[11px] text-slate-200">
+                  {badge}
+                </span>
+              )}
               <span className="text-xs text-slate-400">{isExpanded ? "—" : "+"}</span>
             </button>
           ) : (
-            <h3 className="text-base font-semibold">{title}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-semibold">{title}</h3>
+              {badge && (
+                <span className="rounded-full border border-slate-700 bg-slate-900/60 px-2 py-0.5 text-[11px] text-slate-200">
+                  {badge}
+                </span>
+              )}
+            </div>
           )}
-          {description && (
-            <span className="text-xs text-slate-500">{description}</span>
-          )}
+          {description && <span className="text-xs text-slate-500">{description}</span>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
@@ -236,12 +253,17 @@ function StorageSection({
 }: StorageSectionProps) {
   const [showAllStorageRows, setShowAllStorageRows] = useState(false);
   const storageWarning = (storageGlobalKpis?.share_outside_events ?? 0) > 0.5;
+  const storageBadge =
+    typeof storageGlobalKpis?.total_files === "number"
+      ? `${formatCount(storageGlobalKpis.total_files)} fichiers`
+      : "—";
 
   return (
     <CollapsibleSection
       title="Stockage"
       description="Répartition du volume et points d’attention"
       initiallyOpen={false}
+      badge={storageBadge}
     >
       {storageError && (
         <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
@@ -251,8 +273,8 @@ function StorageSection({
 
       {storageWarning && (
         <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
-          Plus de 50% du stockage est actuellement en dehors des events. Priorisez
-          une action de nettoyage ou de rattachement.
+          Plus de 50% du stockage est actuellement en dehors des événements.
+          Priorisez une action de nettoyage ou de rattachement.
         </div>
       )}
 
@@ -275,7 +297,7 @@ function StorageSection({
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Volume hors events (MB)
+            Volume hors événements (MB)
           </p>
           <p className="text-2xl font-bold text-emerald-400">
             {formatMb(storageGlobalKpis?.total_mb_outside_events)}
@@ -283,7 +305,7 @@ function StorageSection({
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Part hors events (%)
+            Part hors événements (%)
           </p>
           <p className="text-2xl font-bold text-emerald-400">
             {formatPercent(storageGlobalKpis?.share_outside_events)}
@@ -293,20 +315,22 @@ function StorageSection({
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="text-sm font-semibold text-slate-200">Storage par event</h4>
-          {storageEvents.length > 7 && (
+          <h4 className="text-sm font-semibold text-slate-200">
+            Stockage par événement
+          </h4>
+          {storageEvents.length > 10 && (
             <button
               type="button"
               onClick={() => setShowAllStorageRows((current) => !current)}
               className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-xs text-slate-300 transition hover:border-emerald-500/60"
             >
-              {showAllStorageRows ? "Limiter à 7 lignes" : "Voir toute la liste"}
+              {showAllStorageRows ? "Limiter à 10 lignes" : "Voir plus"}
             </button>
           )}
         </div>
         <StorageKpiTable
           rows={storageEvents}
-          maxRows={showAllStorageRows ? undefined : 7}
+          maxRows={showAllStorageRows ? undefined : 10}
         />
       </div>
     </CollapsibleSection>
@@ -324,15 +348,13 @@ export default function ProductKpiDashboard({
 }: ProductKpiDashboardProps) {
   const [contestFilter, setContestFilter] = useState<ContestFilter>("all");
   const [rangeDays, setRangeDays] = useState<30 | 90>(30);
-  const [sort, setSort] = useState<SortState>({
-    key: "last_photo_at",
-    direction: "desc",
-  });
+  const [sort, setSort] = useState<SortState>(getDefaultSort);
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [showAllEventRows, setShowAllEventRows] = useState(false);
-  const [showInactiveDays, setShowInactiveDays] = useState(false);
-  const [showAllDays, setShowAllDays] = useState(false);
+  const [showZeroDays, setShowZeroDays] = useState(false);
+  const [showMoreDays, setShowMoreDays] = useState(false);
   const [showAllVercelDays, setShowAllVercelDays] = useState(false);
+  const [showDataQualityDetails, setShowDataQualityDetails] = useState(false);
 
   const filteredEvents = useMemo(() => {
     if (contestFilter === "contest") {
@@ -350,14 +372,14 @@ export default function ProductKpiDashboard({
 
   const activeEvents = useMemo(() => {
     return [...filteredEvents]
-      .filter((event) => isEventActive(event))
+      .filter((event) => hasActivityEvent(event))
       .sort(compareEventLastActivityDesc);
   }, [filteredEvents]);
 
   const inactiveEventsCount = sortedEvents.length - activeEvents.length;
 
   const visibleEvents = showAllEvents ? sortedEvents : activeEvents;
-  const limitedEvents = showAllEventRows ? visibleEvents : visibleEvents.slice(0, 5);
+  const limitedEvents = showAllEventRows ? visibleEvents : visibleEvents.slice(0, 10);
 
   const filteredTimeseries = useMemo(() => {
     const start = new Date();
@@ -367,14 +389,13 @@ export default function ProductKpiDashboard({
   }, [rangeDays, timeseries]);
 
   const activeTimeseries = useMemo(
-    () => filteredTimeseries.filter((entry) => isDayActive(entry)),
+    () => filteredTimeseries.filter((entry) => isActiveDay(entry)),
     [filteredTimeseries]
   );
 
-  const visibleTimeseries = showInactiveDays ? filteredTimeseries : activeTimeseries;
-  const limitedTimeseries = showAllDays
-    ? visibleTimeseries.slice(-14)
-    : visibleTimeseries.slice(-7);
+  const visibleTimeseries = showZeroDays ? filteredTimeseries : activeTimeseries;
+  const maxTrendRows = showMoreDays ? 30 : 14;
+  const limitedTimeseries = visibleTimeseries.slice(-maxTrendRows);
 
   const filteredVercelMetrics = useMemo(() => {
     const start = new Date();
@@ -421,9 +442,11 @@ export default function ProductKpiDashboard({
       return `Sur les ${rangeDays} derniers jours, aucune activité n’a été enregistrée.`;
     }
 
-    return `Sur ${rangeDays} jours : ${formatCount(eventsCount)} events, ${formatCount(
-      photosCount
-    )} photos, ${formatCount(membersCount)} membres, ${formatCount(
+    return `Sur ${rangeDays} jours : ${formatCount(
+      eventsCount
+    )} événements, ${formatCount(photosCount)} photos, ${formatCount(
+      membersCount
+    )} membres, ${formatCount(
       votesCount
     )} votes, activité sur ${activeDaysCount} jour${
       activeDaysCount > 1 ? "s" : ""
@@ -442,6 +465,10 @@ export default function ProductKpiDashboard({
     [events]
   );
 
+  const hasSupabaseKpiData = globalKpis.length > 0 && timeseries.length > 0;
+  const supabaseKpiStatus = hasSupabaseKpiData ? "OK" : "partiel";
+  const vercelTrafficMissing = vercelMetrics.length === 0;
+
   const handleSort = (key: SortKey) => {
     setSort((current) => {
       if (current.key === key) {
@@ -458,6 +485,7 @@ export default function ProductKpiDashboard({
         description="Synthèse sur la période sélectionnée"
         initiallyOpen
         collapsible={false}
+        badge={`${rangeDays} jours`}
         actions={
           <div className="flex items-center gap-2 text-xs">
             {[30, 90].map((value) => (
@@ -480,7 +508,7 @@ export default function ProductKpiDashboard({
         <div className="grid gap-4 md:grid-cols-5">
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Events ({rangeDays}j)
+              Événements ({rangeDays}j)
             </p>
             <p className="text-2xl font-bold text-emerald-400">
               {formatCount(selectedGlobal?.events)}
@@ -523,12 +551,54 @@ export default function ProductKpiDashboard({
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
           {activitySummary}
         </div>
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                Qualité des données
+              </span>
+              <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-100">
+                Supabase KPI: {supabaseKpiStatus}
+              </span>
+              {vercelTrafficMissing && (
+                <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-200">
+                  Trafic (Vercel): indisponible
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowDataQualityDetails((current) => !current)}
+              className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-xs text-slate-200 transition hover:border-emerald-500/60"
+            >
+              {showDataQualityDetails ? "Masquer les détails" : "Détails"}
+            </button>
+          </div>
+          {showDataQualityDetails && (
+            <div className="mt-3 space-y-2 text-xs text-slate-400">
+              {!hasSupabaseKpiData && (
+                <p>
+                  Les indicateurs KPI Supabase semblent incomplets pour cette période.
+                </p>
+              )}
+              {vercelTrafficMissing && (
+                <p>Les métriques de trafic Vercel ne sont pas disponibles.</p>
+              )}
+              {storageError && <p>{storageError}</p>}
+              {!storageError && hasSupabaseKpiData && !vercelTrafficMissing && (
+                <p>Aucune anomalie détectée sur les sources disponibles.</p>
+              )}
+            </div>
+          )}
+        </div>
       </CollapsibleSection>
 
       <CollapsibleSection
         title="Activité récente"
-        description="Events avec photos, membres ou votes"
+        description="Événements avec photos, membres ou votes"
         initiallyOpen
+        badge={`${activeEvents.length} actifs`}
         actions={
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {(["all", "contest", "non_contest"] as const).map((filter) => (
@@ -555,8 +625,8 @@ export default function ProductKpiDashboard({
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
           <span>
             {showAllEvents
-              ? `${sortedEvents.length} events affichés (${inactiveEventsCount} inactifs inclus).`
-              : `${activeEvents.length} events actifs détectés sur ${sortedEvents.length}.`}
+              ? `${sortedEvents.length} événements affichés (${inactiveEventsCount} inactifs inclus).`
+              : `${activeEvents.length} événements actifs détectés sur ${sortedEvents.length}.`}
           </span>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -567,15 +637,17 @@ export default function ProductKpiDashboard({
               }}
               className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-slate-200 transition hover:border-emerald-500/60"
             >
-              {showAllEvents ? "Masquer les events inactifs" : "Afficher tous les événements"}
+              {showAllEvents
+                ? "Masquer les événements inactifs"
+                : "Inclure les événements inactifs"}
             </button>
-            {visibleEvents.length > 5 && (
+            {visibleEvents.length > 10 && (
               <button
                 type="button"
                 onClick={() => setShowAllEventRows((current) => !current)}
                 className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-slate-200 transition hover:border-emerald-500/60"
               >
-                {showAllEventRows ? "Limiter à 5 lignes" : "Voir plus"}
+                {showAllEventRows ? "Limiter à 10 lignes" : "Afficher tous les événements"}
               </button>
             )}
           </div>
@@ -591,7 +663,8 @@ export default function ProductKpiDashboard({
                     onClick={() => handleSort("event_name")}
                     className="flex items-center gap-2 text-left"
                   >
-                    Event <span className="text-xs">{getSortLabel(sort, "event_name")}</span>
+                    Événement{" "}
+                    <span className="text-xs">{getSortLabel(sort, "event_name")}</span>
                   </button>
                 </th>
                 <th className="px-4 py-2">Concours</th>
@@ -679,8 +752,8 @@ export default function ProductKpiDashboard({
                 <tr>
                   <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
                     {showAllEvents
-                      ? "Aucun event pour ce filtre."
-                      : "Aucun event actif détecté sur cette période."}
+                      ? "Aucun événement pour ce filtre."
+                      : "Aucun événement actif détecté sur cette période."}
                   </td>
                 </tr>
               )}
@@ -688,10 +761,10 @@ export default function ProductKpiDashboard({
           </table>
         </div>
 
-        {!showAllEventRows && visibleEvents.length > 5 && (
+        {!showAllEventRows && visibleEvents.length > 10 && (
           <p className="text-xs text-slate-500">
-            Les 5 derniers events sont affichés. Utilisez “Voir plus” pour afficher la
-            liste complète.
+            Les 10 derniers événements sont affichés. Utilisez “Afficher tous les
+            événements” pour afficher la liste complète.
           </p>
         )}
       </CollapsibleSection>
@@ -700,28 +773,29 @@ export default function ProductKpiDashboard({
         title="Analyse & tendances"
         description="Lecture rapide de la dynamique quotidienne"
         initiallyOpen={false}
+        badge={`${visibleTimeseries.length} jours`}
         actions={
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <button
               type="button"
-              onClick={() => setShowInactiveDays((current) => !current)}
+              onClick={() => setShowZeroDays((current) => !current)}
               className={`rounded-full border px-3 py-1 transition ${
-                showInactiveDays
+                showZeroDays
                   ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-100"
                   : "border-slate-700 bg-slate-900/40 text-slate-300"
               }`}
             >
-              {showInactiveDays
+              {showZeroDays
                 ? "Masquer les jours sans activité"
                 : "Inclure les jours sans activité"}
             </button>
-            {visibleTimeseries.length > 7 && (
+            {visibleTimeseries.length > 14 && (
               <button
                 type="button"
-                onClick={() => setShowAllDays((current) => !current)}
+                onClick={() => setShowMoreDays((current) => !current)}
                 className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-slate-300 transition hover:border-emerald-500/60"
               >
-                {showAllDays ? "Limiter à 7 jours" : "Voir 14 jours"}
+                {showMoreDays ? "Limiter à 14 jours" : "Voir plus"}
               </button>
             )}
           </div>
@@ -735,9 +809,9 @@ export default function ProductKpiDashboard({
         ) : (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
-              <span>Tendance quotidienne (max. 14 jours)</span>
-              {!showAllDays && visibleTimeseries.length > 7 && (
-                <span>Affichage des 7 derniers jours.</span>
+              <span>Tendance quotidienne (max. {maxTrendRows} jours)</span>
+              {!showMoreDays && visibleTimeseries.length > 14 && (
+                <span>Affichage des 14 derniers jours.</span>
               )}
             </div>
             <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60">
@@ -745,7 +819,7 @@ export default function ProductKpiDashboard({
                 <thead className="bg-slate-900">
                   <tr className="text-left text-slate-400">
                     <th className="px-4 py-2">Jour</th>
-                    <th className="px-4 py-2">Events</th>
+                    <th className="px-4 py-2">Événements</th>
                     <th className="px-4 py-2">Membres</th>
                     <th className="px-4 py-2">Photos</th>
                     <th className="px-4 py-2">Votes</th>
@@ -798,18 +872,25 @@ export default function ProductKpiDashboard({
         )}
       </CollapsibleSection>
 
+      <StorageSection
+        storageGlobalKpis={storageGlobalKpis}
+        storageEvents={storageEvents}
+        storageError={storageError}
+      />
+
       {hasContestEvents && (
         <CollapsibleSection
           title="Concours"
           description="Zoom sur la performance des événements concours"
           initiallyOpen={false}
+          badge={formatCount(selectedGlobal?.contest_events)}
         >
           <div className="grid gap-4 md:grid-cols-4">
             {[
               {
-                label: `Events concours (${rangeDays}j)`,
+                label: `Événements concours (${rangeDays}j)`,
                 value: selectedGlobal?.contest_events,
-                empty: "Aucun event concours sur la période.",
+                empty: "Aucun événement concours sur la période.",
               },
               {
                 label: `Photos concours (${rangeDays}j)`,
@@ -847,20 +928,30 @@ export default function ProductKpiDashboard({
         </CollapsibleSection>
       )}
 
-      <StorageSection
-        storageGlobalKpis={storageGlobalKpis}
-        storageEvents={storageEvents}
-        storageError={storageError}
-      />
+      <CollapsibleSection
+        title="Outils"
+        description="Actions administratives rapides"
+        initiallyOpen={false}
+      >
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+            Détection de doublons & IA
+          </p>
+          <p className="mt-2 text-sm text-slate-300">
+            Aucun signal IA ou détection de doublons n’est disponible dans cette vue
+            pour le moment.
+          </p>
+        </div>
+      </CollapsibleSection>
 
       <CollapsibleSection
         title="Technique & infrastructure"
         description="Données avancées et signaux techniques"
         initiallyOpen={false}
+        badge={sortedVercelMetrics.length > 0 ? "Vercel" : "Alerte"}
       >
         <div className="space-y-4">
-
-          {sortedVercelMetrics.length > 0 && (
+          {sortedVercelMetrics.length > 0 ? (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h4 className="text-sm font-semibold text-slate-200">Trafic (Vercel)</h4>
@@ -940,17 +1031,12 @@ export default function ProductKpiDashboard({
                 </table>
               </div>
             </div>
+          ) : (
+            <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
+              Aucun trafic Vercel disponible pour cette période. Vérifiez la
+              configuration des métriques côté Vercel.
+            </div>
           )}
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Détection de doublons & IA
-            </p>
-            <p className="mt-2 text-sm text-slate-300">
-              Aucun signal IA ou détection de doublons n’est disponible dans cette
-              vue pour le moment.
-            </p>
-          </div>
         </div>
       </CollapsibleSection>
     </div>
