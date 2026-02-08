@@ -103,18 +103,38 @@ const getSortValue = (row: ProductEventKpi, key: SortKey) => {
   }
 };
 
+const getEventLastActivity = (event: ProductEventKpi) => {
+  const lastPhotoTime = event.last_photo_at
+    ? new Date(event.last_photo_at).getTime()
+    : null;
+  if (lastPhotoTime != null && !Number.isNaN(lastPhotoTime)) {
+    return lastPhotoTime;
+  }
+  const createdTime = event.created_at ? new Date(event.created_at).getTime() : null;
+  return createdTime != null && !Number.isNaN(createdTime) ? createdTime : null;
+};
+
+const compareEventLastActivityDesc = (a: ProductEventKpi, b: ProductEventKpi) => {
+  const activityA = getEventLastActivity(a);
+  const activityB = getEventLastActivity(b);
+  if (activityA == null && activityB == null) return 0;
+  if (activityA == null) return 1;
+  if (activityB == null) return -1;
+  return activityB - activityA;
+};
+
 const compareRows = (a: ProductEventKpi, b: ProductEventKpi, sort: SortState) => {
+  if (sort.key === "last_photo_at") {
+    const dateA = getEventLastActivity(a);
+    const dateB = getEventLastActivity(b);
+    if (dateA == null && dateB == null) return 0;
+    if (dateA == null) return 1;
+    if (dateB == null) return -1;
+    return sort.direction === "asc" ? dateA - dateB : dateB - dateA;
+  }
   const valueA = getSortValue(a, sort.key);
   const valueB = getSortValue(b, sort.key);
-
-  let comparison = 0;
-  if (sort.key === "last_photo_at") {
-    const dateA = valueA ? new Date(valueA as string).getTime() : null;
-    const dateB = valueB ? new Date(valueB as string).getTime() : null;
-    comparison = compareNullable(dateA, dateB);
-  } else {
-    comparison = compareNullable(valueA, valueB);
-  }
+  const comparison = compareNullable(valueA, valueB);
 
   return sort.direction === "asc" ? comparison : comparison * -1;
 };
@@ -139,7 +159,7 @@ const getRangeLabel = (value: number) => `${value} jours`;
 
 const hasValue = (value: number | null | undefined) => (value ?? 0) > 0;
 
-const hasEntryActivity = (entry: ProductTimeseriesDaily) =>
+const isDayActive = (entry: ProductTimeseriesDaily) =>
   [
     entry.events,
     entry.members,
@@ -148,8 +168,9 @@ const hasEntryActivity = (entry: ProductTimeseriesDaily) =>
     entry.contests_enabled,
   ].some(hasValue);
 
-const hasEventActivity = (event: ProductEventKpi) =>
-  [event.photos, event.members, event.votes].some(hasValue);
+const isEventActive = (event: ProductEventKpi) =>
+  [event.photos, event.members, event.votes].some(hasValue) ||
+  event.last_photo_at != null;
 
 function CollapsibleSection({
   title,
@@ -203,7 +224,7 @@ export default function ProductKpiDashboard({
     direction: "desc",
   });
   const [showAllEvents, setShowAllEvents] = useState(false);
-  const [showZeroDays, setShowZeroDays] = useState(false);
+  const [showInactiveDays, setShowInactiveDays] = useState(false);
   const [showAllDays, setShowAllDays] = useState(false);
   const [showAllVercelDays, setShowAllVercelDays] = useState(false);
 
@@ -221,10 +242,11 @@ export default function ProductKpiDashboard({
     return [...filteredEvents].sort((a, b) => compareRows(a, b, sort));
   }, [filteredEvents, sort]);
 
-  const activeEvents = useMemo(
-    () => sortedEvents.filter((event) => hasEventActivity(event)),
-    [sortedEvents]
-  );
+  const activeEvents = useMemo(() => {
+    return [...filteredEvents]
+      .filter((event) => isEventActive(event))
+      .sort(compareEventLastActivityDesc);
+  }, [filteredEvents]);
 
   const inactiveEventsCount = sortedEvents.length - activeEvents.length;
 
@@ -239,11 +261,11 @@ export default function ProductKpiDashboard({
   }, [rangeDays, timeseries]);
 
   const activeTimeseries = useMemo(
-    () => filteredTimeseries.filter((entry) => hasEntryActivity(entry)),
+    () => filteredTimeseries.filter((entry) => isDayActive(entry)),
     [filteredTimeseries]
   );
 
-  const visibleTimeseries = showZeroDays ? filteredTimeseries : activeTimeseries;
+  const visibleTimeseries = showInactiveDays ? filteredTimeseries : activeTimeseries;
   const limitedTimeseries = showAllDays
     ? visibleTimeseries
     : visibleTimeseries.slice(-10);
@@ -526,22 +548,26 @@ export default function ProductKpiDashboard({
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <button
               type="button"
-              onClick={() => setShowZeroDays((current) => !current)}
+              onClick={() => setShowInactiveDays((current) => !current)}
               className={`rounded-full border px-3 py-1 transition ${
-                showZeroDays
+                showInactiveDays
                   ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-100"
                   : "border-slate-700 bg-slate-900/40 text-slate-300"
               }`}
             >
-              {showZeroDays ? "Masquer les jours à zéro" : "Afficher les jours à zéro"}
+              {showInactiveDays
+                ? "Masquer les jours sans activité"
+                : "Afficher les jours sans activité"}
             </button>
-            <button
-              type="button"
-              onClick={() => setShowAllDays((current) => !current)}
-              className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-slate-300 transition hover:border-emerald-500/60"
-            >
-              {showAllDays ? "Limiter aux 10 derniers jours" : "Afficher toute la période"}
-            </button>
+            {visibleTimeseries.length > 10 && (
+              <button
+                type="button"
+                onClick={() => setShowAllDays((current) => !current)}
+                className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-slate-300 transition hover:border-emerald-500/60"
+              >
+                {showAllDays ? "Limiter aux 10 derniers jours" : "Voir plus"}
+              </button>
+            )}
           </div>
         }
       >
