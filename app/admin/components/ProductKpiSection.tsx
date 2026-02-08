@@ -5,6 +5,8 @@ import {
   getProductTimeseriesDaily,
   getVercelWebMetricsDaily,
 } from "@/app/lib/analyticsProduct";
+import { getStorageGlobalKpis, getStorageKpisByEvent } from "@/lib/storageKpis";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 export function ProductKpiSectionSkeleton() {
   return (
@@ -24,6 +26,8 @@ export function ProductKpiSectionSkeleton() {
 }
 
 export default async function ProductKpiSection() {
+  const supabase = getSupabaseClient();
+
   const [
     { data: globalKpis, error: globalError },
     { data: timeseries, error: timeseriesError },
@@ -35,6 +39,22 @@ export default async function ProductKpiSection() {
     getProductEventKpis({ filter: "all", window: "90d" }),
     getVercelWebMetricsDaily(90),
   ]);
+
+  const [
+    { data: storageGlobalKpis, error: storageGlobalError },
+    { data: storageEvents, error: storageEventsError },
+  ] = supabase
+    ? await Promise.all([
+        getStorageGlobalKpis(supabase),
+        getStorageKpisByEvent(supabase),
+      ])
+    : [
+        {
+          data: null,
+          error: "Supabase client indisponible pour les KPI storage.",
+        },
+        { data: [], error: "Supabase client indisponible pour les KPI storage." },
+      ];
 
   const errorMessages = [
     globalError ? "Global" : null,
@@ -58,6 +78,9 @@ export default async function ProductKpiSection() {
         events={eventKpis ?? []}
         timeseries={timeseries ?? []}
         vercelMetrics={vercelMetrics ?? []}
+        storageGlobalKpis={storageGlobalKpis}
+        storageEvents={storageEvents ?? []}
+        storageError={storageGlobalError ?? storageEventsError}
       />
     </section>
   );

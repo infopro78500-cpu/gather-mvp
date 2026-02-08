@@ -9,6 +9,9 @@ import type {
   ProductTimeseriesDaily,
   VercelWebMetricDaily,
 } from "@/app/lib/analyticsProduct";
+import type { StorageEventKpi, StorageGlobalKpis } from "@/lib/storageKpis";
+
+import StorageKpiTable from "./StorageKpiTable";
 
 type ContestFilter = "all" | "contest" | "non_contest";
 
@@ -32,6 +35,9 @@ type ProductKpiDashboardProps = {
   events: ProductEventKpi[];
   timeseries: ProductTimeseriesDaily[];
   vercelMetrics: VercelWebMetricDaily[];
+  storageGlobalKpis: StorageGlobalKpis | null;
+  storageEvents: StorageEventKpi[];
+  storageError: string | null;
 };
 
 type CollapsibleSectionProps = {
@@ -49,12 +55,19 @@ const percentFormatter = new Intl.NumberFormat("fr-FR", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
+const mbFormatter = new Intl.NumberFormat("fr-FR", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
 
 const formatCount = (value: number | null | undefined) =>
   typeof value === "number" ? numberFormatter.format(value) : "—";
 
 const formatPercent = (value: number | null | undefined) =>
   typeof value === "number" ? percentFormatter.format(value) : "—";
+
+const formatMb = (value: number | null | undefined) =>
+  typeof value === "number" ? mbFormatter.format(value) : "—";
 
 const formatDate = (value: string | null | undefined, withTime = true) => {
   if (!value) return "—";
@@ -169,8 +182,7 @@ const isDayActive = (entry: ProductTimeseriesDaily) =>
   ].some(hasValue);
 
 const isEventActive = (event: ProductEventKpi) =>
-  [event.photos, event.members, event.votes].some(hasValue) ||
-  event.last_photo_at != null;
+  [event.photos, event.members, event.votes].some(hasValue);
 
 function CollapsibleSection({
   title,
@@ -216,6 +228,9 @@ export default function ProductKpiDashboard({
   events,
   timeseries,
   vercelMetrics,
+  storageGlobalKpis,
+  storageEvents,
+  storageError,
 }: ProductKpiDashboardProps) {
   const [contestFilter, setContestFilter] = useState<ContestFilter>("all");
   const [rangeDays, setRangeDays] = useState<30 | 90>(30);
@@ -224,9 +239,11 @@ export default function ProductKpiDashboard({
     direction: "desc",
   });
   const [showAllEvents, setShowAllEvents] = useState(false);
+  const [showAllEventRows, setShowAllEventRows] = useState(false);
   const [showInactiveDays, setShowInactiveDays] = useState(false);
   const [showAllDays, setShowAllDays] = useState(false);
   const [showAllVercelDays, setShowAllVercelDays] = useState(false);
+  const [showAllStorageRows, setShowAllStorageRows] = useState(false);
 
   const filteredEvents = useMemo(() => {
     if (contestFilter === "contest") {
@@ -251,7 +268,7 @@ export default function ProductKpiDashboard({
   const inactiveEventsCount = sortedEvents.length - activeEvents.length;
 
   const visibleEvents = showAllEvents ? sortedEvents : activeEvents;
-  const limitedEvents = showAllEvents ? visibleEvents : visibleEvents.slice(0, 10);
+  const limitedEvents = showAllEventRows ? visibleEvents : visibleEvents.slice(0, 5);
 
   const filteredTimeseries = useMemo(() => {
     const start = new Date();
@@ -267,8 +284,8 @@ export default function ProductKpiDashboard({
 
   const visibleTimeseries = showInactiveDays ? filteredTimeseries : activeTimeseries;
   const limitedTimeseries = showAllDays
-    ? visibleTimeseries
-    : visibleTimeseries.slice(-10);
+    ? visibleTimeseries.slice(-14)
+    : visibleTimeseries.slice(-7);
 
   const filteredVercelMetrics = useMemo(() => {
     const start = new Date();
@@ -283,7 +300,7 @@ export default function ProductKpiDashboard({
 
   const limitedVercelMetrics = showAllVercelDays
     ? sortedVercelMetrics
-    : sortedVercelMetrics.slice(0, 10);
+    : sortedVercelMetrics.slice(0, 7);
 
   const maxEvents = useMemo(() => {
     return visibleTimeseries.reduce((max, entry) => {
@@ -300,14 +317,43 @@ export default function ProductKpiDashboard({
 
   const latestVercelMetric = sortedVercelMetrics[0];
 
-  const activityMessage = useMemo(() => {
-    if (activeTimeseries.length === 0) {
-      return `Aucune activité détectée sur les ${rangeDays} derniers jours.`;
+  const activeDaysCount = activeTimeseries.length;
+
+  const activitySummary = useMemo(() => {
+    const eventsCount = selectedGlobal?.events ?? 0;
+    const photosCount = selectedGlobal?.photos ?? 0;
+    const membersCount = selectedGlobal?.members ?? 0;
+    const votesCount = selectedGlobal?.votes ?? 0;
+
+    if (
+      [eventsCount, photosCount, membersCount, votesCount].every((value) => value === 0) &&
+      activeDaysCount === 0
+    ) {
+      return `Sur les ${rangeDays} derniers jours, aucune activité n’a été enregistrée.`;
     }
-    return `Activité détectée sur ${activeTimeseries.length} jour${
-      activeTimeseries.length > 1 ? "s" : ""
-    } ces ${rangeDays} derniers jours.`;
-  }, [activeTimeseries.length, rangeDays]);
+
+    return `Sur ${rangeDays} jours : ${formatCount(eventsCount)} events, ${formatCount(
+      photosCount
+    )} photos, ${formatCount(membersCount)} membres, ${formatCount(
+      votesCount
+    )} votes, activité sur ${activeDaysCount} jour${
+      activeDaysCount > 1 ? "s" : ""
+    }.`;
+  }, [
+    activeDaysCount,
+    rangeDays,
+    selectedGlobal?.events,
+    selectedGlobal?.members,
+    selectedGlobal?.photos,
+    selectedGlobal?.votes,
+  ]);
+
+  const hasContestEvents = useMemo(
+    () => events.some((event) => Boolean(event.contest_enabled)),
+    [events]
+  );
+
+  const storageWarning = (storageGlobalKpis?.share_outside_events ?? 0) > 0.5;
 
   const handleSort = (key: SortKey) => {
     setSort((current) => {
@@ -344,7 +390,7 @@ export default function ProductKpiDashboard({
           </div>
         }
       >
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
               Events ({rangeDays}j)
@@ -377,16 +423,24 @@ export default function ProductKpiDashboard({
               {formatCount(selectedGlobal?.votes)}
             </p>
           </div>
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+              Jours actifs
+            </p>
+            <p className="text-2xl font-bold text-emerald-400">
+              {formatCount(activeDaysCount)}
+            </p>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
-          {activityMessage}
+          {activitySummary}
         </div>
       </CollapsibleSection>
 
       <CollapsibleSection
         title="Activité récente"
-        description="Events avec mouvement récent"
+        description="Events avec photos, membres ou votes"
         initiallyOpen
         actions={
           <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -397,6 +451,7 @@ export default function ProductKpiDashboard({
                 onClick={() => {
                   setContestFilter(filter);
                   setShowAllEvents(false);
+                  setShowAllEventRows(false);
                 }}
                 className={`rounded-full border px-3 py-1 transition ${
                   contestFilter === filter
@@ -416,13 +471,27 @@ export default function ProductKpiDashboard({
               ? `${sortedEvents.length} events affichés (${inactiveEventsCount} inactifs inclus).`
               : `${activeEvents.length} events actifs détectés sur ${sortedEvents.length}.`}
           </span>
-          <button
-            type="button"
-            onClick={() => setShowAllEvents((current) => !current)}
-            className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-slate-200 transition hover:border-emerald-500/60"
-          >
-            {showAllEvents ? "Masquer les events inactifs" : "Afficher tous les événements"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAllEvents((current) => !current);
+                setShowAllEventRows(false);
+              }}
+              className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-slate-200 transition hover:border-emerald-500/60"
+            >
+              {showAllEvents ? "Masquer les events inactifs" : "Afficher tous les événements"}
+            </button>
+            {visibleEvents.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setShowAllEventRows((current) => !current)}
+                className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-slate-200 transition hover:border-emerald-500/60"
+              >
+                {showAllEventRows ? "Limiter à 5 lignes" : "Voir plus"}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60">
@@ -532,17 +601,17 @@ export default function ProductKpiDashboard({
           </table>
         </div>
 
-        {!showAllEvents && activeEvents.length > 10 && (
+        {!showAllEventRows && visibleEvents.length > 5 && (
           <p className="text-xs text-slate-500">
-            Les 10 derniers events actifs sont affichés. Utilisez “Afficher tous les
-            événements” pour voir la liste complète.
+            Les 5 derniers events sont affichés. Utilisez “Voir plus” pour afficher la
+            liste complète.
           </p>
         )}
       </CollapsibleSection>
 
       <CollapsibleSection
         title="Analyse & tendances"
-        description="Focus sur les jours avec activité"
+        description="Lecture rapide de la dynamique quotidienne"
         initiallyOpen={false}
         actions={
           <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -557,15 +626,15 @@ export default function ProductKpiDashboard({
             >
               {showInactiveDays
                 ? "Masquer les jours sans activité"
-                : "Afficher les jours sans activité"}
+                : "Inclure les jours sans activité"}
             </button>
-            {visibleTimeseries.length > 10 && (
+            {visibleTimeseries.length > 7 && (
               <button
                 type="button"
                 onClick={() => setShowAllDays((current) => !current)}
                 className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-slate-300 transition hover:border-emerald-500/60"
               >
-                {showAllDays ? "Limiter aux 10 derniers jours" : "Voir plus"}
+                {showAllDays ? "Limiter à 7 jours" : "Voir 14 jours"}
               </button>
             )}
           </div>
@@ -577,61 +646,193 @@ export default function ProductKpiDashboard({
             les tendances.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60">
-            <table className="min-w-full text-sm">
-              <thead className="bg-slate-900">
-                <tr className="text-left text-slate-400">
-                  <th className="px-4 py-2">Jour</th>
-                  <th className="px-4 py-2">Events</th>
-                  <th className="px-4 py-2">Membres</th>
-                  <th className="px-4 py-2">Photos</th>
-                  <th className="px-4 py-2">Votes</th>
-                  <th className="px-4 py-2">Concours activés</th>
-                </tr>
-              </thead>
-              <tbody>
-                {limitedTimeseries.map((entry) => {
-                  const eventsValue = entry.events ?? 0;
-                  const width =
-                    maxEvents > 0 ? Math.round((eventsValue / maxEvents) * 100) : 0;
-
-                  return (
-                    <tr
-                      key={entry.day}
-                      className="border-t border-slate-800 text-slate-300 odd:bg-slate-950/40"
-                    >
-                      <td className="px-4 py-2 text-slate-200">
-                        {formatDate(entry.day, false)}
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="flex items-center gap-3">
-                          <span className="w-10">{formatCount(entry.events)}</span>
-                          <div className="h-2 w-24 rounded-full bg-slate-800">
-                            <div
-                              className="h-2 rounded-full bg-emerald-400"
-                              style={{ width: `${width}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-2">{formatCount(entry.members)}</td>
-                      <td className="px-4 py-2">{formatCount(entry.photos)}</td>
-                      <td className="px-4 py-2">{formatCount(entry.votes)}</td>
-                      <td className="px-4 py-2">{formatCount(entry.contests_enabled)}</td>
-                    </tr>
-                  );
-                })}
-                {limitedTimeseries.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
-                      Aucun jour actif pour cette vue.
-                    </td>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+              <span>Tendance quotidienne (max. 14 jours)</span>
+              {!showAllDays && visibleTimeseries.length > 7 && (
+                <span>Affichage des 7 derniers jours.</span>
+              )}
+            </div>
+            <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-900">
+                  <tr className="text-left text-slate-400">
+                    <th className="px-4 py-2">Jour</th>
+                    <th className="px-4 py-2">Events</th>
+                    <th className="px-4 py-2">Membres</th>
+                    <th className="px-4 py-2">Photos</th>
+                    <th className="px-4 py-2">Votes</th>
+                    <th className="px-4 py-2">Concours activés</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {limitedTimeseries.map((entry) => {
+                    const eventsValue = entry.events ?? 0;
+                    const width =
+                      maxEvents > 0 ? Math.round((eventsValue / maxEvents) * 100) : 0;
+
+                    return (
+                      <tr
+                        key={entry.day}
+                        className="border-t border-slate-800 text-slate-300 odd:bg-slate-950/40"
+                      >
+                        <td className="px-4 py-2 text-slate-200">
+                          {formatDate(entry.day, false)}
+                        </td>
+                        <td className="px-4 py-2">
+                          <div className="flex items-center gap-3">
+                            <span className="w-10">{formatCount(entry.events)}</span>
+                            <div className="h-2 w-24 rounded-full bg-slate-800">
+                              <div
+                                className="h-2 rounded-full bg-emerald-400"
+                                style={{ width: `${width}%` }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2">{formatCount(entry.members)}</td>
+                        <td className="px-4 py-2">{formatCount(entry.photos)}</td>
+                        <td className="px-4 py-2">{formatCount(entry.votes)}</td>
+                        <td className="px-4 py-2">{formatCount(entry.contests_enabled)}</td>
+                      </tr>
+                    );
+                  })}
+                  {limitedTimeseries.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
+                        Aucun jour actif pour cette vue.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
+      </CollapsibleSection>
+
+      {hasContestEvents && (
+        <CollapsibleSection
+          title="Concours"
+          description="Zoom sur la performance des événements concours"
+          initiallyOpen={false}
+        >
+          <div className="grid gap-4 md:grid-cols-4">
+            {[
+              {
+                label: `Events concours (${rangeDays}j)`,
+                value: selectedGlobal?.contest_events,
+                empty: "Aucun event concours sur la période.",
+              },
+              {
+                label: `Photos concours (${rangeDays}j)`,
+                value: selectedGlobal?.contest_photos,
+                empty: "Aucune photo concours enregistrée.",
+              },
+              {
+                label: `Membres concours (${rangeDays}j)`,
+                value: selectedGlobal?.contest_members,
+                empty: "Aucun membre actif côté concours.",
+              },
+              {
+                label: "Concours activés",
+                value: selectedGlobal?.contests_enabled,
+                empty: "Aucun concours activé actuellement.",
+              },
+            ].map((card) => (
+              <div
+                key={card.label}
+                className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2"
+              >
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                  {card.label}
+                </p>
+                {hasValue(card.value) ? (
+                  <p className="text-2xl font-bold text-emerald-400">
+                    {formatCount(card.value)}
+                  </p>
+                ) : (
+                  <p className="text-sm text-slate-400">{card.empty}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </CollapsibleSection>
+      )}
+
+      <CollapsibleSection
+        title="Stockage"
+        description="Répartition du volume et points d’attention"
+        initiallyOpen={false}
+      >
+        {storageError && (
+          <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
+            {storageError}
+          </div>
+        )}
+
+        {storageWarning && (
+          <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
+            Plus de 50% du stockage est actuellement en dehors des events. Priorisez
+            une action de nettoyage ou de rattachement.
+          </div>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+              Fichiers stockés (total)
+            </p>
+            <p className="text-2xl font-bold text-emerald-400">
+              {formatCount(storageGlobalKpis?.total_files)}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+              Volume total (MB)
+            </p>
+            <p className="text-2xl font-bold text-emerald-400">
+              {formatMb(storageGlobalKpis?.total_mb)}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+              Volume hors events (MB)
+            </p>
+            <p className="text-2xl font-bold text-emerald-400">
+              {formatMb(storageGlobalKpis?.total_mb_outside_events)}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+              Part hors events (%)
+            </p>
+            <p className="text-2xl font-bold text-emerald-400">
+              {formatPercent(storageGlobalKpis?.share_outside_events)}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h4 className="text-sm font-semibold text-slate-200">
+              Storage par event
+            </h4>
+            {storageEvents.length > 7 && (
+              <button
+                type="button"
+                onClick={() => setShowAllStorageRows((current) => !current)}
+                className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-xs text-slate-300 transition hover:border-emerald-500/60"
+              >
+                {showAllStorageRows ? "Limiter à 7 lignes" : "Voir toute la liste"}
+              </button>
+            )}
+          </div>
+          <StorageKpiTable
+            rows={storageEvents}
+            maxRows={showAllStorageRows ? undefined : 7}
+          />
+        </div>
       </CollapsibleSection>
 
       <CollapsibleSection
@@ -640,62 +841,20 @@ export default function ProductKpiDashboard({
         initiallyOpen={false}
       >
         <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Storage KPIs
-            </p>
-            <p className="mt-2 text-sm text-slate-300">
-              Les KPI storage complets sont disponibles dans la section dédiée du
-              dashboard admin.
-            </p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                Concours ({rangeDays}j)
-              </p>
-              <p className="mt-2 text-sm text-slate-200">
-                {formatCount(selectedGlobal?.contest_events)} events ·{" "}
-                {formatCount(selectedGlobal?.contest_photos)} photos ·{" "}
-                {formatCount(selectedGlobal?.contest_members)} membres ·{" "}
-                {formatCount(selectedGlobal?.contest_votes)} votes
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                Hors concours ({rangeDays}j)
-              </p>
-              <p className="mt-2 text-sm text-slate-200">
-                {formatCount(selectedGlobal?.non_contest_events)} events ·{" "}
-                {formatCount(selectedGlobal?.non_contest_photos)} photos ·{" "}
-                {formatCount(selectedGlobal?.non_contest_members)} membres ·{" "}
-                {formatCount(selectedGlobal?.non_contest_votes)} votes
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                Concours activés
-              </p>
-              <p className="mt-2 text-2xl font-bold text-emerald-400">
-                {formatCount(selectedGlobal?.contests_enabled)}
-              </p>
-            </div>
-          </div>
 
           {sortedVercelMetrics.length > 0 && (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h4 className="text-sm font-semibold text-slate-200">Trafic (Vercel)</h4>
-                <button
-                  type="button"
-                  onClick={() => setShowAllVercelDays((current) => !current)}
-                  className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-xs text-slate-300 transition hover:border-emerald-500/60"
-                >
-                  {showAllVercelDays
-                    ? "Limiter aux 10 derniers jours"
-                    : "Afficher toute la période"}
-                </button>
+                {sortedVercelMetrics.length > 7 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllVercelDays((current) => !current)}
+                    className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-xs text-slate-300 transition hover:border-emerald-500/60"
+                  >
+                    {showAllVercelDays ? "Limiter à 7 jours" : "Afficher toute la période"}
+                  </button>
+                )}
               </div>
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
