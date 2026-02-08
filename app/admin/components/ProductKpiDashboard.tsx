@@ -49,6 +49,12 @@ type CollapsibleSectionProps = {
   children: ReactNode;
 };
 
+type StorageSectionProps = {
+  storageGlobalKpis: StorageGlobalKpis | null;
+  storageEvents: StorageEventKpi[];
+  storageError: string | null;
+};
+
 const numberFormatter = new Intl.NumberFormat("fr-FR");
 const percentFormatter = new Intl.NumberFormat("fr-FR", {
   style: "percent",
@@ -223,6 +229,90 @@ function CollapsibleSection({
   );
 }
 
+function StorageSection({
+  storageGlobalKpis,
+  storageEvents,
+  storageError,
+}: StorageSectionProps) {
+  const [showAllStorageRows, setShowAllStorageRows] = useState(false);
+  const storageWarning = (storageGlobalKpis?.share_outside_events ?? 0) > 0.5;
+
+  return (
+    <CollapsibleSection
+      title="Stockage"
+      description="Répartition du volume et points d’attention"
+      initiallyOpen={false}
+    >
+      {storageError && (
+        <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
+          {storageError}
+        </div>
+      )}
+
+      {storageWarning && (
+        <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
+          Plus de 50% du stockage est actuellement en dehors des events. Priorisez
+          une action de nettoyage ou de rattachement.
+        </div>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-4">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+            Fichiers stockés (total)
+          </p>
+          <p className="text-2xl font-bold text-emerald-400">
+            {formatCount(storageGlobalKpis?.total_files)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+            Volume total (MB)
+          </p>
+          <p className="text-2xl font-bold text-emerald-400">
+            {formatMb(storageGlobalKpis?.total_mb)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+            Volume hors events (MB)
+          </p>
+          <p className="text-2xl font-bold text-emerald-400">
+            {formatMb(storageGlobalKpis?.total_mb_outside_events)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+            Part hors events (%)
+          </p>
+          <p className="text-2xl font-bold text-emerald-400">
+            {formatPercent(storageGlobalKpis?.share_outside_events)}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h4 className="text-sm font-semibold text-slate-200">Storage par event</h4>
+          {storageEvents.length > 7 && (
+            <button
+              type="button"
+              onClick={() => setShowAllStorageRows((current) => !current)}
+              className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-xs text-slate-300 transition hover:border-emerald-500/60"
+            >
+              {showAllStorageRows ? "Limiter à 7 lignes" : "Voir toute la liste"}
+            </button>
+          )}
+        </div>
+        <StorageKpiTable
+          rows={storageEvents}
+          maxRows={showAllStorageRows ? undefined : 7}
+        />
+      </div>
+    </CollapsibleSection>
+  );
+}
+
 export default function ProductKpiDashboard({
   globalKpis,
   events,
@@ -243,7 +333,6 @@ export default function ProductKpiDashboard({
   const [showInactiveDays, setShowInactiveDays] = useState(false);
   const [showAllDays, setShowAllDays] = useState(false);
   const [showAllVercelDays, setShowAllVercelDays] = useState(false);
-  const [showAllStorageRows, setShowAllStorageRows] = useState(false);
 
   const filteredEvents = useMemo(() => {
     if (contestFilter === "contest") {
@@ -352,8 +441,6 @@ export default function ProductKpiDashboard({
     () => events.some((event) => Boolean(event.contest_enabled)),
     [events]
   );
-
-  const storageWarning = (storageGlobalKpis?.share_outside_events ?? 0) > 0.5;
 
   const handleSort = (key: SortKey) => {
     setSort((current) => {
@@ -760,80 +847,11 @@ export default function ProductKpiDashboard({
         </CollapsibleSection>
       )}
 
-      <CollapsibleSection
-        title="Stockage"
-        description="Répartition du volume et points d’attention"
-        initiallyOpen={false}
-      >
-        {storageError && (
-          <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
-            {storageError}
-          </div>
-        )}
-
-        {storageWarning && (
-          <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
-            Plus de 50% du stockage est actuellement en dehors des events. Priorisez
-            une action de nettoyage ou de rattachement.
-          </div>
-        )}
-
-        <div className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Fichiers stockés (total)
-            </p>
-            <p className="text-2xl font-bold text-emerald-400">
-              {formatCount(storageGlobalKpis?.total_files)}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Volume total (MB)
-            </p>
-            <p className="text-2xl font-bold text-emerald-400">
-              {formatMb(storageGlobalKpis?.total_mb)}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Volume hors events (MB)
-            </p>
-            <p className="text-2xl font-bold text-emerald-400">
-              {formatMb(storageGlobalKpis?.total_mb_outside_events)}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Part hors events (%)
-            </p>
-            <p className="text-2xl font-bold text-emerald-400">
-              {formatPercent(storageGlobalKpis?.share_outside_events)}
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h4 className="text-sm font-semibold text-slate-200">
-              Storage par event
-            </h4>
-            {storageEvents.length > 7 && (
-              <button
-                type="button"
-                onClick={() => setShowAllStorageRows((current) => !current)}
-                className="rounded-full border border-slate-700 bg-slate-900/40 px-3 py-1 text-xs text-slate-300 transition hover:border-emerald-500/60"
-              >
-                {showAllStorageRows ? "Limiter à 7 lignes" : "Voir toute la liste"}
-              </button>
-            )}
-          </div>
-          <StorageKpiTable
-            rows={storageEvents}
-            maxRows={showAllStorageRows ? undefined : 7}
-          />
-        </div>
-      </CollapsibleSection>
+      <StorageSection
+        storageGlobalKpis={storageGlobalKpis}
+        storageEvents={storageEvents}
+        storageError={storageError}
+      />
 
       <CollapsibleSection
         title="Technique & infrastructure"

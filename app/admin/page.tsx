@@ -6,9 +6,6 @@ import { getAdminContestStats } from "@/lib/adminStats";
 import ProductKpiSection, {
   ProductKpiSectionSkeleton,
 } from "@/app/admin/components/ProductKpiSection";
-import StorageKpiSection, {
-  StorageKpiSectionSkeleton,
-} from "@/app/admin/components/StorageKpiSection";
 
 type Lead = {
   id: string;
@@ -106,10 +103,6 @@ export default async function AdminPage() {
 
         <Suspense fallback={<ProductKpiSectionSkeleton />}>
           <ProductKpiSection />
-        </Suspense>
-
-        <Suspense fallback={<StorageKpiSectionSkeleton />}>
-          <StorageKpiSection />
         </Suspense>
 
         <section className="space-y-3">
