@@ -3,6 +3,9 @@ import { Suspense } from "react";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { LocalScanIA } from "@/app/components/LocalScanIA";
 import { getAdminContestStats } from "@/lib/adminStats";
+import ProductKpiSection, {
+  ProductKpiSectionSkeleton,
+} from "@/app/admin/components/ProductKpiSection";
 import StorageKpiSection, {
   StorageKpiSectionSkeleton,
 } from "@/app/admin/components/StorageKpiSection";
@@ -100,6 +103,10 @@ export default async function AdminPage() {
             <p className="text-2xl font-bold text-emerald-400">{betas}</p>
           </div>
         </section>
+
+        <Suspense fallback={<ProductKpiSectionSkeleton />}>
+          <ProductKpiSection />
+        </Suspense>
 
         <Suspense fallback={<StorageKpiSectionSkeleton />}>
           <StorageKpiSection />
