@@ -3,6 +3,7 @@ import {
   getProductEventKpis,
   getProductGlobalKpis,
   getProductTimeseriesDaily,
+  getVercelEventVisibility,
   getVercelWebMetricsDaily,
 } from "@/app/lib/analyticsProduct";
 import { getStorageGlobalKpis, getStorageKpisByEvent } from "@/lib/storageKpis";
@@ -33,11 +34,15 @@ export default async function ProductKpiSection() {
     { data: timeseries, error: timeseriesError },
     { data: eventKpis, error: eventsError },
     { data: vercelMetrics, error: vercelError },
+    { data: vercelVisibility30, error: vercelVisibility30Error },
+    { data: vercelVisibility90, error: vercelVisibility90Error },
   ] = await Promise.all([
     getProductGlobalKpis(),
     getProductTimeseriesDaily({ window: "90d" }),
     getProductEventKpis({ filter: "all", window: "90d" }),
     getVercelWebMetricsDaily(90),
+    getVercelEventVisibility(30),
+    getVercelEventVisibility(90),
   ]);
 
   const [
@@ -78,6 +83,14 @@ export default async function ProductKpiSection() {
         events={eventKpis ?? []}
         timeseries={timeseries ?? []}
         vercelMetrics={vercelMetrics ?? []}
+        vercelEventVisibility={{
+          "30d": vercelVisibility30 ?? [],
+          "90d": vercelVisibility90 ?? [],
+        }}
+        vercelEventVisibilityErrors={{
+          "30d": vercelVisibility30Error,
+          "90d": vercelVisibility90Error,
+        }}
         storageGlobalKpis={storageGlobalKpis}
         storageEvents={storageEvents ?? []}
         storageError={storageGlobalError ?? storageEventsError}
