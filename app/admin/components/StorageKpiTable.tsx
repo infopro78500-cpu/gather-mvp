@@ -22,6 +22,7 @@ type SortState = {
 
 type StorageKpiTableProps = {
   rows: StorageEventKpi[];
+  maxRows?: number;
 };
 
 const numberFormatter = new Intl.NumberFormat("fr-FR");
@@ -122,7 +123,7 @@ const getSortLabel = (sort: SortState, key: SortKey) => {
   return sort.direction === "asc" ? "▲" : "▼";
 };
 
-export default function StorageKpiTable({ rows }: StorageKpiTableProps) {
+export default function StorageKpiTable({ rows, maxRows }: StorageKpiTableProps) {
   const [sort, setSort] = useState<SortState>({
     key: "total_mb",
     direction: "desc",
@@ -131,6 +132,11 @@ export default function StorageKpiTable({ rows }: StorageKpiTableProps) {
   const sortedRows = useMemo(() => {
     return [...rows].sort((a, b) => compareRows(a, b, sort));
   }, [rows, sort]);
+
+  const visibleRows = useMemo(() => {
+    if (!maxRows) return sortedRows;
+    return sortedRows.slice(0, maxRows);
+  }, [maxRows, sortedRows]);
 
   const handleSort = (key: SortKey) => {
     setSort((current) => {
@@ -217,7 +223,7 @@ export default function StorageKpiTable({ rows }: StorageKpiTableProps) {
           </tr>
         </thead>
         <tbody>
-          {sortedRows.map((row) => (
+          {visibleRows.map((row) => (
             <tr
               key={row.event_key}
               className="border-t border-slate-800 text-slate-300 odd:bg-slate-950/40"
@@ -233,7 +239,7 @@ export default function StorageKpiTable({ rows }: StorageKpiTableProps) {
               <td className="px-4 py-2">{formatMb(row.orphan_size_mb)}</td>
             </tr>
           ))}
-          {sortedRows.length === 0 && (
+          {visibleRows.length === 0 && (
             <tr>
               <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
                 Aucune donnée storage pour le moment.
