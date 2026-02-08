@@ -5,7 +5,6 @@ import {
   getProductTimeseriesDaily,
   getVercelWebMetricsDaily,
 } from "@/app/lib/analyticsProduct";
-import { getSupabaseClient } from "@/lib/supabaseClient";
 
 export function ProductKpiSectionSkeleton() {
   return (
@@ -25,48 +24,40 @@ export function ProductKpiSectionSkeleton() {
 }
 
 export default async function ProductKpiSection() {
-  const supabase = getSupabaseClient();
-
-  if (!supabase) {
-    return (
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">KPI produit</h2>
-        <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
-          Impossible de charger les KPI produit (configuration Supabase manquante).
-        </div>
-      </section>
-    );
-  }
-
   const [
     { data: globalKpis, error: globalError },
     { data: timeseries, error: timeseriesError },
     { data: eventKpis, error: eventsError },
     { data: vercelMetrics, error: vercelError },
   ] = await Promise.all([
-    getProductGlobalKpis(supabase),
-    getProductTimeseriesDaily(supabase, 90),
-    getProductEventKpis(supabase),
-    getVercelWebMetricsDaily(supabase, 14),
+    getProductGlobalKpis(),
+    getProductTimeseriesDaily({ window: "90d" }),
+    getProductEventKpis({ filter: "all", window: "90d" }),
+    getVercelWebMetricsDaily(14),
   ]);
 
-  const hasError = Boolean(globalError || timeseriesError || eventsError || vercelError);
+  const errorMessages = [
+    globalError ? "Global" : null,
+    timeseriesError ? "Tendance quotidienne" : null,
+    eventsError ? "Events" : null,
+    vercelError ? "Trafic (Vercel)" : null,
+  ].filter((value): value is string => Boolean(value));
 
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-semibold">KPI produit</h2>
 
-      {hasError && (
+      {errorMessages.length > 0 && (
         <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
-          Erreur lors du chargement des KPI produit. Les données peuvent être incomplètes.
+          Certaines données KPI produit sont indisponibles : {errorMessages.join(", ")}.
         </div>
       )}
 
       <ProductKpiDashboard
-        globalKpis={globalKpis}
-        events={eventKpis}
-        timeseries={timeseries}
-        vercelMetrics={vercelMetrics}
+        globalKpis={globalKpis ?? []}
+        events={eventKpis ?? []}
+        timeseries={timeseries ?? []}
+        vercelMetrics={vercelMetrics ?? []}
       />
     </section>
   );

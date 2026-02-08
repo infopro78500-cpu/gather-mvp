@@ -27,7 +27,7 @@ type SortState = {
 };
 
 type ProductKpiDashboardProps = {
-  globalKpis: ProductGlobalKpis | null;
+  globalKpis: ProductGlobalKpis[];
   events: ProductEventKpi[];
   timeseries: ProductTimeseriesDaily[];
   vercelMetrics: VercelWebMetricDaily[];
@@ -79,11 +79,11 @@ const getSortValue = (row: ProductEventKpi, key: SortKey) => {
     case "event_name":
       return row.event_name ?? "";
     case "photos_count":
-      return row.photos_count;
+      return row.photos;
     case "members_count":
-      return row.members_count;
+      return row.members;
     case "votes_count":
-      return row.votes_count;
+      return row.votes;
     case "last_photo_at":
       return row.last_photo_at;
     case "photos_per_member":
@@ -163,10 +163,16 @@ export default function ProductKpiDashboard({
 
   const maxEvents = useMemo(() => {
     return filteredTimeseries.reduce((max, entry) => {
-      const value = entry.events_created ?? 0;
+      const value = entry.events ?? 0;
       return value > max ? value : max;
     }, 0);
   }, [filteredTimeseries]);
+
+  const selectedGlobal = useMemo(() => {
+    return (
+      globalKpis.find((row) => row.window === `${rangeDays}d`) ?? globalKpis[0] ?? null
+    );
+  }, [globalKpis, rangeDays]);
 
   const latestVercelMetric = vercelMetrics[0];
 
@@ -184,46 +190,50 @@ export default function ProductKpiDashboard({
       <div className="grid gap-4 md:grid-cols-4">
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Events (30j)
+            Events ({rangeDays}j)
           </p>
           <p className="text-2xl font-bold text-emerald-400">
-            {formatCount(globalKpis?.events_last_30d)}
+            {formatCount(selectedGlobal?.events)}
           </p>
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Photos (30j)
+            Photos ({rangeDays}j)
           </p>
           <p className="text-2xl font-bold text-emerald-400">
-            {formatCount(globalKpis?.photos_last_30d)}
+            {formatCount(selectedGlobal?.photos)}
           </p>
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Membres (30j)
+            Membres ({rangeDays}j)
           </p>
           <p className="text-2xl font-bold text-emerald-400">
-            {formatCount(globalKpis?.members_last_30d)}
+            {formatCount(selectedGlobal?.members)}
           </p>
         </div>
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Votes (30j)
+            Votes ({rangeDays}j)
           </p>
           <p className="text-2xl font-bold text-emerald-400">
-            {formatCount(globalKpis?.votes_last_30d)}
+            {formatCount(selectedGlobal?.votes)}
           </p>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
-          Concours (30j) : {formatCount(globalKpis?.contest_events_last_30d)} events /{" "}
-          {formatCount(globalKpis?.contest_votes_last_30d)} votes
+          Concours ({rangeDays}j) : {formatCount(selectedGlobal?.contest_events)} events ·{" "}
+          {formatCount(selectedGlobal?.contest_photos)} photos ·{" "}
+          {formatCount(selectedGlobal?.contest_members)} membres ·{" "}
+          {formatCount(selectedGlobal?.contest_votes)} votes
         </span>
         <span className="rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-xs text-slate-200">
-          Hors concours (30j) : {formatCount(globalKpis?.non_contest_events_last_30d)} events /{" "}
-          {formatCount(globalKpis?.non_contest_votes_last_30d)} votes
+          Hors concours ({rangeDays}j) : {formatCount(selectedGlobal?.non_contest_events)}{" "}
+          events · {formatCount(selectedGlobal?.non_contest_photos)} photos ·{" "}
+          {formatCount(selectedGlobal?.non_contest_members)} membres ·{" "}
+          {formatCount(selectedGlobal?.non_contest_votes)} votes
         </span>
       </div>
 
@@ -331,9 +341,9 @@ export default function ProductKpiDashboard({
                   <td className="px-4 py-2 text-slate-200">
                     {row.contest_enabled ? "Oui" : "Non"}
                   </td>
-                  <td className="px-4 py-2">{formatCount(row.photos_count)}</td>
-                  <td className="px-4 py-2">{formatCount(row.members_count)}</td>
-                  <td className="px-4 py-2">{formatCount(row.votes_count)}</td>
+                  <td className="px-4 py-2">{formatCount(row.photos)}</td>
+                  <td className="px-4 py-2">{formatCount(row.members)}</td>
+                  <td className="px-4 py-2">{formatCount(row.votes)}</td>
                   <td className="px-4 py-2">{formatDate(row.last_photo_at)}</td>
                   <td className="px-4 py-2">
                     {row.photos_per_member != null
@@ -389,7 +399,7 @@ export default function ProductKpiDashboard({
             </thead>
             <tbody>
               {filteredTimeseries.map((entry) => {
-                const eventsValue = entry.events_created ?? 0;
+                const eventsValue = entry.events ?? 0;
                 const width = maxEvents > 0 ? Math.round((eventsValue / maxEvents) * 100) : 0;
 
                 return (
@@ -402,7 +412,7 @@ export default function ProductKpiDashboard({
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-3">
-                        <span className="w-10">{formatCount(entry.events_created)}</span>
+                        <span className="w-10">{formatCount(entry.events)}</span>
                         <div className="h-2 w-24 rounded-full bg-slate-800">
                           <div
                             className="h-2 rounded-full bg-emerald-400"
@@ -411,11 +421,11 @@ export default function ProductKpiDashboard({
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-2">{formatCount(entry.members_joined)}</td>
-                    <td className="px-4 py-2">{formatCount(entry.photos_uploaded)}</td>
-                    <td className="px-4 py-2">{formatCount(entry.votes_cast)}</td>
+                    <td className="px-4 py-2">{formatCount(entry.members)}</td>
+                    <td className="px-4 py-2">{formatCount(entry.photos)}</td>
+                    <td className="px-4 py-2">{formatCount(entry.votes)}</td>
                     <td className="px-4 py-2">
-                      {formatCount(entry.contest_enabled_events)}
+                      {formatCount(entry.contests_enabled)}
                     </td>
                   </tr>
                 );
