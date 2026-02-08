@@ -1,43 +1,49 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
 
 export type ProductGlobalKpis = {
-  total_events_all_time: number | null;
-  total_photos_all_time: number | null;
-  total_members_all_time: number | null;
-  total_votes_all_time: number | null;
-  total_contest_events_all_time: number | null;
-  photos_last_30d: number | null;
-  events_last_30d: number | null;
-  members_last_30d: number | null;
-  votes_last_30d: number | null;
-  contest_events_last_30d: number | null;
-  contest_votes_last_30d: number | null;
-  non_contest_events_last_30d: number | null;
-  non_contest_votes_last_30d: number | null;
+  window: "30d" | "90d";
+  events: number | null;
+  photos: number | null;
+  members: number | null;
+  votes: number | null;
+  contest_events: number | null;
+  contest_photos: number | null;
+  contest_members: number | null;
+  contest_votes: number | null;
+  non_contest_events: number | null;
+  non_contest_photos: number | null;
+  non_contest_members: number | null;
+  non_contest_votes: number | null;
+  contests_enabled: number | null;
 };
 
 export type ProductTimeseriesDaily = {
   day: string;
-  events_created: number | null;
-  members_joined: number | null;
-  photos_uploaded: number | null;
-  votes_cast: number | null;
-  contest_enabled_events: number | null;
+  events: number | null;
+  members: number | null;
+  photos: number | null;
+  votes: number | null;
+  contests_enabled: number | null;
+  contest_events: number | null;
+  contest_photos: number | null;
+  contest_members: number | null;
+  contest_votes: number | null;
+  non_contest_events: number | null;
+  non_contest_photos: number | null;
+  non_contest_members: number | null;
+  non_contest_votes: number | null;
 };
 
 export type ProductEventKpi = {
   event_id: string;
   event_name: string | null;
   created_at: string;
-  is_closed: boolean | null;
   contest_enabled: boolean | null;
-  contest_enabled_at: string | null;
-  members_count: number | null;
-  photos_count: number | null;
-  votes_count: number | null;
+  members: number | null;
+  photos: number | null;
+  votes: number | null;
   last_photo_at: string | null;
   photos_per_member: number | null;
-  engagement_status: string | null;
 };
 
 export type VercelWebMetricDaily = {
@@ -49,7 +55,7 @@ export type VercelWebMetricDaily = {
 };
 
 type ProductGlobalKpisResult = {
-  data: ProductGlobalKpis | null;
+  data: ProductGlobalKpis[] | null;
   error: string | null;
 };
 
@@ -70,30 +76,43 @@ type VercelWebMetricsResult = {
 
 const toDateOnlyString = (value: Date) => value.toISOString().slice(0, 10);
 
-export const getProductGlobalKpis = async (
-  supabase: SupabaseClient
-): Promise<ProductGlobalKpisResult> => {
-  const { data, error } = await supabase
-    .from("kpi_product_global")
-    .select("*")
-    .single();
+const getAdminClient = () => {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) {
+    return null;
+  }
+  return supabase;
+};
+
+export const getProductGlobalKpis = async (): Promise<ProductGlobalKpisResult> => {
+  const supabase = getAdminClient();
+  if (!supabase) {
+    return { data: null, error: "Supabase admin client unavailable." };
+  }
+
+  const { data, error } = await supabase.from("product_kpi_global").select("*");
 
   if (error) {
     return { data: null, error: error.message };
   }
 
-  return { data: (data ?? null) as ProductGlobalKpis | null, error: null };
+  return { data: (data ?? null) as ProductGlobalKpis[] | null, error: null };
 };
 
-export const getProductTimeseriesDaily = async (
-  supabase: SupabaseClient,
-  rangeDays = 90
-): Promise<ProductTimeseriesResult> => {
+export const getProductTimeseriesDaily = async (options?: {
+  window?: "30d" | "90d";
+}): Promise<ProductTimeseriesResult> => {
+  const supabase = getAdminClient();
+  if (!supabase) {
+    return { data: [], error: "Supabase admin client unavailable." };
+  }
+
+  const rangeDays = options?.window === "30d" ? 30 : 90;
   const start = new Date();
   start.setDate(start.getDate() - Math.max(rangeDays - 1, 0));
 
   const { data, error } = await supabase
-    .from("kpi_product_timeseries_daily")
+    .from("product_kpi_timeseries_daily")
     .select("*")
     .gte("day", toDateOnlyString(start))
     .order("day", { ascending: true });
@@ -105,21 +124,33 @@ export const getProductTimeseriesDaily = async (
   return { data: (data ?? []) as ProductTimeseriesDaily[], error: null };
 };
 
-export const getProductEventKpis = async (
-  supabase: SupabaseClient,
-  options: { contestOnly?: boolean } = {}
-): Promise<ProductEventKpisResult> => {
-  let query = supabase.from("kpi_product_events").select("*");
+export const getProductEventKpis = async (options?: {
+  filter?: "all" | "contest" | "non_contest";
+  window?: "30d" | "90d";
+}): Promise<ProductEventKpisResult> => {
+  const supabase = getAdminClient();
+  if (!supabase) {
+    return { data: [], error: "Supabase admin client unavailable." };
+  }
 
-  if (options.contestOnly === true) {
+  const rangeDays = options?.window === "30d" ? 30 : 90;
+  const start = new Date();
+  start.setDate(start.getDate() - Math.max(rangeDays - 1, 0));
+
+  let query = supabase
+    .from("product_kpi_events")
+    .select("*")
+    .gte("created_at", start.toISOString());
+
+  if (options?.filter === "contest") {
     query = query.eq("contest_enabled", true);
   }
 
-  if (options.contestOnly === false) {
+  if (options?.filter === "non_contest") {
     query = query.eq("contest_enabled", false);
   }
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  const { data, error } = await query.order("photos", { ascending: false });
 
   if (error) {
     return { data: [], error: error.message };
@@ -129,9 +160,13 @@ export const getProductEventKpis = async (
 };
 
 export const getVercelWebMetricsDaily = async (
-  supabase: SupabaseClient,
   rangeDays = 14
 ): Promise<VercelWebMetricsResult> => {
+  const supabase = getAdminClient();
+  if (!supabase) {
+    return { data: [], error: "Supabase admin client unavailable." };
+  }
+
   const start = new Date();
   start.setDate(start.getDate() - Math.max(rangeDays - 1, 0));
 
