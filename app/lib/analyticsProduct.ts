@@ -75,6 +75,8 @@ type VercelWebMetricsResult = {
 };
 
 const toDateOnlyString = (value: Date) => value.toISOString().slice(0, 10);
+const toDayStartUtc = (value: Date) =>
+  Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate());
 
 const getAdminClient = () => {
   const supabase = getSupabaseAdminClient();
@@ -162,23 +164,144 @@ export const getProductEventKpis = async (options?: {
 export const getVercelWebMetricsDaily = async (
   rangeDays = 14
 ): Promise<VercelWebMetricsResult> => {
-  const supabase = getAdminClient();
-  if (!supabase) {
-    return { data: [], error: "Supabase admin client unavailable." };
+  const token = process.env.VERCEL_TOKEN?.trim();
+  const projectId = process.env.VERCEL_PROJECT_ID?.trim();
+  const teamId = process.env.VERCEL_TEAM_ID?.trim();
+
+  if (!token || !projectId) {
+    return { data: [], error: "Vercel analytics credentials missing." };
   }
 
   const start = new Date();
   start.setDate(start.getDate() - Math.max(rangeDays - 1, 0));
+  const end = new Date();
 
-  const { data, error } = await supabase
-    .from("vercel_web_metrics_daily")
-    .select("*")
-    .gte("day", toDateOnlyString(start))
-    .order("day", { ascending: false });
-
-  if (error) {
-    return { data: [], error: error.message };
+  const url = new URL("https://vercel.com/api/analytics");
+  url.searchParams.set("projectId", projectId);
+  url.searchParams.set("from", String(toDayStartUtc(start)));
+  url.searchParams.set("to", String(end.getTime()));
+  url.searchParams.set("interval", "1d");
+  if (teamId) {
+    url.searchParams.set("teamId", teamId);
   }
 
-  return { data: (data ?? []) as VercelWebMetricDaily[], error: null };
+  const response = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const bodySnippet = await response.text().then((text) => text.slice(0, 200));
+    console.error("Vercel analytics error", {
+      status: response.status,
+      body: bodySnippet,
+    });
+
+    if (response.status === 403 || response.status === 404) {
+      return { data: [], error: "Vercel analytics unavailable." };
+    }
+
+    return { data: [], error: "Failed to fetch Vercel analytics." };
+  }
+
+  const payload: unknown = await response.json();
+
+  const series = extractVercelTimeseries(payload);
+  if (!series) {
+    console.error("Vercel analytics: unexpected response format.", {
+      keys:
+        payload && typeof payload === "object"
+          ? Object.keys(payload as Record<string, unknown>)
+          : null,
+    });
+    return { data: [], error: "Vercel analytics unavailable." };
+  }
+
+  const nowIso = new Date().toISOString();
+  const data = series
+    .map((entry) => normalizeVercelEntry(entry, nowIso))
+    .filter((entry): entry is VercelWebMetricDaily => Boolean(entry))
+    .sort((a, b) => b.day.localeCompare(a.day));
+
+  return { data, error: null };
+};
+
+const extractVercelTimeseries = (
+  payload: unknown
+): Array<Record<string, unknown>> | null => {
+  if (!payload) return null;
+  if (Array.isArray(payload)) return payload as Array<Record<string, unknown>>;
+  if (typeof payload !== "object") return null;
+  const record = payload as Record<string, unknown>;
+  const data = record.data;
+  if (Array.isArray(data)) return data as Array<Record<string, unknown>>;
+  if (data && typeof data === "object") {
+    const nested = data as Record<string, unknown>;
+    if (Array.isArray(nested.timeseries)) return nested.timeseries as Array<Record<string, unknown>>;
+    if (Array.isArray(nested.points)) return nested.points as Array<Record<string, unknown>>;
+    if (Array.isArray(nested.series)) return nested.series as Array<Record<string, unknown>>;
+    if (Array.isArray(nested.values)) return nested.values as Array<Record<string, unknown>>;
+  }
+  return null;
+};
+
+const normalizeDayValue = (value: unknown): string | null => {
+  if (typeof value === "string") {
+    const candidate = value.slice(0, 10);
+    return candidate.match(/^\d{4}-\d{2}-\d{2}$/) ? candidate : null;
+  }
+  if (typeof value === "number") {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return toDateOnlyString(date);
+  }
+  return null;
+};
+
+const normalizeNumber = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+const normalizeVercelEntry = (
+  entry: Record<string, unknown>,
+  updatedAt: string
+): VercelWebMetricDaily | null => {
+  const day =
+    normalizeDayValue(entry.day) ||
+    normalizeDayValue(entry.date) ||
+    normalizeDayValue(entry.timestamp);
+
+  if (!day) return null;
+
+  const visitors =
+    normalizeNumber(entry.visitors) ??
+    normalizeNumber(entry.uniqueVisitors) ??
+    normalizeNumber(entry.unique_visitors) ??
+    normalizeNumber(entry.visitor_count);
+
+  const pageviews =
+    normalizeNumber(entry.pageviews) ??
+    normalizeNumber(entry.views) ??
+    normalizeNumber(entry.page_views);
+
+  const bounceRate =
+    normalizeNumber(entry.bounce_rate) ??
+    normalizeNumber(entry.bounceRate) ??
+    normalizeNumber(entry.bounce);
+
+  return {
+    day,
+    visitors,
+    pageviews,
+    bounce_rate: bounceRate,
+    updated_at: updatedAt,
+  };
 };
