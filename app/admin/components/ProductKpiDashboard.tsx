@@ -366,6 +366,7 @@ export default function ProductKpiDashboard({
   const [showMoreDays, setShowMoreDays] = useState(false);
   const [showAllVercelDays, setShowAllVercelDays] = useState(false);
   const [showDataQualityDetails, setShowDataQualityDetails] = useState(false);
+  const normalizedRangeDays = rangeDays === 90 ? 90 : 30;
 
   const filteredEvents = useMemo(() => {
     if (contestFilter === "contest") {
@@ -394,10 +395,10 @@ export default function ProductKpiDashboard({
 
   const filteredTimeseries = useMemo(() => {
     const start = new Date();
-    start.setDate(start.getDate() - (rangeDays - 1));
+    start.setDate(start.getDate() - (normalizedRangeDays - 1));
     const startDate = start.toISOString().slice(0, 10);
     return timeseries.filter((entry) => entry.day >= startDate);
-  }, [rangeDays, timeseries]);
+  }, [normalizedRangeDays, timeseries]);
 
   const activeTimeseries = useMemo(
     () => filteredTimeseries.filter((entry) => isActiveDay(entry)),
@@ -409,11 +410,12 @@ export default function ProductKpiDashboard({
   const limitedTimeseries = visibleTimeseries.slice(-maxTrendRows);
 
   const filteredVercelMetrics = useMemo(() => {
+    const safeVercelMetrics = Array.isArray(vercelMetrics) ? vercelMetrics : [];
     const start = new Date();
-    start.setDate(start.getDate() - (rangeDays - 1));
+    start.setDate(start.getDate() - (normalizedRangeDays - 1));
     const startDate = start.toISOString().slice(0, 10);
-    return vercelMetrics.filter((entry) => entry.day >= startDate);
-  }, [rangeDays, vercelMetrics]);
+    return safeVercelMetrics.filter((entry) => entry.day >= startDate);
+  }, [normalizedRangeDays, vercelMetrics]);
 
   const sortedVercelMetrics = useMemo(() => {
     return [...filteredVercelMetrics].sort((a, b) => b.day.localeCompare(a.day));
@@ -432,15 +434,20 @@ export default function ProductKpiDashboard({
 
   const selectedGlobal = useMemo(() => {
     return (
-      globalKpis.find((row) => row.window === `${rangeDays}d`) ?? globalKpis[0] ?? null
+      globalKpis.find((row) => row.window === `${normalizedRangeDays}d`) ??
+      globalKpis[0] ??
+      null
     );
-  }, [globalKpis, rangeDays]);
+  }, [globalKpis, normalizedRangeDays]);
 
   const latestVercelMetric = sortedVercelMetrics[0];
 
-  const selectedVisibilityKey = `${rangeDays}d` as "30d" | "90d";
-  const visibilityRows = vercelEventVisibility[selectedVisibilityKey] ?? [];
-  const visibilityError = vercelEventVisibilityErrors[selectedVisibilityKey] ?? null;
+  const selectedVisibilityKey = normalizedRangeDays === 90 ? "90d" : "30d";
+  const visibilitySource = vercelEventVisibility?.[selectedVisibilityKey];
+  const visibilityRows = Array.isArray(visibilitySource) ? visibilitySource : [];
+  const visibilityError = vercelEventVisibilityErrors?.[selectedVisibilityKey] ?? null;
+  const hasVisibilityData = Array.isArray(visibilitySource);
+  const shouldShowVisibilityWarning = !hasVisibilityData || Boolean(visibilityError);
 
   const sortedVisibilityRows = useMemo(() => {
     return [...visibilityRows].sort((a, b) => b.visits - a.visits);
@@ -458,10 +465,10 @@ export default function ProductKpiDashboard({
       [eventsCount, photosCount, membersCount, votesCount].every((value) => value === 0) &&
       activeDaysCount === 0
     ) {
-      return `Sur les ${rangeDays} derniers jours, aucune activité n’a été enregistrée.`;
+      return `Sur les ${normalizedRangeDays} derniers jours, aucune activité n’a été enregistrée.`;
     }
 
-    return `Sur ${rangeDays} jours : ${formatCount(
+    return `Sur ${normalizedRangeDays} jours : ${formatCount(
       eventsCount
     )} événements, ${formatCount(photosCount)} photos, ${formatCount(
       membersCount
@@ -472,7 +479,7 @@ export default function ProductKpiDashboard({
     }.`;
   }, [
     activeDaysCount,
-    rangeDays,
+    normalizedRangeDays,
     selectedGlobal?.events,
     selectedGlobal?.members,
     selectedGlobal?.photos,
@@ -486,7 +493,8 @@ export default function ProductKpiDashboard({
 
   const hasSupabaseKpiData = globalKpis.length > 0 && timeseries.length > 0;
   const supabaseKpiStatus = hasSupabaseKpiData ? "OK" : "partiel";
-  const vercelTrafficMissing = vercelMetrics.length === 0;
+  const vercelTrafficMissing =
+    !Array.isArray(vercelMetrics) || vercelMetrics.length === 0;
 
   const handleSort = (key: SortKey) => {
     setSort((current) => {
@@ -504,7 +512,7 @@ export default function ProductKpiDashboard({
         description="Synthèse sur la période sélectionnée"
         initiallyOpen
         collapsible={false}
-        badge={`${rangeDays} jours`}
+        badge={`${normalizedRangeDays} jours`}
         actions={
           <div className="flex items-center gap-2 text-xs">
             {[30, 90].map((value) => (
@@ -527,7 +535,7 @@ export default function ProductKpiDashboard({
         <div className="grid gap-4 md:grid-cols-5">
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Événements ({rangeDays}j)
+              Événements ({normalizedRangeDays}j)
             </p>
             <p className="text-2xl font-bold text-emerald-400">
               {formatCount(selectedGlobal?.events)}
@@ -535,7 +543,7 @@ export default function ProductKpiDashboard({
           </div>
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Photos ({rangeDays}j)
+              Photos ({normalizedRangeDays}j)
             </p>
             <p className="text-2xl font-bold text-emerald-400">
               {formatCount(selectedGlobal?.photos)}
@@ -543,7 +551,7 @@ export default function ProductKpiDashboard({
           </div>
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Membres ({rangeDays}j)
+              Membres ({normalizedRangeDays}j)
             </p>
             <p className="text-2xl font-bold text-emerald-400">
               {formatCount(selectedGlobal?.members)}
@@ -551,7 +559,7 @@ export default function ProductKpiDashboard({
           </div>
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center space-y-2">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Votes ({rangeDays}j)
+              Votes ({normalizedRangeDays}j)
             </p>
             <p className="text-2xl font-bold text-emerald-400">
               {formatCount(selectedGlobal?.votes)}
@@ -907,17 +915,17 @@ export default function ProductKpiDashboard({
           <div className="grid gap-4 md:grid-cols-4">
             {[
               {
-                label: `Événements concours (${rangeDays}j)`,
+                label: `Événements concours (${normalizedRangeDays}j)`,
                 value: selectedGlobal?.contest_events,
                 empty: "Aucun événement concours sur la période.",
               },
               {
-                label: `Photos concours (${rangeDays}j)`,
+                label: `Photos concours (${normalizedRangeDays}j)`,
                 value: selectedGlobal?.contest_photos,
                 empty: "Aucune photo concours enregistrée.",
               },
               {
-                label: `Membres concours (${rangeDays}j)`,
+                label: `Membres concours (${normalizedRangeDays}j)`,
                 value: selectedGlobal?.contest_members,
                 empty: "Aucun membre actif côté concours.",
               },
@@ -1066,12 +1074,16 @@ export default function ProductKpiDashboard({
             <p className="text-xs text-slate-500">
               Basé sur les consultations des pages /events/:id
             </p>
-            {visibilityError && (
+            {shouldShowVisibilityWarning && (
               <div className="rounded-2xl border border-amber-500/60 bg-amber-500/10 p-4 text-sm text-amber-200">
-                Trafic Vercel indisponible pour la visibilité des événements.
+                <p className="font-semibold">Trafic Vercel indisponible.</p>
+                <p className="mt-1 text-xs text-amber-100">
+                  Vérifiez la configuration Vercel (token, projet, permissions) ou
+                  réessayez plus tard.
+                </p>
               </div>
             )}
-            {sortedVisibilityRows.length > 0 ? (
+            {hasVisibilityData && sortedVisibilityRows.length > 0 ? (
               <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60">
                 <table className="min-w-full text-sm">
                   <thead className="bg-slate-900">
@@ -1099,11 +1111,11 @@ export default function ProductKpiDashboard({
                   </tbody>
                 </table>
               </div>
-            ) : (
+            ) : hasVisibilityData ? (
               <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-400">
                 Aucun événement consulté sur cette période.
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </CollapsibleSection>
