@@ -161,6 +161,13 @@ export default function ProductKpiDashboard({
     return timeseries.filter((entry) => entry.day >= startDate);
   }, [rangeDays, timeseries]);
 
+  const filteredVercelMetrics = useMemo(() => {
+    const start = new Date();
+    start.setDate(start.getDate() - (rangeDays - 1));
+    const startDate = start.toISOString().slice(0, 10);
+    return vercelMetrics.filter((entry) => entry.day >= startDate);
+  }, [rangeDays, vercelMetrics]);
+
   const maxEvents = useMemo(() => {
     return filteredTimeseries.reduce((max, entry) => {
       const value = entry.events ?? 0;
@@ -174,7 +181,7 @@ export default function ProductKpiDashboard({
     );
   }, [globalKpis, rangeDays]);
 
-  const latestVercelMetric = vercelMetrics[0];
+  const latestVercelMetric = filteredVercelMetrics[0];
 
   const handleSort = (key: SortKey) => {
     setSort((current) => {
@@ -442,7 +449,7 @@ export default function ProductKpiDashboard({
         </div>
       </div>
 
-      {vercelMetrics.length > 0 && (
+      {filteredVercelMetrics.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-base font-semibold">Trafic (Vercel)</h3>
           <div className="grid gap-4 md:grid-cols-3">
@@ -483,7 +490,7 @@ export default function ProductKpiDashboard({
                 </tr>
               </thead>
               <tbody>
-                {vercelMetrics.map((metric) => (
+                {filteredVercelMetrics.map((metric) => (
                   <tr
                     key={metric.day}
                     className="border-t border-slate-800 text-slate-300 odd:bg-slate-950/40"

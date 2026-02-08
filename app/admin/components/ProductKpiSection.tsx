@@ -33,7 +33,7 @@ export default async function ProductKpiSection() {
     getProductGlobalKpis(),
     getProductTimeseriesDaily({ window: "90d" }),
     getProductEventKpis({ filter: "all", window: "90d" }),
-    getVercelWebMetricsDaily(14),
+    getVercelWebMetricsDaily(90),
   ]);
 
   const errorMessages = [

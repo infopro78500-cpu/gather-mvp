@@ -13,7 +13,8 @@
 **Vercel (trafic web)**
 - Table optionnelle `public.vercel_web_metrics_daily`.
 - Sert uniquement à afficher un bloc “Trafic (Vercel)” si des données existent.
-- Aucun fetch API Vercel n’est implémenté côté app : l’ingestion se fait via un job externe.
+- Le dashboard admin peut désormais interroger l’API Vercel côté serveur via `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (teamId optionnel).
+- Un job externe reste possible si vous préférez stocker l’historique en base.
 
 ## 2) Alimenter `vercel_web_metrics_daily`
 
