@@ -15,7 +15,16 @@ import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
 import { getVoterId } from "@/lib/voterId";
 import { getContestPhotoId } from "@/lib/photoId";
-import { ContestCountdown } from "@/app/components/contest/ContestCountdown";
+import {
+  ContestLeaderboard,
+  type ContestLeaderboardEntry,
+} from "@/app/components/events/ContestLeaderboard";
+import { PhotoLightbox } from "@/app/components/events/PhotoLightbox";
+import { useToast } from "@/app/components/ui/ToastProvider";
+import {
+  getUploaderDeviceId,
+  canDeletePhoto as canDeletePhotoShared,
+} from "@/lib/photoPermissions";
 
 
 const BUCKET_NAME = "event-photos";
@@ -23,9 +32,6 @@ const MAX_FILES = 20; // max 20 fichiers à la fois
 const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
 const INITIAL_VISIBLE_COUNT = 8;
 const VISIBLE_INCREMENT = 8;
-const DEFAULT_VISIBLE = 3;
-const MAX_VISIBLE = 10;
-const PODIUM_MEDALS = ["🥇", "🥈", "🥉"];
 
 type PhotoItem = Photo & {
   uploaderDeviceId?: string | null;
@@ -77,44 +83,6 @@ const getFileSortValue = (file: {
   return 0;
 };
 
-type ContestLeaderboardEntry = {
-  photoId: string;
-  count: number;
-  photo: PhotoItem | null;
-};
-
-const looksLikeStorageFilename = (filename: string): boolean => {
-  const trimmed = filename.trim();
-  if (!trimmed) return false;
-  const hasUuid =
-    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(
-      trimmed
-    );
-  const hasLongHash = /[0-9a-f]{20,}/i.test(trimmed);
-  const hasTimestamp = /__?\d{10,}/.test(trimmed) || /\d{13}/.test(trimmed);
-  const hasImageExtension = /\.(jpe?g|png)$/i.test(trimmed);
-  const isVeryLong = trimmed.length > 32;
-  return (
-    hasUuid ||
-    hasLongHash ||
-    hasTimestamp ||
-    (hasImageExtension && isVeryLong)
-  );
-};
-
-const formatPhotoLabel = (
-  entry: ContestLeaderboardEntry | null | undefined,
-  index: number
-): string => {
-  const fallback = `Photo #${index + 1}`;
-  const name = entry?.photo?.name?.trim();
-  if (!name) return fallback;
-  if (looksLikeStorageFilename(name)) return fallback;
-  const maxLength = 28;
-  if (name.length <= maxLength) return name;
-  return `${name.slice(0, maxLength - 1)}…`;
-};
-
 export default function EventPage() {
 const params = useParams<{ pin: string }>();
 
@@ -125,6 +93,7 @@ if (!params?.pin) {
 const pin = params.pin;
 
   const supabase = getSupabaseClient();
+  const { showToast } = useToast();
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -145,7 +114,6 @@ const pin = params.pin;
   const [isHost, setIsHost] = useState(false);
 
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoItem | null>(null);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -155,7 +123,6 @@ const pin = params.pin;
   const [contestLoading, setContestLoading] = useState(false);
   const [contestError, setContestError] = useState<string | null>(null);
   const [likeLoadingPhotoId, setLikeLoadingPhotoId] = useState<string | null>(null);
-  const [showMoreRanking, setShowMoreRanking] = useState(false);
 
   const [showUploadTooltip, setShowUploadTooltip] = useState(false);
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
@@ -201,11 +168,6 @@ const pin = params.pin;
       photo: photos.find((photo) => photo.contestPhotoId === entry.photoId) ?? null,
     }));
   }, [contestState?.contestEnabled, contestState?.leaderboard, photos]);
-  const podiumEntries = contestLeaderboard.slice(0, PODIUM_MEDALS.length);
-  const extraContestLeaderboard = contestLeaderboard.slice(
-    DEFAULT_VISIBLE,
-    MAX_VISIBLE
-  );
   const hasPhotos = photoCount > 0;
   const isContestEnabled = Boolean(event?.contest_enabled);
   const contestEndsAt = contestState?.contestEndsAt ?? event?.contest_ends_at ?? null;
@@ -400,9 +362,7 @@ const pin = params.pin;
             const path = `${evt.id}/${file.name}`;
             const filename = file.name || "";
 
-            const uploaderDeviceId = filename.includes("__")
-              ? filename.split("__")[0]
-              : undefined;
+            const uploaderDeviceId = getUploaderDeviceId(filename);
 
             const { data: publicData } = supabase.storage
               .from(BUCKET_NAME)
@@ -465,11 +425,8 @@ const pin = params.pin;
     };
   }, [event]);
 
-  const canDeletePhoto = (photo: PhotoItem): boolean => {
-    if (!deviceId) return false;
-    if (isHost) return true;
-    return photo.uploaderDeviceId === deviceId;
-  };
+  const canDeletePhoto = (photo: PhotoItem): boolean =>
+    canDeletePhotoShared({ isHost, deviceId, uploaderDeviceId: photo.uploaderDeviceId });
 
   const handleToggleLike = async (photo: PhotoItem): Promise<void> => {
     if (!event || !contestState?.contestEnabled || !voterId) return;
@@ -533,8 +490,9 @@ const pin = params.pin;
   ): Promise<void> => {
     const files = e.target.files;
     if (expirationInfo.isExpired) {
-      alert(
-        "Cet événement est terminé. L'ajout de nouvelles photos n'est plus possible."
+      showToast(
+        "Cet événement est terminé. L'ajout de nouvelles photos n'est plus possible.",
+        "error"
       );
       e.target.value = "";
       return;
@@ -555,7 +513,7 @@ const pin = params.pin;
     }
 
     if (filesArray.length > MAX_FILES) {
-      alert(`Tu peux envoyer maximum ${MAX_FILES} fichiers à la fois.`);
+      showToast(`Tu peux envoyer maximum ${MAX_FILES} fichiers à la fois.`, "error");
       return;
     }
 
@@ -633,11 +591,13 @@ const pin = params.pin;
           rejectedFiles.length > 1 ? "s" : ""
         } n'ont pas été ajoutés car ils dépassent 10 Mo : ${rejectedList}`;
         setUploadError(message);
+        showToast(message, "error");
       }
 
       if (newPhotos.length > 0) {
         setPhotos((prev) => [...prev, ...newPhotos]);
         setUploadSuccess("Upload terminé ✅");
+        showToast("Upload terminé ✅", "success");
         setTimeout(() => setUploadSuccess(null), 2500);
       }
     } finally {
@@ -743,7 +703,7 @@ const pin = params.pin;
     });
 
     if (allowedPaths.length === 0) {
-      alert("Aucune photo autorisée à être supprimée.");
+      showToast("Aucune photo autorisée à être supprimée.", "error");
       return;
     }
 
@@ -803,7 +763,7 @@ const pin = params.pin;
     if (!event) return;
 
     if (photosToDownload.length === 0) {
-      alert("Aucune photo à télécharger.");
+      showToast("Aucune photo à télécharger.", "error");
       return;
     }
 
@@ -831,7 +791,7 @@ const pin = params.pin;
       saveAs(content, zipName);
     } catch (err) {
       console.error("Erreur lors de la création du ZIP :", err);
-      alert("Erreur lors de la création du fichier ZIP.");
+      showToast("Erreur lors de la création du fichier ZIP.", "error");
     } finally {
       setDownloading(false);
     }
@@ -923,136 +883,12 @@ const pin = params.pin;
             </section>
 
             {isContestEnabled && (
-              <section className="rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-5 shadow-md space-y-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Mode concours</p>
-                    <p className="text-base font-semibold text-slate-50">
-                      Votez pour vos photos préférées ❤️
-                    </p>
-                    <p className="text-sm text-slate-400">
-                      Chaque participant peut liker une photo une fois. Le classement se met à jour en direct.
-                    </p>
-                  </div>
-                  {contestEndsAt && (
-                    <div className="self-start">
-                      <ContestCountdown endsAt={contestEndsAt} />
-                    </div>
-                  )}
-                </div>
-
-                {contestLoading && (
-                  <p className="text-sm text-slate-400">Chargement du concours...</p>
-                )}
-                {contestError && (
-                  <p className="text-sm text-red-600">{contestError}</p>
-                )}
-
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-slate-100">Classement</p>
-                  {contestLeaderboard.length === 0 ? (
-                    <p className="text-sm text-slate-400">
-                      Aucun vote pour le moment. Soyez le premier à liker une photo !
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {podiumEntries.length > 0 && (
-                        <div className="grid gap-2 sm:grid-cols-3">
-                          {PODIUM_MEDALS.map((medal, index) => {
-                            const entry = podiumEntries[index] ?? null;
-                            const label = formatPhotoLabel(entry, index);
-                            return (
-                              <div
-                                key={medal}
-                                className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-950/70 px-3 py-2 text-xs text-slate-200"
-                              >
-                                <span className="text-lg" aria-hidden>
-                                  {medal}
-                                </span>
-                                {entry?.photo?.url ? (
-                                  <img
-                                    src={entry.photo.url}
-                                    alt={label}
-                                    className="h-10 w-10 rounded-md object-cover"
-                                  />
-                                ) : (
-                                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-800 text-xs text-slate-400">
-                                    —
-                                  </div>
-                                )}
-                                <div className="min-w-0 space-y-0.5">
-                                  <p className="truncate text-xs font-semibold text-slate-100">
-                                    {label}
-                                  </p>
-                                  <p className="text-[11px] text-slate-400">
-                                    {entry
-                                      ? `${entry.count} vote${entry.count > 1 ? "s" : ""}`
-                                      : "En attente"}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {contestLeaderboard.length > DEFAULT_VISIBLE && (
-                        <div className="flex justify-center">
-                          <button
-                            type="button"
-                            onClick={() => setShowMoreRanking((prev) => !prev)}
-                            className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800"
-                          >
-                            {showMoreRanking ? "Afficher moins" : "Afficher plus"}
-                          </button>
-                        </div>
-                      )}
-
-                      {showMoreRanking &&
-                        contestLeaderboard.length > DEFAULT_VISIBLE && (
-                        <ol className="space-y-2">
-                          {extraContestLeaderboard.map((entry, index) => {
-                            const rank = index + DEFAULT_VISIBLE + 1;
-                            const label = formatPhotoLabel(
-                              entry,
-                              index + DEFAULT_VISIBLE
-                            );
-                            return (
-                              <li
-                                key={entry.photoId}
-                                className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950/70 px-3 py-2 text-sm text-slate-100"
-                              >
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-xs font-semibold text-slate-200">
-                                    {rank}
-                                  </span>
-                                  {entry.photo?.url ? (
-                                    <img
-                                      src={entry.photo.url}
-                                      alt={label}
-                                      className="h-10 w-10 rounded-md object-cover"
-                                    />
-                                  ) : (
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-800 text-xs text-slate-400">
-                                      —
-                                    </div>
-                                  )}
-                                  <span className="truncate text-xs text-slate-200">
-                                    {label}
-                                  </span>
-                                </div>
-                                <span className="text-sm font-semibold text-slate-100">
-                                  {entry.count} vote{entry.count > 1 ? "s" : ""}
-                                </span>
-                              </li>
-                            );
-                          })}
-                        </ol>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </section>
+              <ContestLeaderboard
+                contestEndsAt={contestEndsAt}
+                contestLoading={contestLoading}
+                contestError={contestError}
+                leaderboard={contestLeaderboard}
+              />
             )}
 
             <section className="rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-5 shadow-md space-y-4">
@@ -1343,10 +1179,7 @@ const pin = params.pin;
                             >
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setSelectedPhoto(photo);
-                                  setIsLightboxOpen(true);
-                                }}
+                                onClick={() => setSelectedPhoto(photo)}
                                 className="w-full h-full"
                               >
                                 <div className="relative w-full overflow-hidden aspect-[4/5]">
@@ -1436,29 +1269,7 @@ const pin = params.pin;
                     </div>
                   )}
 
-                  {isLightboxOpen && selectedPhoto && (
-                    <div
-                      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center"
-                      onClick={() => setIsLightboxOpen(false)}
-                    >
-                      <div
-                        className="relative max-w-[90%] max-h-[90%]"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <img
-                          src={selectedPhoto.url}
-                          alt={selectedPhoto.name}
-                          className="max-w-full max-h-full rounded-lg shadow-2xl"
-                        />
-                        <button
-                          onClick={() => setIsLightboxOpen(false)}
-                          className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-md px-2 py-1 text-xs shadow-sm"
-                        >
-                          Fermer
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <PhotoLightbox photo={selectedPhoto} onClose={() => setSelectedPhoto(null)} />
                 </div>
               </div>
             </section>
