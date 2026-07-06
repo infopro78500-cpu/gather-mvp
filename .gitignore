@@ -16,3 +16,15 @@ __pycache__/
 *.log
 www/
 www/dev/
+
+# Environnements et IDE locaux
+env/
+.idea/
+
+# Sorties générées localement
+analytics_output/
+android/app/build/
+
+# Fichiers temporaires Office (verrous Word)
+~$*
+docs/*.docx
