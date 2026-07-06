@@ -166,10 +166,13 @@ En attendant l'arrivée d'Arnaud, une partie de la priorité 1 (sécurité) et d
 - **Modification d'événement (mode concours)** déplacée derrière une route serveur (`/api/events/[eventId]/contest-settings`) qui vérifie que le `deviceId` correspond bien à `host_device_id` avant d'appliquer le changement — **auparavant n'importe qui connaissant l'URL `/event/{eventId}/edit` pouvait modifier le concours de n'importe quel événement, sans aucune vérification**. La page affiche maintenant un message si vous n'êtes pas l'hôte.
 - **Collision de PIN gérée** : la création d'événement réessaie automatiquement (jusqu'à 5 fois) si le PIN généré est déjà pris, au lieu d'afficher une erreur générique.
 - **Pagination** : la galerie photos peut désormais charger au-delà de 200 fichiers (pagination interne jusqu'à 2000) ; le dashboard admin des leads a une vraie pagination (50/page) avec des compteurs globaux exacts (auparavant les statistiques d'intérêt étaient calculées seulement sur les 50 derniers leads).
-- **CI GitHub Actions** ajoutée (`.github/workflows/ci.yml`) : lint + typecheck + build sur chaque push/PR vers `main`.
-- **Début de découpage** du fichier `app/events/[pin]/page.tsx` : le bloc « partage / QR code » a été extrait dans `app/components/events/ShareEventPanel.tsx` (1593 → 1467 lignes). C'est un premier pas, pas une réorganisation complète — le fichier reste volumineux et gagnerait à être découpé davantage (lightbox, classement concours) par Arnaud.
+- **CI GitHub Actions** ajoutée (`.github/workflows/ci.yml`) : lint + typecheck + tests + build sur chaque push/PR vers `main`.
+- **Lien de gestion d'événement ajouté** : la page `/event/{eventId}/edit` (mode concours) existait mais n'était reliée nulle part — aucun bouton n'y menait, seul un organisateur connaissant l'URL par cœur pouvait l'atteindre. Un bouton « ⚙️ Gérer l'événement » a été ajouté dans les « Actions avancées » de la page événement (visible seulement pour l'hôte), avec un lien de retour vers l'événement depuis la page de gestion.
+- **Système de notifications (toasts)** : tous les `alert()`/messages bloquants natifs ont été remplacés par des notifications non intrusives (`app/components/ui/ToastProvider.tsx`), y compris l'agrégation des erreurs d'upload (fichiers trop lourds, trop nombreux).
+- **Vitest installé** : tests unitaires sur la logique critique (génération/collision de PIN, permissions de suppression de photo, expiration d'événement), intégrés à `npm run check:release` et à la CI.
+- **Découpage du fichier `app/events/[pin]/page.tsx` poursuivi** : en plus du panneau de partage/QR, la visionneuse plein écran (`PhotoLightbox.tsx`) et le classement du concours (`ContestLeaderboard.tsx`) ont été extraits (1593 → 1287 lignes). Toujours un fichier volumineux, mais la logique de permission et de génération de PIN a aussi été mutualisée dans `lib/photoPermissions.ts` et `lib/pin.ts` (au lieu d'être dupliquée entre client et serveur).
 
-**Reste dans la roadmap** : passer le bucket photos en privé avec URLs signées, mettre en place de vrais comptes hôtes, tests automatisés (Vitest).
+**Reste dans la roadmap** : passer le bucket photos en privé avec URLs signées, mettre en place de vrais comptes hôtes.
 
 ## 9. Dette technique et limites connues (honnêteté totale)
 
@@ -177,9 +180,9 @@ En attendant l'arrivée d'Arnaud, une partie de la priorité 1 (sécurité) et d
 1. **Sécurité — chantier n°1 (partiellement traité, voir §8)** : RLS (Row Level Security) reste techniquement permissif sur le bucket storage en lecture (public par design) ; `/admin` est désormais protégé et les écritures sensibles (suppression photo, modification concours) passent par des routes serveur validées — mais l'auth OTP n'est toujours pas branchée sur les flux événement et il n'y a pas de vrais comptes hôtes.
 2. ~~**Unicité du PIN non garantie**~~ — **corrigé le 6 juillet 2026** (retry automatique, voir §8).
 3. ~~**Pas de pagination**~~ — **corrigé le 6 juillet 2026** (galerie + leads admin, voir §8).
-4. **Robustesse UX** : fichiers >10 Mo ignorés silencieusement, `alert/confirm` natifs, ZIP toujours intégral.
+4. ~~**Robustesse UX (alert/confirm natifs)**~~ — **corrigé le 6 juillet 2026** pour les notifications (toasts, voir §8) ; les `window.confirm` avant suppression restent volontairement (vraies confirmations bloquantes).
 5. **Pipeline IA locale** non déployable telle quelle (dépendance Python côté serveur).
-6. **Fichier monolithe** : `app/events/[pin]/page.tsx` toujours volumineux (~1470 lignes) malgré une première extraction (voir §8) ; à poursuivre.
+6. **Fichier monolithe** : `app/events/[pin]/page.tsx` toujours volumineux (~1290 lignes) malgré deux vagues d'extraction (voir §8) ; à poursuivre.
 7. **Branches accumulées** : nombreuses branches `codex/*` historiques sur GitHub (mergées pour la plupart) — sans impact sur le code, à purger à l'occasion.
 
 > Nettoyage déjà effectué le 6 juillet 2026 : suppression des fichiers parasites versionnés (`tatus`, `top tracking .env.local`, `lint/`, fichiers IDE `.idea/`), retrait du script npm cassé `analytics:report`, réécriture du README, enrichissement du `.gitignore`, réalignement du `main` GitHub sur l'état à jour. Voir aussi §8 pour les chantiers de sécurité/robustesse traités le même jour.
@@ -200,15 +203,15 @@ En attendant l'arrivée d'Arnaud, une partie de la priorité 1 (sécurité) et d
 **Priorité 2 — Robustesse**
 - ~~Unicité du PIN (retry automatique)~~ ✅ fait le 6 juillet 2026.
 - ~~Pagination galerie/leads~~ ✅ fait le 6 juillet 2026.
-- ~~CI GitHub Actions (lint + typecheck + build)~~ ✅ fait le 6 juillet 2026.
-- Messages d'erreur agrégés à l'upload, toasts (au lieu d'`alert/confirm` natifs) — reste à faire.
-- Mettre en place Vitest + tests sur les flux critiques (au-delà du script `node:test` existant) — reste à faire.
+- ~~CI GitHub Actions (lint + typecheck + build)~~ ✅ fait le 6 juillet 2026, tests inclus depuis.
+- ~~Messages d'erreur agrégés à l'upload, toasts~~ ✅ fait le 6 juillet 2026.
+- ~~Mettre en place Vitest + tests sur les flux critiques~~ ✅ fait le 6 juillet 2026 (PIN, permissions de suppression, expiration).
 
 **Priorité 3 — Métier & croissance**
 - Compte utilisateur réel pour les hôtes (retrouver ses événements multi-appareils).
 - Finaliser le pipeline mobile Capacitor (build, stores) si le mobile reste un objectif.
 - Industrialiser les analytics (cron réel pour `vercel_web_metrics_daily`).
-- Poursuivre le découpage de `app/events/[pin]/page.tsx` (le bloc partage/QR est déjà extrait — voir §8) : lightbox et classement concours restent à extraire.
+- Poursuivre le découpage de `app/events/[pin]/page.tsx` (partage/QR, visionneuse et classement concours déjà extraits — voir §8) : reste surtout la logique d'upload et le rendu de la galerie.
 
 ---
 
