@@ -168,6 +168,14 @@ export default function EditEventPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 md:px-6 lg:px-0">
+      {event?.pin && (
+        <a
+          href={`/events/${event.pin}`}
+          className="inline-flex w-fit items-center gap-2 text-sm font-semibold text-teal-300 hover:text-teal-200"
+        >
+          ← Retour à l’événement
+        </a>
+      )}
       <header className="flex flex-col gap-2">
         <p className="text-xs uppercase tracking-[0.2em] text-teal-300">Gestion d’événement</p>
         <h1 className="text-3xl font-semibold text-white md:text-4xl">{title}</h1>
