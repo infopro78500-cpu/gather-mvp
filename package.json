@@ -14,7 +14,6 @@
     "test:health": "node scripts/health.test.mjs",
     "cap:sync": "npx cap sync",
     "cap:android": "npx cap open android",
-    "analytics:report": "node analytics/run_report.js",
     "analytics:smoke": "node scripts/analytics.smoke.mjs"
   },
   "dependencies": {
