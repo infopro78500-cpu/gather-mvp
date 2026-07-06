@@ -157,7 +157,8 @@ KPI_AUDIT.md          Audit des KPI
 
 ## 8. Dette technique et limites connues (honnêteté totale)
 
-1. **Sécurité — chantier n°1** : pas de RLS (Row Level Security) ni de vérification serveur ; les permissions reposent uniquement sur le `deviceId` en localStorage (falsifiable) ; le bucket photos est public (quiconque a l'URL peut voir les fichiers) ; l'auth OTP existe mais n'est pas branchée sur les flux événement ; `/admin` n'est pas protégé.
+0. **Offre Supabase gratuite = risque de panne totale (corrigé une fois, va se reproduire)** : le projet Supabase original (`qyiymuwkphiccomakiar`) a été mis en pause automatiquement pour inactivité et, passé 90 jours, n'était plus restaurable depuis le dashboard. Le 6 juillet 2026, il a fallu télécharger les sauvegardes (base + fichiers du bucket `event-photos`) et tout reconstruire dans un nouveau projet (`gather-mvp-restored`, `eu-west-1`). **Tant que le projet reste sur l'offre gratuite, ce risque se reproduira.** Passer sur l'offre Pro Supabase (~25$/mois, ne se met jamais en pause) est un prérequis absolu avant toute mise en production.
+1. **Sécurité — chantier n°1** : RLS (Row Level Security) est techniquement activé sur les tables et sur le bucket storage, mais avec des règles totalement permissives (accès public en lecture/écriture/suppression, sans vérification de propriétaire) — dans les faits, ça équivaut à une absence de protection. Les permissions réelles reposent uniquement sur le `deviceId` en localStorage (falsifiable) ; l'auth OTP existe mais n'est pas branchée sur les flux événement ; `/admin` n'est pas protégé.
 2. **Unicité du PIN non garantie** à la création (collision possible).
 3. **Pas de pagination** : galerie plafonnée à 200 fichiers, leads à 50.
 4. **Robustesse UX** : fichiers >10 Mo ignorés silencieusement, `alert/confirm` natifs, ZIP toujours intégral.
