@@ -25,7 +25,7 @@ export function ShareEventPanel({ shareUrl, pin }: ShareEventPanelProps) {
   return (
     <>
       <section
-        className={`rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-4 shadow-md ${
+        className={`rounded-2xl border border-amber-500/25 bg-slate-950/60 px-5 py-4 shadow-md ${
           isShareOpen ? "space-y-4" : ""
         }`}
       >
@@ -36,10 +36,10 @@ export function ShareEventPanel({ shareUrl, pin }: ShareEventPanelProps) {
           aria-controls="share-section-details"
           className="flex w-full items-center justify-between gap-4 text-left"
         >
-          <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">
+          <span className="text-[11px] uppercase tracking-[0.2em] text-amber-300/80 font-semibold">
             Partage de l’événement
           </span>
-          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-200">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-amber-500/30 bg-slate-900 text-amber-200">
             {isShareOpen ? (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
