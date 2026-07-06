@@ -10,7 +10,7 @@
 
 Gather a pour ambition de devenir **le standard du partage de photos en commun en quelques clics** : un organisateur crée un « événement » (mariage, soirée, voyage…), obtient un code PIN à 6 chiffres et un QR code, et tous les participants peuvent déposer / consulter / télécharger les photos de l'événement sans créer de compte.
 
-Le produit est aujourd'hui au stade **MVP fonctionnel** : les flux principaux marchent, mais il reste du travail de sécurisation, de robustesse et de finition avant une mise en production sérieuse (voir sections 8 et 9).
+Le produit est aujourd'hui au stade **MVP fonctionnel** : les flux principaux marchent, mais il reste du travail de sécurisation, de robustesse et de finition avant une mise en production sérieuse (voir sections 9 et 10).
 
 ---
 
@@ -104,6 +104,8 @@ KPI_AUDIT.md          Audit des KPI
 
 **Storage** : bucket **public** `event-photos`, un dossier par `event.id`.
 
+> **Projet actif depuis le 6 juillet 2026** : `gather-mvp-restored` (réf. `uvpgaxggzltjitpqcvlv`, région `eu-west-1`). Le projet original (`qyiymuwkphiccomakiar`) a été mis en pause pour inactivité et n'était plus restaurable après 90 jours — voir §9, point 0. Toutes les données (base + 234 photos) ont été reconstruites à l'identique dans ce nouveau projet.
+
 **Migrations** (dans `supabase/migrations/`, à appliquer dans l'ordre) :
 1. `20250211` ajout expiration des événements
 2. `20250305` mode concours
@@ -155,42 +157,62 @@ KPI_AUDIT.md          Audit des KPI
 
 ---
 
-## 8. Dette technique et limites connues (honnêteté totale)
+## 8. Chantiers de sécurité/robustesse déjà traités (6 juillet 2026)
+
+En attendant l'arrivée d'Arnaud, une partie de la priorité 1 (sécurité) et de la priorité 2 (robustesse) de la roadmap a été traitée :
+
+- **`/admin` et `/api/admin/*` protégés** par mot de passe (Basic Auth via `middleware.ts`, variable `ADMIN_PASSWORD`). **À reporter dans les variables d'environnement Vercel.**
+- **Suppression de photos** (simple et multiple) déplacée derrière une route serveur (`/api/events/[eventId]/photos/delete`) qui vérifie le `deviceId` côté serveur avant d'utiliser la clé service_role — le client anonyme n'a plus le droit `DELETE` direct sur le bucket storage (policy RLS retirée en base + migration `20260706120000_harden_storage_delete_policy.sql`).
+- **Modification d'événement (mode concours)** déplacée derrière une route serveur (`/api/events/[eventId]/contest-settings`) qui vérifie que le `deviceId` correspond bien à `host_device_id` avant d'appliquer le changement — **auparavant n'importe qui connaissant l'URL `/event/{eventId}/edit` pouvait modifier le concours de n'importe quel événement, sans aucune vérification**. La page affiche maintenant un message si vous n'êtes pas l'hôte.
+- **Collision de PIN gérée** : la création d'événement réessaie automatiquement (jusqu'à 5 fois) si le PIN généré est déjà pris, au lieu d'afficher une erreur générique.
+- **Pagination** : la galerie photos peut désormais charger au-delà de 200 fichiers (pagination interne jusqu'à 2000) ; le dashboard admin des leads a une vraie pagination (50/page) avec des compteurs globaux exacts (auparavant les statistiques d'intérêt étaient calculées seulement sur les 50 derniers leads).
+- **CI GitHub Actions** ajoutée (`.github/workflows/ci.yml`) : lint + typecheck + build sur chaque push/PR vers `main`.
+- **Début de découpage** du fichier `app/events/[pin]/page.tsx` : le bloc « partage / QR code » a été extrait dans `app/components/events/ShareEventPanel.tsx` (1593 → 1467 lignes). C'est un premier pas, pas une réorganisation complète — le fichier reste volumineux et gagnerait à être découpé davantage (lightbox, classement concours) par Arnaud.
+
+**Reste dans la roadmap** : passer le bucket photos en privé avec URLs signées, mettre en place de vrais comptes hôtes, tests automatisés (Vitest).
+
+## 9. Dette technique et limites connues (honnêteté totale)
 
 0. **Offre Supabase gratuite = risque de panne totale (corrigé une fois, va se reproduire)** : le projet Supabase original (`qyiymuwkphiccomakiar`) a été mis en pause automatiquement pour inactivité et, passé 90 jours, n'était plus restaurable depuis le dashboard. Le 6 juillet 2026, il a fallu télécharger les sauvegardes (base + fichiers du bucket `event-photos`) et tout reconstruire dans un nouveau projet (`gather-mvp-restored`, `eu-west-1`). **Tant que le projet reste sur l'offre gratuite, ce risque se reproduira.** Passer sur l'offre Pro Supabase (~25$/mois, ne se met jamais en pause) est un prérequis absolu avant toute mise en production.
-1. **Sécurité — chantier n°1** : RLS (Row Level Security) est techniquement activé sur les tables et sur le bucket storage, mais avec des règles totalement permissives (accès public en lecture/écriture/suppression, sans vérification de propriétaire) — dans les faits, ça équivaut à une absence de protection. Les permissions réelles reposent uniquement sur le `deviceId` en localStorage (falsifiable) ; l'auth OTP existe mais n'est pas branchée sur les flux événement ; `/admin` n'est pas protégé.
-2. **Unicité du PIN non garantie** à la création (collision possible).
-3. **Pas de pagination** : galerie plafonnée à 200 fichiers, leads à 50.
+1. **Sécurité — chantier n°1 (partiellement traité, voir §8)** : RLS (Row Level Security) reste techniquement permissif sur le bucket storage en lecture (public par design) ; `/admin` est désormais protégé et les écritures sensibles (suppression photo, modification concours) passent par des routes serveur validées — mais l'auth OTP n'est toujours pas branchée sur les flux événement et il n'y a pas de vrais comptes hôtes.
+2. ~~**Unicité du PIN non garantie**~~ — **corrigé le 6 juillet 2026** (retry automatique, voir §8).
+3. ~~**Pas de pagination**~~ — **corrigé le 6 juillet 2026** (galerie + leads admin, voir §8).
 4. **Robustesse UX** : fichiers >10 Mo ignorés silencieusement, `alert/confirm` natifs, ZIP toujours intégral.
 5. **Pipeline IA locale** non déployable telle quelle (dépendance Python côté serveur).
-6. **Fichier monolithe** : `app/events/[pin]/page.tsx` ≈ 1600 lignes, à découper en composants.
+6. **Fichier monolithe** : `app/events/[pin]/page.tsx` toujours volumineux (~1470 lignes) malgré une première extraction (voir §8) ; à poursuivre.
 7. **Branches accumulées** : nombreuses branches `codex/*` historiques sur GitHub (mergées pour la plupart) — sans impact sur le code, à purger à l'occasion.
 
-> Nettoyage déjà effectué le 6 juillet 2026 : suppression des fichiers parasites versionnés (`tatus`, `top tracking .env.local`, `lint/`, fichiers IDE `.idea/`), retrait du script npm cassé `analytics:report`, réécriture du README, enrichissement du `.gitignore`, réalignement du `main` GitHub sur l'état à jour.
+> Nettoyage déjà effectué le 6 juillet 2026 : suppression des fichiers parasites versionnés (`tatus`, `top tracking .env.local`, `lint/`, fichiers IDE `.idea/`), retrait du script npm cassé `analytics:report`, réécriture du README, enrichissement du `.gitignore`, réalignement du `main` GitHub sur l'état à jour. Voir aussi §8 pour les chantiers de sécurité/robustesse traités le même jour.
 
 ---
 
-## 9. Roadmap suggérée vers la production
+## 10. Roadmap suggérée vers la production
+
+**Priorité 0 — Éviter une nouvelle panne**
+- Passer Supabase sur l'offre **Pro** (~25$/mois) dès que possible : sur l'offre gratuite, le projet se remet en pause après une période d'inactivité et devient irrécupérable après 90 jours (voir §9, point 0 — déjà vécu une fois le 6 juillet 2026). **Seul point encore non traité — nécessite un paiement, donc une action de Nico.**
 
 **Priorité 1 — Sécurité (bloquant production)**
-- Activer RLS sur toutes les tables + policies Supabase.
-- Passer le bucket en privé + URLs signées (ou policies storage).
-- Protéger `/admin` et `/api/admin/*` (auth + rôle).
-- Déplacer les écritures sensibles (création event, suppression) derrière des routes serveur avec validation.
+- ~~Protéger `/admin` et `/api/admin/*`~~ ✅ fait le 6 juillet 2026 (Basic Auth).
+- ~~Déplacer les écritures sensibles (suppression photos, modification concours) derrière des routes serveur avec validation~~ ✅ fait le 6 juillet 2026.
+- Passer le bucket photos en privé + URLs signées (au lieu de public en lecture) — **reste à faire**.
+- Mettre en place de vrais comptes hôtes (au lieu du `deviceId` localStorage) pour une vérification d'identité plus robuste — **reste à faire**, chantier plus lourd.
 
 **Priorité 2 — Robustesse**
-- Unicité du PIN (contrainte DB + retry), pagination galerie/leads, messages d'erreur agrégés à l'upload, toasts.
-- Mettre en place Vitest + quelques tests sur les flux critiques ; CI GitHub Actions (lint + typecheck + build + tests).
+- ~~Unicité du PIN (retry automatique)~~ ✅ fait le 6 juillet 2026.
+- ~~Pagination galerie/leads~~ ✅ fait le 6 juillet 2026.
+- ~~CI GitHub Actions (lint + typecheck + build)~~ ✅ fait le 6 juillet 2026.
+- Messages d'erreur agrégés à l'upload, toasts (au lieu d'`alert/confirm` natifs) — reste à faire.
+- Mettre en place Vitest + tests sur les flux critiques (au-delà du script `node:test` existant) — reste à faire.
 
 **Priorité 3 — Métier & croissance**
 - Compte utilisateur réel pour les hôtes (retrouver ses événements multi-appareils).
 - Finaliser le pipeline mobile Capacitor (build, stores) si le mobile reste un objectif.
 - Industrialiser les analytics (cron réel pour `vercel_web_metrics_daily`).
-- Découper `app/events/[pin]/page.tsx` en composants.
+- Poursuivre le découpage de `app/events/[pin]/page.tsx` (le bloc partage/QR est déjà extrait — voir §8) : lightbox et classement concours restent à extraire.
 
 ---
 
-## 10. Contacts et accès à transmettre à Arnaud
+## 11. Contacts et accès à transmettre à Arnaud
 
 - [ ] Accès **GitHub** au dépôt (collaborateur ou transfert d'organisation)
 - [ ] Accès **Vercel** au projet (membre d'équipe)
