@@ -72,6 +72,11 @@ BEGIN
   END IF;
 END $$;
 
+-- Superseded by product_kpi_global / product_kpi_events / product_kpi_timeseries_daily below
+DROP VIEW IF EXISTS public.kpi_product_global CASCADE;
+DROP VIEW IF EXISTS public.kpi_product_timeseries_daily CASCADE;
+DROP VIEW IF EXISTS public.kpi_product_events CASCADE;
+
 DROP TABLE IF EXISTS public.analytics_events_old;
 
 create or replace function public.analytics_log_event_created()
