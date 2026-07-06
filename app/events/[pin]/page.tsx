@@ -4,13 +4,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabaseClient";
-import QRCode from "react-qr-code";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
 import { EventData } from "@/types/event";
 import { Photo } from "@/types/photo";
 import { EventHeader } from "@/app/components/events/EventHeader";
+import { ShareEventPanel } from "@/app/components/events/ShareEventPanel";
 import { getDeviceId as getEventDeviceId } from "@/lib/deviceId";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
 import { getVoterId } from "@/lib/voterId";
@@ -137,8 +137,6 @@ const pin = params.pin;
   const [deletingSelected, setDeletingSelected] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [showAdvancedActions, setShowAdvancedActions] = useState(false);
-  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
-  const [isShareOpen, setIsShareOpen] = useState(false);
 
   const [isCoffreOpen, setIsCoffreOpen] = useState(false);
   const [origin, setOrigin] = useState<string | null>(null);
@@ -238,14 +236,6 @@ const pin = params.pin;
   useEffect(() => {
     if (typeof window !== "undefined") {
       setOrigin(window.location.origin);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mediaQuery = window.matchMedia("(min-width: 768px)");
-    if (mediaQuery.matches) {
-      setIsShareOpen(true);
     }
   }, []);
 
@@ -364,21 +354,37 @@ const pin = params.pin;
       if (!silent) {
         setIsRefreshing(true);
       }
-      const { data: files, error: listError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .list(evt.id, {
-          limit: 200,
-          sortBy: { column: "name", order: "asc" },
-        });
+      type StorageFile = { name: string; created_at?: string | null; updated_at?: string | null };
+      const PAGE_SIZE = 200;
+      const MAX_FILES_TOTAL = 2000;
+      const safeFiles: StorageFile[] = [];
+      let offset = 0;
 
-      if (listError) {
-        console.error("Erreur lors de la récupération des photos", listError);
-        setError("Erreur lors du chargement des photos.");
-        setPhotos([]);
-        return;
+      // storage.list() est plafonné par page ; on boucle pour dépasser
+      // la limite de 200 fichiers tant qu'il reste des résultats.
+      while (true) {
+        const { data: page, error: listError } = await supabase.storage
+          .from(BUCKET_NAME)
+          .list(evt.id, {
+            limit: PAGE_SIZE,
+            offset,
+            sortBy: { column: "name", order: "asc" },
+          });
+
+        if (listError) {
+          console.error("Erreur lors de la récupération des photos", listError);
+          setError("Erreur lors du chargement des photos.");
+          setPhotos([]);
+          return;
+        }
+
+        safeFiles.push(...(page ?? []));
+
+        if (!page || page.length < PAGE_SIZE || safeFiles.length >= MAX_FILES_TOTAL) {
+          break;
+        }
+        offset += PAGE_SIZE;
       }
-
-      const safeFiles = files ?? [];
       const sortedFiles = [...safeFiles].sort((a, b) => {
         const timestampDiff = getFileSortValue(b) - getFileSortValue(a);
         if (timestampDiff !== 0) return timestampDiff;
@@ -698,14 +704,16 @@ const pin = params.pin;
 
     try {
       try {
-        const { error: deleteError } = await supabase.storage
-          .from(BUCKET_NAME)
-          .remove([photo.path]);
+        const response = await fetch(`/api/events/${event.id}/photos/delete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceId, paths: [photo.path] }),
+        });
 
-        if (deleteError) {
-          console.error("Erreur Supabase lors de la suppression", {
+        if (!response.ok) {
+          console.error("Erreur lors de la suppression", {
             path: photo.path,
-            error: deleteError,
+            status: response.status,
           });
         }
       } catch (err) {
@@ -750,14 +758,16 @@ const pin = params.pin;
       setDeletingSelected(true);
       setError(null);
 
-      const { error: deleteError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .remove(allowedPaths);
+      const response = await fetch(`/api/events/${event.id}/photos/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deviceId, paths: allowedPaths }),
+      });
 
-      if (deleteError) {
-        console.error("Erreur Supabase lors de la suppression multiple", {
+      if (!response.ok) {
+        console.error("Erreur lors de la suppression multiple", {
           paths: allowedPaths,
-          error: deleteError,
+          status: response.status,
         });
         setError("Erreur lors de la suppression des photos sélectionnées.");
         return;
@@ -772,12 +782,6 @@ const pin = params.pin;
       await refreshPhotos(event);
       setDeletingSelected(false);
     }
-  };
-
-  const handleCopyLink = () => {
-    if (!shareUrl) return;
-    navigator.clipboard.writeText(shareUrl);
-    alert("Lien de l’évènement copié dans le presse-papiers ✅");
   };
 
   const formatZipName = (evt: EventData, label: string) => {
@@ -1450,137 +1454,7 @@ const pin = params.pin;
               </div>
             </section>
 
-            {shareUrl && (
-              <section
-                className={`rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-4 shadow-md ${
-                  isShareOpen ? "space-y-4" : ""
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setIsShareOpen((prev) => !prev)}
-                  aria-expanded={isShareOpen}
-                  aria-controls="share-section-details"
-                  className="flex w-full items-center justify-between gap-4 text-left"
-                >
-                  <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">
-                    Partage de l’événement
-                  </span>
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-800 bg-slate-900 text-slate-200">
-                    {isShareOpen ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <polyline points="6 15 12 9 18 15" />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    )}
-                  </span>
-                </button>
-
-                {isShareOpen && (
-                  <div
-                    id="share-section-details"
-                    className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
-                  >
-                    <div className="space-y-2 flex-1">
-                      <p className="text-base font-semibold text-slate-50">
-                        Invitez votre groupe à rejoindre ce coffre.
-                      </p>
-                      <p className="text-sm text-slate-400">
-                        Copie le lien ou scanne le QR code pour partager rapidement.
-                      </p>
-                      <div className="mt-3 space-y-2">
-                        <div className="w-full overflow-hidden rounded-lg border border-slate-800 bg-slate-950/80 px-3 py-2.5 text-[12px] text-slate-100 shadow-inner">
-                          {shareUrl}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleCopyLink}
-                          className="inline-flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-teal-400 shadow-sm"
-                        >
-                          📋 Copier le lien
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-center md:justify-end">
-                      <div className="flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-inner">
-                        <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-28 md:h-28 mx-auto">
-                          <QRCode
-                            value={shareUrl}
-                            bgColor="transparent"
-                            fgColor="#e2e8f0"
-                            style={{ height: "100%", width: "100%" }}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsQrModalOpen(true)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800"
-                        >
-                          Agrandir le QR
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </section>
-            )}
-
-            {isQrModalOpen && shareUrl && (
-              <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
-                onClick={() => setIsQrModalOpen(false)}
-              >
-                <div
-                  className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-950/95 p-5 shadow-2xl"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-slate-100">QR code</p>
-                    <button
-                      type="button"
-                      onClick={() => setIsQrModalOpen(false)}
-                      className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800"
-                    >
-                      Fermer
-                    </button>
-                  </div>
-                  <div className="mt-4 flex items-center justify-center">
-                    <div className="h-56 w-56 sm:h-64 sm:w-64">
-                      <QRCode
-                        value={shareUrl}
-                        bgColor="transparent"
-                        fgColor="#e2e8f0"
-                        style={{ height: "100%", width: "100%" }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {shareUrl && <ShareEventPanel shareUrl={shareUrl} />}
 
             <p className="text-center text-sm text-slate-200 font-semibold">
               Merci d’avoir partagé vos souvenirs ❤️ {hasPhotos && "— de nouvelles photos arrivent en continu !"}

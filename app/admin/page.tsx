@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { LocalScanIA } from "@/app/components/LocalScanIA";
@@ -18,7 +19,13 @@ type Lead = {
   interest_beta_tester: boolean | null;
 };
 
-export default async function AdminPage() {
+const PAGE_SIZE = 50;
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const supabase = getSupabaseClient();
 
   if (!supabase) {
@@ -30,11 +37,16 @@ export default async function AdminPage() {
     );
   }
 
-  const { data, error } = await supabase
+  const resolvedSearchParams = await searchParams;
+  const page = Math.max(1, Number(resolvedSearchParams?.page) || 1);
+  const rangeStart = (page - 1) * PAGE_SIZE;
+  const rangeEnd = rangeStart + PAGE_SIZE - 1;
+
+  const { data, error, count } = await supabase
     .from("leads_landing")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(50);
+    .range(rangeStart, rangeEnd);
 
   if (error) {
     console.error("Erreur Supabase:", error);
@@ -55,12 +67,23 @@ export default async function AdminPage() {
   }
 
   const leads: Lead[] = data as Lead[];
+  const totalLeads = count ?? leads.length;
+  const totalPages = Math.max(1, Math.ceil(totalLeads / PAGE_SIZE));
 
-  const totalLeads = leads.length;
-  const investors = leads.filter((l) => l.interest_investing).length;
-  const contributors = leads.filter((l) => l.interest_contributing).length;
-  const ambassadors = leads.filter((l) => l.interest_ambassador).length;
-  const betas = leads.filter((l) => l.interest_beta_tester).length;
+  const countInterest = async (column: string) => {
+    const { count: interestCount } = await supabase
+      .from("leads_landing")
+      .select("*", { count: "exact", head: true })
+      .eq(column, true);
+    return interestCount ?? 0;
+  };
+
+  const [investors, contributors, ambassadors, betas] = await Promise.all([
+    countInterest("interest_investing"),
+    countInterest("interest_contributing"),
+    countInterest("interest_ambassador"),
+    countInterest("interest_beta_tester"),
+  ]);
 
   const { data: contestStats, error: contestStatsError } =
     await getAdminContestStats(supabase);
@@ -204,6 +227,29 @@ export default async function AdminPage() {
                 )}
               </tbody>
             </table>
+          </div>
+          <div className="flex items-center justify-between text-sm text-slate-400">
+            <span>
+              Page {page} / {totalPages} ({totalLeads} lead{totalLeads > 1 ? "s" : ""} au total)
+            </span>
+            <div className="flex gap-2">
+              {page > 1 && (
+                <Link
+                  href={`/admin?page=${page - 1}`}
+                  className="rounded-lg border border-slate-700 px-3 py-1.5 hover:border-teal-500 hover:text-teal-400"
+                >
+                  Précédent
+                </Link>
+              )}
+              {page < totalPages && (
+                <Link
+                  href={`/admin?page=${page + 1}`}
+                  className="rounded-lg border border-slate-700 px-3 py-1.5 hover:border-teal-500 hover:text-teal-400"
+                >
+                  Suivant
+                </Link>
+              )}
+            </div>
           </div>
         </section>
       </div>

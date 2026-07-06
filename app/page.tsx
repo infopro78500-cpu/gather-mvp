@@ -32,7 +32,6 @@ export default function CreateEventPage() {
       return;
     }
 
-    const pin = generatePin();
     setCreating(true);
 
     try {
@@ -53,23 +52,35 @@ export default function CreateEventPage() {
 
       const { expiresAt } = calculateExpiresAt(lifetimeDays);
 
-      const { error: insertError } = await supabase.from("events").insert({
-        name: name.trim(),
-        pin,
-        host_device_id: deviceId,
-        host_user_id: userId, // peut être null pour le MVP
-        expires_at: expiresAt.toISOString(),
-        lifetime_days: lifetimeDays,
-      });
+      const MAX_PIN_ATTEMPTS = 5;
+      let pin = generatePin();
 
-      if (insertError) {
-        console.error(insertError);
-        setError("Erreur lors de la création de l'évènement.");
-        return;
+      for (let attempt = 1; attempt <= MAX_PIN_ATTEMPTS; attempt += 1) {
+        const { error: insertError } = await supabase.from("events").insert({
+          name: name.trim(),
+          pin,
+          host_device_id: deviceId,
+          host_user_id: userId, // peut être null pour le MVP
+          expires_at: expiresAt.toISOString(),
+          lifetime_days: lifetimeDays,
+        });
+
+        if (!insertError) {
+          // On connaît déjà le PIN, pas besoin de .select().single()
+          window.location.href = `/events/${pin}`;
+          return;
+        }
+
+        const isPinCollision = insertError.code === "23505";
+        if (!isPinCollision || attempt === MAX_PIN_ATTEMPTS) {
+          console.error(insertError);
+          setError("Erreur lors de la création de l'évènement.");
+          return;
+        }
+
+        // Collision sur le PIN (déjà pris) : on en régénère un et on réessaie.
+        pin = generatePin();
       }
-
-      // On connaît déjà le PIN, pas besoin de .select().single()
-      window.location.href = `/events/${pin}`;
     } catch (err) {
       console.error(err);
       setError("Erreur inattendue.");
