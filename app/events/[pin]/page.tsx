@@ -869,10 +869,10 @@ const pin = params.pin;
 
         {!loading && event && (
           <>
-            <section className="rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-5 shadow-md space-y-3">
+            <section className="rounded-2xl border border-sky-500/25 bg-slate-950/60 px-5 py-5 shadow-md space-y-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-1">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 font-semibold">Évènement</p>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-sky-300/80 font-semibold">Évènement</p>
                   <p className="text-lg font-semibold text-slate-50">{event.name || "Photos"}</p>
                   <p className="text-sm text-slate-400">
                     Toutes les photos du groupe sont réunies ici.
@@ -891,10 +891,11 @@ const pin = params.pin;
               />
             )}
 
-            <section className="rounded-2xl border border-slate-800 bg-slate-950/60 px-5 py-5 shadow-md space-y-4">
+            <section className="rounded-2xl border border-emerald-500/25 bg-slate-950/60 px-5 py-5 shadow-md space-y-4">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-300/80 font-semibold">Photos</p>
                     <p className="text-base font-semibold text-slate-50">Photos du groupe</p>
                     <p className="text-sm text-slate-400">
                       Retrouvez et ajoutez les souvenirs partagés par tous.
@@ -927,7 +928,7 @@ const pin = params.pin;
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-200 shadow-sm">
+                  <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-200 shadow-sm">
                     {photoCount} photo{photoCount > 1 ? "s" : ""}
                   </span>
                   <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-200 shadow-sm">
