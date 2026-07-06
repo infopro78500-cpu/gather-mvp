@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint app pages lib scripts --ext .js,.jsx,.ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "check:release": "npm run lint && npm run typecheck && npm run build",
+    "test": "vitest run",
+    "check:release": "npm run lint && npm run typecheck && npm run test && npm run build",
     "release:verify": "npm run check:release && npm run test:health && npm run smoke",
     "smoke": "node scripts/smoke.mjs",
     "test:health": "node scripts/health.test.mjs",
@@ -46,6 +47,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

@@ -4,6 +4,7 @@ import { useState, FormEvent } from "react";
 import { getDeviceId } from "@/lib/deviceId";
 import { calculateExpiresAt } from "@/lib/eventLifetimes";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { generatePin, isPinCollisionError } from "@/lib/pin";
 import Image from "next/image";
 
 export default function CreateEventPage() {
@@ -12,11 +13,6 @@ export default function CreateEventPage() {
   const [error, setError] = useState<string | null>(null);
   const [lifetimeDays, setLifetimeDays] = useState<number>(1);
   const supabase = getSupabaseClient();
-
-  const generatePin = () => {
-    // Génère un PIN à 6 chiffres
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -71,7 +67,7 @@ export default function CreateEventPage() {
           return;
         }
 
-        const isPinCollision = insertError.code === "23505";
+        const isPinCollision = isPinCollisionError(insertError);
         if (!isPinCollision || attempt === MAX_PIN_ATTEMPTS) {
           console.error(insertError);
           setError("Erreur lors de la création de l'évènement.");

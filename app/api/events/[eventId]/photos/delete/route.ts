@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
+import { canDeletePhoto, getUploaderDeviceId } from "@/lib/photoPermissions";
 
 const BUCKET_NAME = "event-photos";
 
@@ -7,10 +8,6 @@ type DeleteRequestBody = {
   deviceId?: string;
   paths?: string[];
 };
-
-function getUploaderDeviceId(filename: string): string | undefined {
-  return filename.includes("__") ? filename.split("__")[0] : undefined;
-}
 
 export async function POST(
   request: NextRequest,
@@ -61,8 +58,11 @@ export async function POST(
   const allowedPaths = requestedPaths.filter((path) => {
     if (!path.startsWith(eventPrefix)) return false;
     const filename = path.slice(eventPrefix.length);
-    if (isHost) return true;
-    return getUploaderDeviceId(filename) === deviceId;
+    return canDeletePhoto({
+      isHost,
+      deviceId,
+      uploaderDeviceId: getUploaderDeviceId(filename),
+    });
   });
 
   if (allowedPaths.length === 0) {
