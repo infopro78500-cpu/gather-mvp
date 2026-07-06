@@ -17,9 +17,9 @@ export function EventHeader({ event }: Props) {
 
   return (
     <div className="flex flex-col items-start sm:items-end gap-1 text-left sm:text-right">
-      <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-semibold text-slate-200 shadow-sm">
+      <span className="inline-flex items-center rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-200 shadow-sm">
         PIN
-        <span className="ml-1 font-semibold tracking-widest text-slate-100">
+        <span className="ml-1 font-semibold tracking-widest text-amber-300">
           {event.pin}
         </span>
       </span>
