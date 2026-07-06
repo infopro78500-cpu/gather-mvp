@@ -28,3 +28,4 @@ android/app/build/
 # Fichiers temporaires Office (verrous Word)
 ~$*
 docs/*.docx
+tsconfig.tsbuildinfo
