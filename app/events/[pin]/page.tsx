@@ -1295,6 +1295,15 @@ const pin = params.pin;
                               ? "Info hôte : vous pouvez supprimer toutes les photos du groupe."
                               : "Vous pouvez supprimer uniquement vos photos. L'hôte gère l'ensemble du coffre."}
                           </p>
+
+                          {isHost && event && (
+                            <a
+                              href={`/event/${event.id}/edit`}
+                              className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800"
+                            >
+                              ⚙️ Gérer l’événement (mode concours, infos)
+                            </a>
+                          )}
                         </div>
                       )}
                     </div>
