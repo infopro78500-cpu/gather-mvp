@@ -7,6 +7,7 @@ import ImageUploader from "@/app/components/ImageUploader";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { EventData } from "@/types/event";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
+import { getDeviceId } from "@/lib/deviceId";
 
 const validateUUID = (value: string | undefined | null): value is string => {
   if (!value) return false;
@@ -22,6 +23,7 @@ export default function EditEventPage() {
   const supabase = getSupabaseClient();
 
   const [event, setEvent] = useState<EventData | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [contestEnabled, setContestEnabled] = useState(false);
@@ -44,6 +46,10 @@ export default function EditEventPage() {
     if (Number.isNaN(date.getTime())) return null;
     return date.toISOString();
   };
+
+  useEffect(() => {
+    setDeviceId(getDeviceId());
+  }, []);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -97,12 +103,13 @@ export default function EditEventPage() {
 
   const title = event?.name ?? "Événement";
   const expirationInfo = getExpirationInfo(event?.expires_at ?? null);
+  const isHost = Boolean(event && deviceId && event.host_device_id === deviceId);
 
   const handleContestSave = async () => {
     if (!event) return;
 
-    if (!supabase) {
-      setContestError("Supabase n'est pas configuré.");
+    if (!isHost) {
+      setContestError("Seul l'organisateur peut modifier cet évènement.");
       return;
     }
 
@@ -111,11 +118,6 @@ export default function EditEventPage() {
     setContestMessage(null);
 
     const contestEndsAtIso = toIsoString(contestEndsAt);
-    const shouldSetContestEnabledAt =
-      contestEnabled && !event.contest_enabled_at;
-    const contestEnabledAtIso = shouldSetContestEnabledAt
-      ? new Date().toISOString()
-      : event.contest_enabled_at ?? null;
 
     if (contestEndsAt && !contestEndsAtIso) {
       setContestError("Date de fin invalide.");
@@ -123,39 +125,45 @@ export default function EditEventPage() {
       return;
     }
 
-    const updatePayload: Partial<EventData> = {
-      contest_enabled: contestEnabled,
-      contest_ends_at: contestEndsAtIso,
-    };
+    try {
+      const response = await fetch(`/api/events/${event.id}/contest-settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deviceId,
+          contestEnabled,
+          contestEndsAt: contestEndsAtIso,
+        }),
+      });
 
-    if (shouldSetContestEnabledAt) {
-      updatePayload.contest_enabled_at = contestEnabledAtIso;
-    }
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        setContestError(
+          body?.error ?? "Impossible d'enregistrer les paramètres du concours."
+        );
+        setContestSaving(false);
+        return;
+      }
 
-    const { error: updateError } = await supabase
-      .from("events")
-      .update(updatePayload)
-      .eq("id", event.id);
+      const updated = await response.json();
 
-    if (updateError) {
-      console.error("Erreur lors de la mise à jour du concours", updateError);
+      setEvent((prev) =>
+        prev
+          ? {
+              ...prev,
+              contest_enabled: updated.contest_enabled,
+              contest_enabled_at: updated.contest_enabled_at,
+              contest_ends_at: updated.contest_ends_at,
+            }
+          : prev
+      );
+      setContestMessage("Paramètres du concours enregistrés ✅");
+    } catch (err) {
+      console.error("Erreur lors de la mise à jour du concours", err);
       setContestError("Impossible d'enregistrer les paramètres du concours.");
+    } finally {
       setContestSaving(false);
-      return;
     }
-
-    setEvent((prev) =>
-      prev
-        ? {
-            ...prev,
-            contest_enabled: contestEnabled,
-            contest_enabled_at: contestEnabledAtIso,
-            contest_ends_at: contestEndsAtIso,
-          }
-        : prev
-    );
-    setContestMessage("Paramètres du concours enregistrés ✅");
-    setContestSaving(false);
   };
 
   return (
@@ -237,46 +245,56 @@ export default function EditEventPage() {
           </p>
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-[1fr_1.2fr]">
-          <label className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-sm text-slate-200">
-            <input
-              type="checkbox"
-              checked={contestEnabled}
-              onChange={(event) => setContestEnabled(event.target.checked)}
-              className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-teal-400"
-            />
-            <span>Activer le mode concours</span>
-          </label>
+        {!loading && !error && !isHost && (
+          <p className="mt-4 text-sm text-amber-400">
+            Seul l&apos;organisateur de cet évènement (sur son appareil d&apos;origine) peut modifier ces paramètres.
+          </p>
+        )}
 
-          <label className="flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-sm text-slate-200">
-            <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Fin du vote (optionnel)</span>
-            <input
-              type="datetime-local"
-              value={contestEndsAt}
-              onChange={(event) => setContestEndsAt(event.target.value)}
-              disabled={!contestEnabled}
-              className="rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-            />
-            <span className="text-xs text-slate-400">
-              Laissez vide pour un concours sans date de fin.
-            </span>
-          </label>
-        </div>
+        {isHost && (
+          <>
+            <div className="mt-4 grid gap-4 md:grid-cols-[1fr_1.2fr]">
+              <label className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-sm text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={contestEnabled}
+                  onChange={(event) => setContestEnabled(event.target.checked)}
+                  className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-teal-400"
+                />
+                <span>Activer le mode concours</span>
+              </label>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleContestSave}
-            disabled={contestSaving || loading}
-            className="inline-flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {contestSaving ? "Sauvegarde..." : "Enregistrer le concours"}
-          </button>
-          {contestMessage && (
-            <span className="text-sm text-emerald-400">{contestMessage}</span>
-          )}
-          {contestError && <span className="text-sm text-red-400">{contestError}</span>}
-        </div>
+              <label className="flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-sm text-slate-200">
+                <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Fin du vote (optionnel)</span>
+                <input
+                  type="datetime-local"
+                  value={contestEndsAt}
+                  onChange={(event) => setContestEndsAt(event.target.value)}
+                  disabled={!contestEnabled}
+                  className="rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+                <span className="text-xs text-slate-400">
+                  Laissez vide pour un concours sans date de fin.
+                </span>
+              </label>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleContestSave}
+                disabled={contestSaving || loading}
+                className="inline-flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {contestSaving ? "Sauvegarde..." : "Enregistrer le concours"}
+              </button>
+              {contestMessage && (
+                <span className="text-sm text-emerald-400">{contestMessage}</span>
+              )}
+              {contestError && <span className="text-sm text-red-400">{contestError}</span>}
+            </div>
+          </>
+        )}
       </section>
     </div>
   );
