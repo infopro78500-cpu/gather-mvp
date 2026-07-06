@@ -25,7 +25,7 @@ export default async function AdminPage() {
     console.error("[Supabase] Client not available for admin page.");
     return (
       <main className="min-h-screen bg-slate-950 text-slate-50 px-6 py-10 flex justify-center">
-        <p>Supabase n'est pas configuré.</p>
+        <p>Supabase n&apos;est pas configuré.</p>
       </main>
     );
   }

@@ -24,18 +24,19 @@ const formatDuration = (totalSeconds: number) => {
 
 export function ContestCountdown({ endsAt }: ContestCountdownProps) {
   const endsAtMs = useMemo(() => new Date(endsAt).getTime(), [endsAt]);
-  const [remainingMs, setRemainingMs] = useState(() => endsAtMs - Date.now());
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    setRemainingMs(endsAtMs - Date.now());
     const intervalId = window.setInterval(() => {
-      setRemainingMs(endsAtMs - Date.now());
+      setNow(Date.now());
     }, 1000);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [endsAtMs]);
+  }, []);
+
+  const remainingMs = endsAtMs - now;
 
   if (!Number.isFinite(endsAtMs)) {
     return null;
