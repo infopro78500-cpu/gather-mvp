@@ -934,6 +934,12 @@ const pin = params.pin;
                     {isCoffreOpen ? "Galerie ouverte" : "Galerie masquée"}
                   </span>
                 </div>
+
+                {!hasPhotos && (
+                  <p className="text-sm text-amber-200">
+                    🎉 Sois le premier à ajouter une photo, ou invite ton groupe grâce au bloc « Partage » ci-dessous !
+                  </p>
+                )}
               </div>
 
               <div
@@ -1274,7 +1280,7 @@ const pin = params.pin;
               </div>
             </section>
 
-            {shareUrl && <ShareEventPanel shareUrl={shareUrl} />}
+            {shareUrl && event && <ShareEventPanel shareUrl={shareUrl} pin={event.pin} />}
 
             <p className="text-center text-sm text-slate-200 font-semibold">
               Merci d’avoir partagé vos souvenirs ❤️ {hasPhotos && "— de nouvelles photos arrivent en continu !"}

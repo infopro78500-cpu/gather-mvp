@@ -6,12 +6,13 @@ import { useToast } from "@/app/components/ui/ToastProvider";
 
 type ShareEventPanelProps = {
   shareUrl: string;
+  pin: string;
 };
 
 const isDesktopViewport = () =>
   typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
 
-export function ShareEventPanel({ shareUrl }: ShareEventPanelProps) {
+export function ShareEventPanel({ shareUrl, pin }: ShareEventPanelProps) {
   const [isShareOpen, setIsShareOpen] = useState(isDesktopViewport);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const { showToast } = useToast();
@@ -76,21 +77,29 @@ export function ShareEventPanel({ shareUrl }: ShareEventPanelProps) {
             id="share-section-details"
             className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
           >
-            <div className="space-y-2 flex-1">
+            <div className="space-y-3 flex-1">
               <p className="text-base font-semibold text-slate-50">
                 Invitez votre groupe à rejoindre ce coffre.
               </p>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300/80 font-semibold">
+                  Code à partager
+                </p>
+                <p className="font-mono text-4xl font-bold tracking-[0.15em] text-amber-300">
+                  {pin}
+                </p>
+              </div>
               <p className="text-sm text-slate-400">
-                Copie le lien ou scanne le QR code pour partager rapidement.
+                Ou copie le lien / scanne le QR code pour partager rapidement.
               </p>
               <div className="mt-3 space-y-2">
-                <div className="w-full overflow-hidden rounded-lg border border-slate-800 bg-slate-950/80 px-3 py-2.5 text-[12px] text-slate-100 shadow-inner">
+                <div className="w-full overflow-hidden rounded-lg border border-slate-800 bg-slate-950/80 px-3 py-2.5 text-[12px] text-slate-400 shadow-inner">
                   {shareUrl}
                 </div>
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="inline-flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-teal-400 shadow-sm"
+                  className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-amber-400 shadow-sm"
                 >
                   📋 Copier le lien
                 </button>
@@ -98,7 +107,7 @@ export function ShareEventPanel({ shareUrl }: ShareEventPanelProps) {
             </div>
 
             <div className="flex items-center justify-center md:justify-end">
-              <div className="flex flex-col items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-inner">
+              <div className="flex flex-col items-center gap-2 rounded-2xl border border-amber-500/30 bg-slate-950/70 p-4 shadow-inner">
                 <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-28 md:h-28 mx-auto">
                   <QRCode
                     value={shareUrl}
@@ -110,7 +119,7 @@ export function ShareEventPanel({ shareUrl }: ShareEventPanelProps) {
                 <button
                   type="button"
                   onClick={() => setIsQrModalOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-100 shadow-sm transition-colors hover:bg-slate-800"
+                  className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-amber-200 shadow-sm transition-colors hover:bg-slate-800"
                 >
                   Agrandir le QR
                 </button>
