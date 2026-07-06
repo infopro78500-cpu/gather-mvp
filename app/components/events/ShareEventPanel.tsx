@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import QRCode from "react-qr-code";
+import { useToast } from "@/app/components/ui/ToastProvider";
 
 type ShareEventPanelProps = {
   shareUrl: string;
@@ -13,10 +14,11 @@ const isDesktopViewport = () =>
 export function ShareEventPanel({ shareUrl }: ShareEventPanelProps) {
   const [isShareOpen, setIsShareOpen] = useState(isDesktopViewport);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const { showToast } = useToast();
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareUrl);
-    alert("Lien de l’évènement copié dans le presse-papiers ✅");
+    showToast("Lien de l’évènement copié dans le presse-papiers ✅", "success");
   };
 
   return (
