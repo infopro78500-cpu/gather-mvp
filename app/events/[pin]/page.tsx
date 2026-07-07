@@ -519,15 +519,29 @@ const pin = params.pin;
       return;
     }
 
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      showToast(
+        "Pas de connexion internet détectée. Réessaie dès que le réseau revient.",
+        "error"
+      );
+      e.target.value = "";
+      return;
+    }
+
     setUploading(true);
     setError(null);
     setUploadError(null);
     setUploadSuccess(null);
     setUploadInfo({ processed: 0, total: filesArray.length });
 
+    const MAX_UPLOAD_ATTEMPTS = 3;
+    const RETRY_BASE_DELAY_MS = 1000;
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
     try {
       const newPhotos: PhotoItem[] = [];
       const rejectedFiles: string[] = [];
+      const failedFiles: string[] = [];
 
       for (const file of filesArray) {
         const sizeMb = file.size / (1024 * 1024);
@@ -547,41 +561,49 @@ const pin = params.pin;
         const filenameOnStorage = `${currentDeviceId}__${Date.now()}-${safeName}`;
         const path = `${event.id}/${filenameOnStorage}`;
 
-        try {
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from(BUCKET_NAME)
-            .upload(path, file);
+        let uploaded = false;
+        for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS && !uploaded; attempt += 1) {
+          try {
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from(BUCKET_NAME)
+              .upload(path, file);
 
-          if (uploadError) {
-            console.error("Erreur upload Supabase", uploadError);
-            continue;
-          }
+            if (uploadError) {
+              throw uploadError;
+            }
 
-          if (!uploadData) {
-            console.warn("Upload terminé sans données retournées", {
+            if (!uploadData) {
+              throw new Error("Upload terminé sans données retournées");
+            }
+
+            const { data: publicData } = supabase.storage
+              .from(BUCKET_NAME)
+              .getPublicUrl(path);
+
+            if (!publicData?.publicUrl) {
+              throw new Error("URL publique manquante après upload");
+            }
+
+            newPhotos.push({
+              name: filenameOnStorage,
+              url: publicData.publicUrl,
               path,
-              file: file.name,
+              uploaderDeviceId: currentDeviceId,
             });
-            continue;
+            uploaded = true;
+          } catch (err) {
+            console.error(
+              `Échec upload (tentative ${attempt}/${MAX_UPLOAD_ATTEMPTS}) : ${file.name}`,
+              err
+            );
+            if (attempt < MAX_UPLOAD_ATTEMPTS) {
+              await wait(RETRY_BASE_DELAY_MS * attempt);
+            }
           }
+        }
 
-          const { data: publicData } = supabase.storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(path);
-
-          if (!publicData?.publicUrl) {
-            console.warn("URL publique manquante après upload", { path });
-            continue;
-          }
-
-          newPhotos.push({
-            name: filenameOnStorage,
-            url: publicData.publicUrl,
-            path,
-            uploaderDeviceId: currentDeviceId,
-          });
-        } catch (err) {
-          console.error("Erreur inattendue lors de l’upload d’un fichier", err);
+        if (!uploaded) {
+          failedFiles.push(file.name);
         }
 
         setUploadInfo((prev) =>
@@ -595,6 +617,17 @@ const pin = params.pin;
           rejectedFiles.length > 1 ? "s" : ""
         } n'ont pas été ajoutés car ils dépassent la taille autorisée (${MAX_FILE_SIZE_MB} Mo par photo, ${MAX_VIDEO_FILE_SIZE_MB} Mo par vidéo) : ${rejectedList}`;
         setUploadError(message);
+        showToast(message, "error");
+      }
+
+      if (failedFiles.length > 0) {
+        const failedList = failedFiles.join(", ");
+        const message = `${failedFiles.length} fichier${
+          failedFiles.length > 1 ? "s" : ""
+        } n'${failedFiles.length > 1 ? "ont" : "a"} pas pu être envoyé${
+          failedFiles.length > 1 ? "s" : ""
+        } malgré ${MAX_UPLOAD_ATTEMPTS} tentatives (réseau instable ?) : ${failedList}`;
+        setUploadError((prev) => (prev ? `${prev} — ${message}` : message));
         showToast(message, "error");
       }
 
