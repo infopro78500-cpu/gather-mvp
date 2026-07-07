@@ -95,12 +95,16 @@ export default function ConfidentialitePage() {
             la suppression d’un coffre ou d’une photo, contactez-nous à
             l’adresse&nbsp;:
           </p>
-          <p className="font-semibold text-teal-300">[À COMPLÉTER : e-mail de contact]</p>
+          <p className="font-semibold text-teal-300">
+            [adresse e-mail officielle en cours de création]
+          </p>
 
           <h2 className="pt-4 text-lg font-semibold text-slate-100">Responsable</h2>
           <p>
-            [À COMPLÉTER : nom / raison sociale du responsable de traitement et
-            coordonnées]
+            Le responsable du traitement est l’équipe Gather, dans le cadre d’un
+            projet en cours de développement non encore immatriculé. L’identité
+            juridique complète du responsable sera précisée lors de
+            l’immatriculation de la structure.
           </p>
 
           <p className="pt-6 text-xs text-slate-500">

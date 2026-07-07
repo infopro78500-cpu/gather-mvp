@@ -18,9 +18,19 @@ export default function MentionsLegalesPage() {
         <section className="space-y-3 text-sm leading-relaxed text-slate-300">
           <h2 className="pt-2 text-lg font-semibold text-slate-100">Éditeur</h2>
           <p>
-            [À COMPLÉTER : nom / raison sociale, forme juridique, capital le cas
-            échéant, adresse du siège, numéro SIRET/RCS, e-mail de contact,
-            directeur de la publication]
+            Gather est actuellement un projet en cours de développement, édité à
+            titre personnel par l’équipe Gather. Aucune structure juridique
+            (société ou entreprise individuelle) n’est immatriculée à ce jour.
+            Les informations légales complètes (raison sociale, numéro SIRET,
+            siège social) seront publiées lors de l’immatriculation, préalable à
+            toute exploitation commerciale du service.
+          </p>
+          <p>Directeur de la publication : l’équipe Gather.</p>
+          <p>
+            Contact :{" "}
+            <span className="font-semibold text-teal-300">
+              [adresse e-mail officielle en cours de création]
+            </span>
           </p>
 
           <h2 className="pt-4 text-lg font-semibold text-slate-100">Hébergement</h2>
