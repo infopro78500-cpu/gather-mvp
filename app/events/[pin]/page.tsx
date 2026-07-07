@@ -25,11 +25,13 @@ import {
   getUploaderDeviceId,
   canDeletePhoto as canDeletePhotoShared,
 } from "@/lib/photoPermissions";
+import { isVideoFilename } from "@/lib/mediaType";
 
 
 const BUCKET_NAME = "event-photos";
 const MAX_FILES = 20; // max 20 fichiers à la fois
-const MAX_FILE_SIZE_MB = 10; // max 10 Mo par fichier
+const MAX_FILE_SIZE_MB = 10; // max 10 Mo par photo
+const MAX_VIDEO_FILE_SIZE_MB = 50; // max 50 Mo par vidéo courte
 const INITIAL_VISIBLE_COUNT = 8;
 const VISIBLE_INCREMENT = 8;
 
@@ -529,7 +531,9 @@ const pin = params.pin;
 
       for (const file of filesArray) {
         const sizeMb = file.size / (1024 * 1024);
-        if (sizeMb > MAX_FILE_SIZE_MB) {
+        const isVideo = isVideoFilename(file.name);
+        const sizeLimitMb = isVideo ? MAX_VIDEO_FILE_SIZE_MB : MAX_FILE_SIZE_MB;
+        if (sizeMb > sizeLimitMb) {
           console.warn(`Fichier trop lourd : ${file.name}`);
           rejectedFiles.push(file.name);
           continue;
@@ -589,7 +593,7 @@ const pin = params.pin;
         const rejectedList = rejectedFiles.join(", ");
         const message = `${rejectedFiles.length} fichier${
           rejectedFiles.length > 1 ? "s" : ""
-        } n'ont pas été ajoutés car ils dépassent 10 Mo : ${rejectedList}`;
+        } n'ont pas été ajoutés car ils dépassent la taille autorisée (${MAX_FILE_SIZE_MB} Mo par photo, ${MAX_VIDEO_FILE_SIZE_MB} Mo par vidéo) : ${rejectedList}`;
         setUploadError(message);
         showToast(message, "error");
       }
@@ -994,13 +998,13 @@ const pin = params.pin;
                         </button>
                         {showUploadTooltip && (
                           <div className="absolute left-1/2 top-full z-10 mt-2 w-max max-w-[260px] -translate-x-1/2 rounded-lg border border-emerald-500/40 bg-slate-950 px-3 py-2 text-xs text-emerald-100 shadow-lg">
-                            Ajoute des souvenirs en quelques clics. Max 20 fichiers • 10 Mo par photo • Formats JPG/PNG.
+                            Ajoute des souvenirs en quelques clics. Max 20 fichiers • {MAX_FILE_SIZE_MB} Mo par photo, {MAX_VIDEO_FILE_SIZE_MB} Mo par vidéo courte.
                           </div>
                         )}
                         <input
                           ref={uploadInputRef}
                           type="file"
-                          accept="image/*"
+                          accept="image/*,video/*"
                           multiple
                           className="hidden"
                           onChange={handleUpload}
@@ -1190,11 +1194,28 @@ const pin = params.pin;
                                 className="w-full h-full"
                               >
                                 <div className="relative w-full overflow-hidden aspect-[4/5]">
-                                  <img
-                                    src={photo.url}
-                                    alt={photo.name}
-                                    className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
-                                  />
+                                  {isVideoFilename(photo.name) ? (
+                                    <video
+                                      src={photo.url}
+                                      muted
+                                      playsInline
+                                      preload="metadata"
+                                      className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={photo.url}
+                                      alt={photo.name}
+                                      className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+                                    />
+                                  )}
+                                  {isVideoFilename(photo.name) && (
+                                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-sm text-white">
+                                        ▶
+                                      </span>
+                                    </span>
+                                  )}
                                   {selectionMode && (
                                     <div className="absolute top-2 left-2 rounded-md bg-white/90 px-2 py-1 shadow-sm">
                                       <input
