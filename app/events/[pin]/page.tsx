@@ -26,6 +26,13 @@ import {
   canDeletePhoto as canDeletePhotoShared,
 } from "@/lib/photoPermissions";
 import { isVideoFilename } from "@/lib/mediaType";
+import { withRetry } from "@/lib/uploadHelpers";
+import {
+  addQueuedUpload,
+  getQueuedUploadsForEvent,
+  removeQueuedUpload,
+  type QueuedUpload,
+} from "@/lib/uploadQueue";
 
 
 const BUCKET_NAME = "event-photos";
@@ -137,6 +144,9 @@ const pin = params.pin;
     total: number;
   } | null>(null);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
+
+  const [queuedUploads, setQueuedUploads] = useState<QueuedUpload[]>([]);
+  const [syncingQueue, setSyncingQueue] = useState(false);
 
   const photoCount = photos.length;
   const selectedCount = selectedPhotos.length;
@@ -519,29 +529,17 @@ const pin = params.pin;
       return;
     }
 
-    if (typeof navigator !== "undefined" && navigator.onLine === false) {
-      showToast(
-        "Pas de connexion internet détectée. Réessaie dès que le réseau revient.",
-        "error"
-      );
-      e.target.value = "";
-      return;
-    }
-
     setUploading(true);
     setError(null);
     setUploadError(null);
     setUploadSuccess(null);
     setUploadInfo({ processed: 0, total: filesArray.length });
 
-    const MAX_UPLOAD_ATTEMPTS = 3;
-    const RETRY_BASE_DELAY_MS = 1000;
-    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
     try {
       const newPhotos: PhotoItem[] = [];
       const rejectedFiles: string[] = [];
-      const failedFiles: string[] = [];
+      const queuedNow: QueuedUpload[] = [];
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
 
       for (const file of filesArray) {
         const sizeMb = file.size / (1024 * 1024);
@@ -561,49 +559,79 @@ const pin = params.pin;
         const filenameOnStorage = `${currentDeviceId}__${Date.now()}-${safeName}`;
         const path = `${event.id}/${filenameOnStorage}`;
 
-        let uploaded = false;
-        for (let attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS && !uploaded; attempt += 1) {
-          try {
+        // Hors ligne : on ne tente même pas, on met directement en attente
+        // pour un envoi automatique dès que la connexion revient.
+        if (offline) {
+          const id = await addQueuedUpload({
+            eventId: event.id,
+            deviceId: currentDeviceId,
+            fileName: file.name,
+            fileType: file.type,
+            blob: file,
+            createdAt: Date.now(),
+          });
+          queuedNow.push({
+            id,
+            eventId: event.id,
+            deviceId: currentDeviceId,
+            fileName: file.name,
+            fileType: file.type,
+            blob: file,
+            createdAt: Date.now(),
+          });
+          setUploadInfo((prev) =>
+            prev ? { ...prev, processed: prev.processed + 1 } : null
+          );
+          continue;
+        }
+
+        const outcome = await withRetry(
+          async () => {
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from(BUCKET_NAME)
               .upload(path, file);
-
-            if (uploadError) {
-              throw uploadError;
-            }
-
-            if (!uploadData) {
-              throw new Error("Upload terminé sans données retournées");
-            }
+            if (uploadError) throw uploadError;
+            if (!uploadData) throw new Error("Upload terminé sans données retournées");
 
             const { data: publicData } = supabase.storage
               .from(BUCKET_NAME)
               .getPublicUrl(path);
-
-            if (!publicData?.publicUrl) {
-              throw new Error("URL publique manquante après upload");
-            }
-
-            newPhotos.push({
-              name: filenameOnStorage,
-              url: publicData.publicUrl,
-              path,
-              uploaderDeviceId: currentDeviceId,
-            });
-            uploaded = true;
-          } catch (err) {
-            console.error(
-              `Échec upload (tentative ${attempt}/${MAX_UPLOAD_ATTEMPTS}) : ${file.name}`,
-              err
-            );
-            if (attempt < MAX_UPLOAD_ATTEMPTS) {
-              await wait(RETRY_BASE_DELAY_MS * attempt);
-            }
+            if (!publicData?.publicUrl) throw new Error("URL publique manquante");
+            return publicData.publicUrl;
+          },
+          {
+            onAttemptFailed: (attempt, err) =>
+              console.error(`Échec upload (tentative ${attempt}/3) : ${file.name}`, err),
           }
-        }
+        );
 
-        if (!uploaded) {
-          failedFiles.push(file.name);
+        if (outcome.success) {
+          newPhotos.push({
+            name: filenameOnStorage,
+            url: outcome.result,
+            path,
+            uploaderDeviceId: currentDeviceId,
+          });
+        } else {
+          // Le réseau a lâché pendant l'upload : on met en attente plutôt
+          // que de perdre le fichier, il repartira automatiquement.
+          const id = await addQueuedUpload({
+            eventId: event.id,
+            deviceId: currentDeviceId,
+            fileName: file.name,
+            fileType: file.type,
+            blob: file,
+            createdAt: Date.now(),
+          });
+          queuedNow.push({
+            id,
+            eventId: event.id,
+            deviceId: currentDeviceId,
+            fileName: file.name,
+            fileType: file.type,
+            blob: file,
+            createdAt: Date.now(),
+          });
         }
 
         setUploadInfo((prev) =>
@@ -620,15 +648,12 @@ const pin = params.pin;
         showToast(message, "error");
       }
 
-      if (failedFiles.length > 0) {
-        const failedList = failedFiles.join(", ");
-        const message = `${failedFiles.length} fichier${
-          failedFiles.length > 1 ? "s" : ""
-        } n'${failedFiles.length > 1 ? "ont" : "a"} pas pu être envoyé${
-          failedFiles.length > 1 ? "s" : ""
-        } malgré ${MAX_UPLOAD_ATTEMPTS} tentatives (réseau instable ?) : ${failedList}`;
-        setUploadError((prev) => (prev ? `${prev} — ${message}` : message));
-        showToast(message, "error");
+      if (queuedNow.length > 0) {
+        setQueuedUploads((prev) => [...prev, ...queuedNow]);
+        const message = offline
+          ? `${queuedNow.length} fichier${queuedNow.length > 1 ? "s" : ""} mis en attente : envoi automatique dès que la connexion revient.`
+          : `${queuedNow.length} fichier${queuedNow.length > 1 ? "s" : ""} mis en attente après une coupure réseau : envoi automatique dès que possible.`;
+        showToast(message, "info");
       }
 
       if (newPhotos.length > 0) {
@@ -646,6 +671,87 @@ const pin = params.pin;
       e.target.value = "";
     }
   };
+
+  const flushUploadQueue = async (): Promise<void> => {
+    if (!event || !supabase) return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+
+    const pending = await getQueuedUploadsForEvent(event.id);
+    if (pending.length === 0) return;
+
+    setSyncingQueue(true);
+    const synced: PhotoItem[] = [];
+
+    for (const item of pending) {
+      const outcome = await withRetry(
+        async () => {
+          const path = `${item.eventId}/${item.deviceId}__${item.createdAt}-${item.fileName
+            .normalize("NFKD")
+            .replace(/[̀-ͯ]/g, "")
+            .replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .upload(path, item.blob);
+          if (uploadError) throw uploadError;
+
+          const { data: publicData } = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(path);
+          if (!publicData?.publicUrl) throw new Error("URL publique manquante");
+
+          return { path, url: publicData.publicUrl };
+        },
+        { maxAttempts: 2 }
+      );
+
+      if (outcome.success) {
+        await removeQueuedUpload(item.id);
+        setQueuedUploads((prev) => prev.filter((q) => q.id !== item.id));
+        synced.push({
+          name: item.fileName,
+          url: outcome.result.url,
+          path: outcome.result.path,
+          uploaderDeviceId: item.deviceId,
+        });
+      }
+    }
+
+    if (synced.length > 0) {
+      setPhotos((prev) => [...prev, ...synced]);
+      showToast(
+        `${synced.length} photo${synced.length > 1 ? "s" : ""} en attente envoyée${synced.length > 1 ? "s" : ""} automatiquement ✅`,
+        "success"
+      );
+    }
+    setSyncingQueue(false);
+  };
+
+  // Charge la file d'attente locale de cet événement au montage, tente une
+  // synchro immédiate si on est déjà en ligne, puis réessaie au retour du
+  // réseau et périodiquement en filet de sécurité.
+  useEffect(() => {
+    if (!event) return;
+
+    getQueuedUploadsForEvent(event.id)
+      .then((pending) => {
+        setQueuedUploads(pending);
+        if (pending.length > 0) {
+          flushUploadQueue();
+        }
+      })
+      .catch((err) => console.error("Lecture file d'attente locale impossible", err));
+
+    const handleOnline = () => flushUploadQueue();
+    window.addEventListener("online", handleOnline);
+    const intervalId = window.setInterval(() => flushUploadQueue(), 30000);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.clearInterval(intervalId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.id]);
 
   const openUploadDialog = () => {
     if (uploading || expirationInfo.isExpired) return;
@@ -971,7 +1077,22 @@ const pin = params.pin;
                   <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-200 shadow-sm">
                     {isCoffreOpen ? "Galerie ouverte" : "Galerie masquée"}
                   </span>
+                  {queuedUploads.length > 0 && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-amber-200 shadow-sm">
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full bg-amber-400 ${syncingQueue ? "animate-pulse" : ""}`}
+                        aria-hidden
+                      />
+                      {queuedUploads.length} en attente{syncingQueue ? " (envoi...)" : ""}
+                    </span>
+                  )}
                 </div>
+
+                {queuedUploads.length > 0 && (
+                  <p className="text-sm text-amber-200">
+                    📶 {queuedUploads.length} fichier{queuedUploads.length > 1 ? "s" : ""} en attente de connexion — envoi automatique dès que le réseau revient, tant que cette page reste ouverte (elle est aussi reprise si tu la rouvres plus tard).
+                  </p>
+                )}
 
                 {!hasPhotos && (
                   <p className="text-sm text-amber-200">
