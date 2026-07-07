@@ -39,6 +39,7 @@ const BUCKET_NAME = "event-photos";
 const MAX_FILES = 20; // max 20 fichiers à la fois
 const MAX_FILE_SIZE_MB = 10; // max 10 Mo par photo
 const MAX_VIDEO_FILE_SIZE_MB = 50; // max 50 Mo par vidéo courte
+const SIGNED_URL_TTL_SECONDS = 3600; // validité des URLs signées (bucket privé)
 const INITIAL_VISIBLE_COUNT = 8;
 const VISIBLE_INCREMENT = 8;
 
@@ -366,6 +367,28 @@ const pin = params.pin;
       });
       const shouldComputeContestIds = Boolean(evt.contest_enabled);
 
+      const paths = sortedFiles
+        .filter((f) => f && f.name)
+        .map((f) => `${evt.id}/${f.name}`);
+
+      // URLs signées (bucket privé) : un seul appel groupé pour tous les
+      // fichiers, avec une validité d'1h. La galerie se rafraîchit toutes
+      // les 8s, les URLs restent donc toujours fraîches pendant la session.
+      const signedByPath = new Map<string, string>();
+      if (paths.length > 0) {
+        const { data: signed, error: signError } = await supabase.storage
+          .from(BUCKET_NAME)
+          .createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
+        if (signError) {
+          console.error("Erreur lors de la signature des URLs", signError);
+        }
+        (signed ?? []).forEach((entry) => {
+          if (entry.signedUrl && entry.path) {
+            signedByPath.set(entry.path, entry.signedUrl);
+          }
+        });
+      }
+
       const photosWithUrl = (
         await Promise.all(
           sortedFiles.map(async (file): Promise<PhotoItem | null> => {
@@ -373,14 +396,10 @@ const pin = params.pin;
 
             const path = `${evt.id}/${file.name}`;
             const filename = file.name || "";
-
             const uploaderDeviceId = getUploaderDeviceId(filename);
 
-            const { data: publicData } = supabase.storage
-              .from(BUCKET_NAME)
-              .getPublicUrl(path);
-
-            if (!publicData?.publicUrl) {
+            const signedUrl = signedByPath.get(path);
+            if (!signedUrl) {
               return null;
             }
 
@@ -396,7 +415,7 @@ const pin = params.pin;
             return {
               name: file.name,
               path,
-              url: publicData.publicUrl,
+              url: signedUrl,
               uploaderDeviceId,
               contestPhotoId,
             };
@@ -593,11 +612,11 @@ const pin = params.pin;
             if (uploadError) throw uploadError;
             if (!uploadData) throw new Error("Upload terminé sans données retournées");
 
-            const { data: publicData } = supabase.storage
+            const { data: signedData, error: signError } = await supabase.storage
               .from(BUCKET_NAME)
-              .getPublicUrl(path);
-            if (!publicData?.publicUrl) throw new Error("URL publique manquante");
-            return publicData.publicUrl;
+              .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+            if (signError || !signedData?.signedUrl) throw new Error("URL signée manquante");
+            return signedData.signedUrl;
           },
           {
             onAttemptFailed: (attempt, err) =>
@@ -695,12 +714,12 @@ const pin = params.pin;
             .upload(path, item.blob);
           if (uploadError) throw uploadError;
 
-          const { data: publicData } = supabase.storage
+          const { data: signedData, error: signError } = await supabase.storage
             .from(BUCKET_NAME)
-            .getPublicUrl(path);
-          if (!publicData?.publicUrl) throw new Error("URL publique manquante");
+            .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+          if (signError || !signedData?.signedUrl) throw new Error("URL signée manquante");
 
-          return { path, url: publicData.publicUrl };
+          return { path, url: signedData.signedUrl };
         },
         { maxAttempts: 2 }
       );
