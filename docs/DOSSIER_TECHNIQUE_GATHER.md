@@ -171,6 +171,13 @@ En attendant l'arrivée d'Arnaud, une partie de la priorité 1 (sécurité) et d
 - **Système de notifications (toasts)** : tous les `alert()`/messages bloquants natifs ont été remplacés par des notifications non intrusives (`app/components/ui/ToastProvider.tsx`), y compris l'agrégation des erreurs d'upload (fichiers trop lourds, trop nombreux).
 - **Vitest installé** : tests unitaires sur la logique critique (génération/collision de PIN, permissions de suppression de photo, expiration d'événement), intégrés à `npm run check:release` et à la CI.
 - **Découpage du fichier `app/events/[pin]/page.tsx` poursuivi** : en plus du panneau de partage/QR, la visionneuse plein écran (`PhotoLightbox.tsx`) et le classement du concours (`ContestLeaderboard.tsx`) ont été extraits (1593 → 1287 lignes). Toujours un fichier volumineux, mais la logique de permission et de génération de PIN a aussi été mutualisée dans `lib/photoPermissions.ts` et `lib/pin.ts` (au lieu d'être dupliquée entre client et serveur).
+- **Identité visuelle des 3 blocs de la page événement** : chaque carte a maintenant sa couleur d'accent (bleu = info événement, émeraude = photos, ambre = partage/PIN), au lieu d'un style neutre identique partout.
+- **Upload vidéo débloqué** : le sélecteur de fichier n'acceptait que les images (`accept="image/*"`), alors que l'offre gratuite promet des « vidéos courtes ». Vidéos acceptées (50 Mo max, vs 10 Mo pour les photos), affichées correctement en galerie et dans la visionneuse (`<video>` au lieu d'une image cassée).
+- **Résilience réseau à l'upload** : un upload qui échoue (coupure réseau) est maintenant réessayé automatiquement (jusqu'à 3 tentatives avec délai croissant) au lieu d'être perdu silencieusement sans aucun message à l'utilisateur.
+- **Capture hors ligne + synchronisation automatique** : les photos/vidéos sélectionnées sans connexion (ou dont l'upload échoue malgré les réessais) sont mises en file d'attente locale (IndexedDB), visibles via un badge « en attente », et envoyées automatiquement dès que la connexion revient — sans que l'utilisateur ait besoin de recommencer. La file survit à la fermeture de l'onglet. Logique de réessai factorisée et testée (`lib/uploadHelpers.ts`, `withRetry`).
+- **Service Worker minimal** (`public/sw.js`, actif en production uniquement) : garde l'app accessible pendant une coupure réseau au lieu de l'erreur navigateur "pas de connexion" — fait main plutôt que `next-pwa`, incompatible avec Turbopack (utilisé par défaut en Next.js 16).
+
+> **Écart avec le pitch deck investisseur** : le deck (`GATHER (3).pdf`) présente un parcours en 6 étapes dont 3 ne correspondaient pas à la réalité du code (capture offline, sync automatique, IA locale). Les points ci-dessus rendent maintenant **vraies les étapes « photos offline » et « sync automatique »**, sur la stack web actuelle, sans attendre l'app native. Seule l'étape « IA locale » (reconnaissance faciale) reste hors de portée sans app native — décision prise de la reporter à la construction de l'app native plutôt que de bricoler un succédané maintenant. Le deck contenait aussi une promesse de « chiffrement de bout en bout » incompatible avec le modèle actuel d'accès par PIN sans compte : à reformuler en « chiffrement au repos et en transit » (déjà vrai aujourd'hui) avant toute présentation à un investisseur technique.
 
 **Reste dans la roadmap** : passer le bucket photos en privé avec URLs signées, mettre en place de vrais comptes hôtes.
 
@@ -181,8 +188,8 @@ En attendant l'arrivée d'Arnaud, une partie de la priorité 1 (sécurité) et d
 2. ~~**Unicité du PIN non garantie**~~ — **corrigé le 6 juillet 2026** (retry automatique, voir §8).
 3. ~~**Pas de pagination**~~ — **corrigé le 6 juillet 2026** (galerie + leads admin, voir §8).
 4. ~~**Robustesse UX (alert/confirm natifs)**~~ — **corrigé le 6 juillet 2026** pour les notifications (toasts, voir §8) ; les `window.confirm` avant suppression restent volontairement (vraies confirmations bloquantes).
-5. **Pipeline IA locale** non déployable telle quelle (dépendance Python côté serveur).
-6. **Fichier monolithe** : `app/events/[pin]/page.tsx` toujours volumineux (~1290 lignes) malgré deux vagues d'extraction (voir §8) ; à poursuivre.
+5. **Pipeline IA locale** (script Python de doublons) non déployable telle quelle (dépendance serveur). **Décision consciente** : reporté à la construction de l'app native (voir §8, écart deck) plutôt que de bricoler un succédané web maintenant.
+6. **Fichier monolithe** : `app/events/[pin]/page.tsx` est remonté à ~1470 lignes malgré les extractions (voir §8) — la logique d'upload/file d'attente hors ligne ajoutée le 7 juillet a repris de la place. Un passage en hook personnalisé (`useUploadQueue`) permettrait de le sortir du composant.
 7. **Branches accumulées** : nombreuses branches `codex/*` historiques sur GitHub (mergées pour la plupart) — sans impact sur le code, à purger à l'occasion.
 
 > Nettoyage déjà effectué le 6 juillet 2026 : suppression des fichiers parasites versionnés (`tatus`, `top tracking .env.local`, `lint/`, fichiers IDE `.idea/`), retrait du script npm cassé `analytics:report`, réécriture du README, enrichissement du `.gitignore`, réalignement du `main` GitHub sur l'état à jour. Voir aussi §8 pour les chantiers de sécurité/robustesse traités le même jour.
@@ -206,12 +213,13 @@ En attendant l'arrivée d'Arnaud, une partie de la priorité 1 (sécurité) et d
 - ~~CI GitHub Actions (lint + typecheck + build)~~ ✅ fait le 6 juillet 2026, tests inclus depuis.
 - ~~Messages d'erreur agrégés à l'upload, toasts~~ ✅ fait le 6 juillet 2026.
 - ~~Mettre en place Vitest + tests sur les flux critiques~~ ✅ fait le 6 juillet 2026 (PIN, permissions de suppression, expiration).
+- ~~Réessai automatique à l'upload, capture hors ligne + synchronisation automatique~~ ✅ fait le 7 juillet 2026 (voir §8) — rend vraies les étapes « offline » et « sync automatique » du pitch deck sur la stack web actuelle.
 
 **Priorité 3 — Métier & croissance**
 - Compte utilisateur réel pour les hôtes (retrouver ses événements multi-appareils).
-- Finaliser le pipeline mobile Capacitor (build, stores) si le mobile reste un objectif.
+- **App mobile native (React Native ou natif)**, prérequis pour deux promesses du pitch deck qui ne sont pas faisables en web : offline-first « vrai » (tâche de fond même app fermée) et IA locale / reconnaissance faciale sur l'appareil. Le pipeline Capacitor actuel (webview) est embryonnaire et ne suffit pas pour ces deux usages.
 - Industrialiser les analytics (cron réel pour `vercel_web_metrics_daily`).
-- Poursuivre le découpage de `app/events/[pin]/page.tsx` (partage/QR, visionneuse et classement concours déjà extraits — voir §8) : reste surtout la logique d'upload et le rendu de la galerie.
+- Poursuivre le découpage de `app/events/[pin]/page.tsx` (partage/QR, visionneuse et classement concours déjà extraits — voir §8) : envisager d'extraire la logique d'upload/file d'attente dans un hook dédié.
 
 ---
 
