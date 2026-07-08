@@ -18,6 +18,12 @@ export function LandingForm() {
 
     const formData = new FormData(e.currentTarget);
 
+    // Capture du canal d'acquisition (UTM + provenance), sans donnée perso.
+    const urlParams =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search)
+        : new URLSearchParams();
+
     const payload = {
       email: formData.get("email"),
       full_name: formData.get("full_name"),
@@ -27,6 +33,12 @@ export function LandingForm() {
       interest_beta_tester: !!formData.get("interest_beta_tester"),
       message: formData.get("message"),
       source: "coming_soon",
+      // Honeypot anti-bot : rempli uniquement par les robots.
+      company: formData.get("company"),
+      utm_source: urlParams.get("utm_source"),
+      utm_medium: urlParams.get("utm_medium"),
+      utm_campaign: urlParams.get("utm_campaign"),
+      referrer: typeof document !== "undefined" ? document.referrer : null,
     };
 
     try {
@@ -44,32 +56,24 @@ export function LandingForm() {
       } else {
         setDone(true);
 
-        // 1) On lit les choix de participation
         const invest = !!formData.get("interest_investing");
         const contrib = !!formData.get("interest_contributing");
         const amb = !!formData.get("interest_ambassador");
         const beta = !!formData.get("interest_beta_tester");
 
-        // 2) On construit la liste des pages possibles
-        const selectedPaths: string[] = [];
-        if (invest) selectedPaths.push("/infos/investisseur-v2");
-        if (contrib) selectedPaths.push("/infos/contributeur");
-        if (amb) selectedPaths.push("/infos/ambassadeur");
-        if (beta) selectedPaths.push("/infos/beta-testeur");
-
-        // 3) Redirection
-        if (selectedPaths.length === 1) {
-          // Un seul rôle → page directe
-          router.push(selectedPaths[0]);
+        // Redirection : la page investisseur existe et sert de pitch dédié
+        // (uniquement si c'est le seul intérêt coché). Tous les autres cas
+        // vont vers /merci, qui adapte son message aux intérêts choisis.
+        if (invest && !contrib && !amb && !beta) {
+          router.push("/infos/investisseur-v2");
         } else {
-          // Plusieurs rôles ou aucun → page "merci"
           const params = new URLSearchParams();
           if (invest) params.append("invest", "1");
           if (contrib) params.append("contrib", "1");
           if (amb) params.append("amb", "1");
           if (beta) params.append("beta", "1");
-
-          router.push(`/merci?${params.toString()}`);
+          const query = params.toString();
+          router.push(query ? `/merci?${query}` : "/merci");
         }
 
         (e.target as HTMLFormElement).reset();
@@ -84,6 +88,20 @@ export function LandingForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Honeypot anti-bot : invisible pour les humains, ignoré des lecteurs
+          d'écran ; s'il est rempli, la soumission est traitée comme du spam. */}
+      <div aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
+        <label>
+          Ne pas remplir
+          <input
+            type="text"
+            name="company"
+            tabIndex={-1}
+            autoComplete="off"
+          />
+        </label>
+      </div>
+
       {/* Email */}
       <div className="space-y-1">
         <label className="block text-sm font-medium text-slate-200">
@@ -162,6 +180,29 @@ export function LandingForm() {
           className="w-full rounded-md bg-slate-900/60 border border-slate-700 px-3 py-2 text-slate-100 text-sm outline-none resize-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
         />
       </div>
+
+      {/* Consentement RGPD */}
+      <label className="flex items-start gap-2 text-xs text-slate-300">
+        <input
+          type="checkbox"
+          name="consent"
+          required
+          className="mt-0.5 h-4 w-4 rounded border-slate-600 bg-slate-900"
+        />
+        <span>
+          J’accepte que mes informations soient utilisées pour être recontacté·e
+          au sujet de Gather. Voir la{" "}
+          <a
+            href="/legal/confidentialite"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-300 underline hover:text-teal-200"
+          >
+            politique de confidentialité
+          </a>
+          .
+        </span>
+      </label>
 
       {/* Bouton */}
       <button
