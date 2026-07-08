@@ -28,9 +28,12 @@ export default function MentionsLegalesPage() {
           <p>Directeur de la publication : l’équipe Gather.</p>
           <p>
             Contact :{" "}
-            <span className="font-semibold text-teal-300">
-              [adresse e-mail officielle en cours de création]
-            </span>
+            <a
+              href="mailto:contact@usegather.app"
+              className="font-semibold text-teal-300 hover:text-teal-200"
+            >
+              contact@usegather.app
+            </a>
           </p>
 
           <h2 className="pt-4 text-lg font-semibold text-slate-100">Hébergement</h2>

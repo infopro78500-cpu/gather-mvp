@@ -95,8 +95,13 @@ export default function ConfidentialitePage() {
             la suppression d’un coffre ou d’une photo, contactez-nous à
             l’adresse&nbsp;:
           </p>
-          <p className="font-semibold text-teal-300">
-            [adresse e-mail officielle en cours de création]
+          <p>
+            <a
+              href="mailto:contact@usegather.app"
+              className="font-semibold text-teal-300 hover:text-teal-200"
+            >
+              contact@usegather.app
+            </a>
           </p>
 
           <h2 className="pt-4 text-lg font-semibold text-slate-100">Responsable</h2>
