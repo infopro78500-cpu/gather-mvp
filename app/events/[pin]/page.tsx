@@ -42,9 +42,15 @@ const MAX_VIDEO_FILE_SIZE_MB = 50; // max 50 Mo par vidéo courte
 const SIGNED_URL_TTL_SECONDS = 3600; // validité des URLs signées (bucket privé)
 const INITIAL_VISIBLE_COUNT = 8;
 const VISIBLE_INCREMENT = 8;
+// Largeur des vignettes de la grille (transformation d'image Supabase).
+// 0 = désactivé (offre gratuite : la transformation est une fonctionnalité
+// payante). À passer à ~600 via NEXT_PUBLIC_IMAGE_THUMB_WIDTH une fois sur
+// l'offre Pro pour diviser la bande passante par ~15 sur la galerie.
+const THUMB_WIDTH = Number(process.env.NEXT_PUBLIC_IMAGE_THUMB_WIDTH) || 0;
 
 type PhotoItem = Photo & {
   uploaderDeviceId?: string | null;
+  thumbUrl?: string;
   contestPhotoId?: string;
 };
 
@@ -137,6 +143,16 @@ const pin = params.pin;
   const [showUploadTooltip, setShowUploadTooltip] = useState(false);
   const [showDownloadTooltip, setShowDownloadTooltip] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  // Cache des URLs signées par chemin : on réutilise la même URL entre deux
+  // rafraîchissements pour que le navigateur garde l'image en cache au lieu
+  // de la re-télécharger (une nouvelle URL signée = cache invalidé).
+  const signedUrlCacheRef = useRef<Map<string, { url: string; signedAt: number }>>(
+    new Map()
+  );
+  // Cache séparé pour les vignettes redimensionnées (offre Pro uniquement).
+  const thumbUrlCacheRef = useRef<Map<string, { url: string; signedAt: number }>>(
+    new Map()
+  );
 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
@@ -371,22 +387,82 @@ const pin = params.pin;
         .filter((f) => f && f.name)
         .map((f) => `${evt.id}/${f.name}`);
 
-      // URLs signées (bucket privé) : un seul appel groupé pour tous les
-      // fichiers, avec une validité d'1h. La galerie se rafraîchit toutes
-      // les 8s, les URLs restent donc toujours fraîches pendant la session.
+      // URLs signées (bucket privé) avec cache : on réutilise l'URL déjà
+      // signée d'un fichier tant qu'elle est encore valable (moins de 50 min),
+      // et on ne signe que les nouveaux fichiers. Ainsi l'URL reste stable
+      // entre deux rafraîchissements → le navigateur garde l'image en cache
+      // au lieu de tout re-télécharger toutes les 8 secondes.
+      const now = Date.now();
+      const REUSE_MS = (SIGNED_URL_TTL_SECONDS - 600) * 1000;
+      const cache = signedUrlCacheRef.current;
       const signedByPath = new Map<string, string>();
-      if (paths.length > 0) {
+      const toSign: string[] = [];
+
+      for (const path of paths) {
+        const cached = cache.get(path);
+        if (cached && now - cached.signedAt < REUSE_MS) {
+          signedByPath.set(path, cached.url);
+        } else {
+          toSign.push(path);
+        }
+      }
+
+      if (toSign.length > 0) {
         const { data: signed, error: signError } = await supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
+          .createSignedUrls(toSign, SIGNED_URL_TTL_SECONDS);
         if (signError) {
           console.error("Erreur lors de la signature des URLs", signError);
         }
         (signed ?? []).forEach((entry) => {
           if (entry.signedUrl && entry.path) {
             signedByPath.set(entry.path, entry.signedUrl);
+            cache.set(entry.path, { url: entry.signedUrl, signedAt: now });
           }
         });
+      }
+
+      // Purge du cache des fichiers qui n'existent plus.
+      const currentPaths = new Set(paths);
+      for (const key of cache.keys()) {
+        if (!currentPaths.has(key)) cache.delete(key);
+      }
+
+      // Vignettes redimensionnées (offre Pro). Même stratégie de cache. Si
+      // désactivé (THUMB_WIDTH = 0), la grille utilise l'URL pleine résolution.
+      const thumbByPath = new Map<string, string>();
+      if (THUMB_WIDTH > 0) {
+        const thumbCache = thumbUrlCacheRef.current;
+        const thumbToSign: string[] = [];
+        for (const path of paths) {
+          const cached = thumbCache.get(path);
+          if (cached && now - cached.signedAt < REUSE_MS) {
+            thumbByPath.set(path, cached.url);
+          } else {
+            thumbToSign.push(path);
+          }
+        }
+        if (thumbToSign.length > 0) {
+          // createSignedUrls (pluriel) ne gère pas la transformation ; on
+          // signe donc chaque vignette individuellement. Seuls les nouveaux
+          // fichiers sont signés (les autres viennent du cache).
+          await Promise.all(
+            thumbToSign.map(async (path) => {
+              const { data } = await supabase.storage
+                .from(BUCKET_NAME)
+                .createSignedUrl(path, SIGNED_URL_TTL_SECONDS, {
+                  transform: { width: THUMB_WIDTH, resize: "cover" },
+                });
+              if (data?.signedUrl) {
+                thumbByPath.set(path, data.signedUrl);
+                thumbCache.set(path, { url: data.signedUrl, signedAt: now });
+              }
+            })
+          );
+        }
+        for (const key of thumbCache.keys()) {
+          if (!currentPaths.has(key)) thumbCache.delete(key);
+        }
       }
 
       const photosWithUrl = (
@@ -416,6 +492,7 @@ const pin = params.pin;
               name: file.name,
               path,
               url: signedUrl,
+              thumbUrl: thumbByPath.get(path) ?? signedUrl,
               uploaderDeviceId,
               contestPhotoId,
             };
@@ -1377,7 +1454,7 @@ const pin = params.pin;
                                     />
                                   ) : (
                                     <img
-                                      src={photo.url}
+                                      src={photo.thumbUrl ?? photo.url}
                                       alt={photo.name}
                                       className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
                                     />
