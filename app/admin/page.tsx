@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
 import { LocalScanIA } from "@/app/components/LocalScanIA";
 import { getAdminContestStats } from "@/lib/adminStats";
 import ProductKpiSection, {
@@ -26,10 +26,12 @@ export default async function AdminPage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
-  const supabase = getSupabaseClient();
+  // Lecture via la clé service role (server-side, /admin est protégé par
+  // Basic Auth). Les leads ne sont plus lisibles par la clé anon publique.
+  const supabase = getSupabaseAdminClient();
 
   if (!supabase) {
-    console.error("[Supabase] Client not available for admin page.");
+    console.error("[Supabase] Admin client not available for admin page.");
     return (
       <main className="min-h-screen bg-slate-950 text-slate-50 px-6 py-10 flex justify-center">
         <p>Supabase n&apos;est pas configuré.</p>
