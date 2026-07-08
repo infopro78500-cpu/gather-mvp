@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     .select("id")
     .lt("expires_at", new Date().toISOString())
     .is("photos_purged_at", null)
+    .eq("preserve_photos", false)
     .limit(BATCH);
 
   if (error) {
