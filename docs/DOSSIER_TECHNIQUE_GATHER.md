@@ -161,7 +161,7 @@ KPI_AUDIT.md          Audit des KPI
 
 En attendant l'arrivée d'Arnaud, une partie de la priorité 1 (sécurité) et de la priorité 2 (robustesse) de la roadmap a été traitée :
 
-- **`/admin` et `/api/admin/*` protégés** par mot de passe (Basic Auth via `middleware.ts`, variable `ADMIN_PASSWORD`). **À reporter dans les variables d'environnement Vercel.**
+- **`/admin` et `/api/admin/*` protégés** par mot de passe (Basic Auth via `proxy.ts`, variable `ADMIN_PASSWORD`). **À reporter dans les variables d'environnement Vercel.**
 - **Suppression de photos** (simple et multiple) déplacée derrière une route serveur (`/api/events/[eventId]/photos/delete`) qui vérifie le `deviceId` côté serveur avant d'utiliser la clé service_role — le client anonyme n'a plus le droit `DELETE` direct sur le bucket storage (policy RLS retirée en base + migration `20260706120000_harden_storage_delete_policy.sql`).
 - **Modification d'événement (mode concours)** déplacée derrière une route serveur (`/api/events/[eventId]/contest-settings`) qui vérifie que le `deviceId` correspond bien à `host_device_id` avant d'appliquer le changement — **auparavant n'importe qui connaissant l'URL `/event/{eventId}/edit` pouvait modifier le concours de n'importe quel événement, sans aucune vérification**. La page affiche maintenant un message si vous n'êtes pas l'hôte.
 - **Collision de PIN gérée** : la création d'événement réessaie automatiquement (jusqu'à 5 fois) si le PIN généré est déjà pris, au lieu d'afficher une erreur générique.

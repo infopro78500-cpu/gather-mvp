@@ -4,7 +4,7 @@ export const config = {
   matcher: ["/admin/:path*", "/api/admin/:path*"],
 };
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const password = process.env.ADMIN_PASSWORD;
 
   if (!password) {
@@ -21,6 +21,6 @@ export function middleware(request: NextRequest) {
 
   return new NextResponse("Authentification requise.", {
     status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="Gather Admin"' },
+    headers: { "WWW-Authenticate": 'Basic realm="Usegather Admin"' },
   });
 }
