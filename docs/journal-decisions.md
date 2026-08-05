@@ -1,0 +1,44 @@
+# Journal des décisions — Usegather (ex-Gather)
+
+> **Rôle** : mémoire des choix *et de leurs raisons*, pour ne pas re-débattre. Toute décision structurante s'ajoute **en haut**. Un agent ou un associé qui veut revenir sur un choix lit d'abord l'entrée concernée. Le produit s'est appelé **Gather** jusqu'au 04/08/2026 — les entrées antérieures gardent l'ancien nom, on ne réécrit pas l'histoire.
+
+Format d'une entrée :
+
+```
+## AAAA-MM-JJ — Titre court
+**Décision** : ce qu'on fait.
+**Pourquoi** : le raisonnement / ce qu'on a écarté.
+**Impact** : ce que ça change (produit, code, équipe, docs).
+```
+
+---
+
+## 2026-08-04 — Mise en place du pilotage multi-équipe (cockpit Notion + docs pivots)
+**Décision** : Usegather adopte le système de pilotage éprouvé sur le projet Renka : cockpit Notion partagé aux 4 associés (base Tâches — Branche ×7, Type Tâche/Décision, Priorité, **Qui**) + 4 docs pivots versionnés (`decisions-validees`, `journal-decisions`, `journal-sessions`, `roadmap`) + CLAUDE.md + 3 agents (`cadrage-produit`, `data-analytics`, `ux-design`).
+**Pourquoi** : 10 fichiers .md en vrac à la racine, pas de journal, le *pourquoi* des choix vivait dans des conversations — intransmissible à une équipe de 4. Le système Renka a fait ses preuves (double écriture Notion↔git, rituels courts, décisions = objets de première classe).
+**Impact** : racine rangée (`docs/strategie/`), règles de session dans CLAUDE.md (double écriture obligatoire), cockpit Notion à partager avec Arnaud, Jérem et Corentin.
+
+## 2026-08-04 — Le nom public devient « Usegather »
+**Décision** : bascule complète du produit sur **Usegather** (marque INPI n° 5200774, enregistrée 13/03/2026, cl. 9/35/42). « Gather » seul est banni des supports publics. Renommage code fait le jour même : UI, métadonnées (`lang fr`, metadataBase `usegather.app`), pages légales/investisseurs, emails `contact@usegather.app`, appId mobile unifié `com.usegather.app` (avant toute publication store — après, c'est figé à vie).
+**Pourquoi** : la marque enregistrée est « Usegather », pas « Gather » (non protégeable seul, marques tierces type Gather.town, risque de contrefaçon ET de déchéance de notre marque pour non-usage). Le nom est moyen (6/10 : « th » imprononçable en français, registre tech pour un marché émotionnel) mais **il est à nous** — on ne rechange pas, on compense : lockup use+**gather**, prononciation assumée, QR-first (le nom se scanne plus qu'il ne se dit). Piste marketing validée : faire de la prononciation un gag récurrent, chute « Vous n'avez pas à le prononcer. Juste à le scanner. »
+**Impact** : restent à faire — logo (le PNG affiche encore « GATHER »), domaine `usegather.app` à brancher sur Vercel (l'ancien `gather-mvp.vercel.app` redirige à vie → les QR imprimés survivent), docs/deck à passer en Usegather. Marque au nom propre de Nico → cession à la société à l'immatriculation. Clés localStorage `gather_*` conservées volontairement.
+
+## 2026-07-08 — Maîtrise des coûts Supabase avant relance
+**Décision** : cron quotidien de purge du stockage des événements expirés (`api/cron/cleanup-expired`, avec préservation opt-in par événement), cache des URLs signées, miniatures prêtes pour le resize.
+**Pourquoi** : incident de juillet (projet Supabase gratuit mis en pause, données beta reconstruites) + egress = premier poste de coût. Prérequis à l'offre payante stable décidée avant tout lancement sérieux.
+**Impact** : coûts prévisibles ; KPI stockage documentés (`KPI_STORAGE_SYSTEM.md`) ; dossier technique mis à jour.
+
+## 2026-07-08 — Sécurisation leads & RGPD
+**Décision** : colmatage de la fuite de données leads, durcissement de l'API, consentement RGPD sur le formulaire, correction des 404 post-inscription.
+**Pourquoi** : chantier sécurité n°1 acté à la passation ; fondations RGPD nécessaires avant toute acquisition.
+**Impact** : formulaire early access conforme ; pages légales avec vrai email de contact.
+
+## 2026-07-06 — Passation technique à Arnaud
+**Décision** : Arnaud reprend le développement (lead tech). `main` GitHub réaligné, dossier technique complet livré (`docs/DOSSIER_TECHNIQUE_GATHER.md`). La sécurité est le chantier n°1.
+**Pourquoi** : Nico se concentre sur produit/business/marque ; le projet passe en équipe structurée (4 associés, cf. `strategie/POINT-SITUATION-GATHER.md §9`).
+**Impact** : répartition des rôles actée ; le dossier technique devient le document d'onboarding technique.
+
+## 2026-07-08 — Le deck repart sur des bases honnêtes (v2)
+**Décision** : reconstruction du pitch deck (`strategie/deck-v2.md`) : beachhead mariage France, Printerkut présenté comme moat (partenaire de production dédié, zéro CapEx), traction réelle uniquement (beta 50+ événements / 700+ photos, 0 actif à l'instant T).
+**Pourquoi** : les claims invérifiables du deck précédent étaient un risque de crédibilité face à des financeurs publics (Fit4Start, aides) qui vérifient.
+**Impact** : tout support investisseur dérive de cette version ; la stratégie de financement vise le non-dilutif < 50 k€ (piste LU principale, leviers FR en parallèle).
