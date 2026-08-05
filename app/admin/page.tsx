@@ -100,7 +100,7 @@ export default async function AdminPage({
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50 px-6 py-10 flex justify-center">
       <div className="w-full max-w-6xl space-y-8">
-        <h1 className="text-2xl md:text-3xl font-bold">Dashboard Gather</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">Dashboard Usegather</h1>
 
         {/* Cartes de stats */}
         <section className="grid gap-4 md:grid-cols-5">

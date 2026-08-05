@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Mentions légales — Gather",
+  title: "Mentions légales — Usegather",
 };
 
 export default function MentionsLegalesPage() {
@@ -18,14 +18,14 @@ export default function MentionsLegalesPage() {
         <section className="space-y-3 text-sm leading-relaxed text-slate-300">
           <h2 className="pt-2 text-lg font-semibold text-slate-100">Éditeur</h2>
           <p>
-            Gather est actuellement un projet en cours de développement, édité à
-            titre personnel par l’équipe Gather. Aucune structure juridique
+            Usegather est actuellement un projet en cours de développement, édité à
+            titre personnel par l’équipe Usegather. Aucune structure juridique
             (société ou entreprise individuelle) n’est immatriculée à ce jour.
             Les informations légales complètes (raison sociale, numéro SIRET,
             siège social) seront publiées lors de l’immatriculation, préalable à
             toute exploitation commerciale du service.
           </p>
-          <p>Directeur de la publication : l’équipe Gather.</p>
+          <p>Directeur de la publication : l’équipe Usegather.</p>
           <p>
             Contact :{" "}
             <a
@@ -48,7 +48,7 @@ export default function MentionsLegalesPage() {
           </h2>
           <p>
             Les photos et vidéos déposées dans un coffre restent la propriété de
-            leurs auteurs. Gather ne revendique aucun droit sur les contenus
+            leurs auteurs. Usegather ne revendique aucun droit sur les contenus
             partagés par les utilisateurs.
           </p>
 

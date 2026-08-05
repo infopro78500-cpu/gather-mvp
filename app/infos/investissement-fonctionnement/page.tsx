@@ -5,14 +5,14 @@ export default function InvestissementFonctionnementPage() {
         {/* 1. HERO */}
         <section className="space-y-4" id="resume">
           <p className="text-xs uppercase tracking-[0.25em] text-emerald-400/80">
-            Gather • Comprendre le fonctionnement
+            Usegather • Comprendre le fonctionnement
           </p>
           <h1 className="text-3xl md:text-4xl font-bold">
-            Comprendre le fonctionnement de l&apos;investissement dans Gather
+            Comprendre le fonctionnement de l&apos;investissement dans Usegather
           </h1>
           <p className="text-slate-300 text-base md:text-lg max-w-3xl">
             L&apos;objectif de cette page est d&apos;expliquer simplement comment fonctionne la
-            participation financière dans Gather&nbsp;: multiplicateurs, points, types de
+            participation financière dans Usegather&nbsp;: multiplicateurs, points, types de
             contributeurs et cadre d&apos;accord. Sans jargon juridique, sans promesse magique.
           </p>
         </section>
@@ -35,7 +35,7 @@ export default function InvestissementFonctionnementPage() {
           <h2 className="text-xl md:text-2xl font-semibold">Le principe général</h2>
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
             <p className="text-sm text-slate-300">
-              Gather ne vend pas des parts de société classiques. Les personnes qui soutiennent le
+              Usegather ne vend pas des parts de société classiques. Les personnes qui soutiennent le
               projet financièrement reçoivent des <strong>points</strong>, calculés à partir d&apos;un{" "}
               <strong>multiplicateur</strong>.
             </p>
@@ -60,7 +60,7 @@ export default function InvestissementFonctionnementPage() {
                 <li>Limité à <strong>200 personnes maximum</strong>.</li>
                 <li>Plafond à <strong>1000&nbsp;€</strong> par personne.</li>
                 <li>Multiplicateurs les plus élevés (x20, x15, x12 selon le moment d&apos;entrée).</li>
-                <li>Rôle d&apos;ambassadeur naturel de Gather.</li>
+                <li>Rôle d&apos;ambassadeur naturel de Usegather.</li>
               </ul>
             </div>
 
@@ -125,7 +125,7 @@ export default function InvestissementFonctionnementPage() {
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
             <p className="text-sm text-slate-300">
               Les points servent de base à une éventuelle <strong>redistribution future</strong>.
-              Si Gather décide de redistribuer une partie de ses revenus, cette redistribution
+              Si Usegather décide de redistribuer une partie de ses revenus, cette redistribution
               pourra être répartie entre les contributeurs au <strong>prorata de leurs points</strong>.
             </p>
             <p className="text-sm text-slate-300">
@@ -135,7 +135,7 @@ export default function InvestissementFonctionnementPage() {
             </p>
             <p className="text-xs text-slate-500">
               Important&nbsp;: le système reste flexible et dépendra de la trajectoire réelle de
-              Gather. L&apos;objectif est d&apos;aligner les intérêts entre le projet et celles et
+              Usegather. L&apos;objectif est d&apos;aligner les intérêts entre le projet et celles et
               ceux qui l&apos;aident à décoller.
             </p>
           </div>
@@ -164,7 +164,7 @@ export default function InvestissementFonctionnementPage() {
           </ol>
           <div className="pt-2">
             <a
-              href="mailto:contact@gather.app?subject=Comprendre%20le%20fonctionnement%20de%20l%27investissement%20Gather"
+              href="mailto:contact@usegather.app?subject=Comprendre%20le%20fonctionnement%20de%20l%27investissement%20Usegather"
               className="inline-flex items-center gap-2 rounded-xl border border-emerald-400 px-4 py-2 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/10 transition"
             >
               📩 Poser des questions ou demander un échange
@@ -203,7 +203,7 @@ export default function InvestissementFonctionnementPage() {
           <p className="text-xs text-slate-500">
             ⚠️ Comme tout projet en early stage, il existe un risque élevé. Il faut être à l&apos;aise
             avec l&apos;idée de soutenir une vision, sans garantie de rendement. L&apos;intention de
-            Gather est d&apos;être clair, transparent et aligné avec ses premiers soutiens.
+            Usegather est d&apos;être clair, transparent et aligné avec ses premiers soutiens.
           </p>
 
           <div className="flex flex-wrap gap-3">
@@ -214,7 +214,7 @@ export default function InvestissementFonctionnementPage() {
               ⬅️ Revenir à la page investissement
             </a>
             <a
-              href="mailto:contact@gather.app?subject=Questions%20sur%20le%20fonctionnement%20de%20l%27investissement%20Gather"
+              href="mailto:contact@usegather.app?subject=Questions%20sur%20le%20fonctionnement%20de%20l%27investissement%20Usegather"
               className="inline-flex items-center rounded-xl border border-emerald-400 px-4 py-2 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/10 transition"
             >
               💬 Discuter d&apos;une participation

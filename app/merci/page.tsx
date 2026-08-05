@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Merci — Gather",
+  title: "Merci — Usegather",
 };
 
 export default async function MerciPage({
@@ -21,9 +21,9 @@ export default async function MerciPage({
   const beta = params.beta === "1";
 
   const lines: string[] = [];
-  if (beta) lines.push("Tu seras parmi les premiers à tester Gather en avant-première.");
+  if (beta) lines.push("Tu seras parmi les premiers à tester Usegather en avant-première.");
   if (contrib) lines.push("On revient vers toi pour parler de la façon dont tu peux contribuer.");
-  if (amb) lines.push("Merci de vouloir parler de Gather autour de toi 🙌");
+  if (amb) lines.push("Merci de vouloir parler de Usegather autour de toi 🙌");
   if (invest) lines.push("Ton intérêt pour investir a bien été noté — on te recontacte rapidement.");
 
   return (
@@ -33,7 +33,7 @@ export default async function MerciPage({
         <h1 className="text-3xl font-bold">Merci d’avoir rejoint l’aventure&nbsp;!</h1>
         <p className="text-slate-300">
           Ton inscription est bien enregistrée. On te tient au courant des
-          prochaines étapes de Gather.
+          prochaines étapes de Usegather.
         </p>
 
         {lines.length > 0 && (

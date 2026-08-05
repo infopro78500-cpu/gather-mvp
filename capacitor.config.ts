@@ -8,8 +8,8 @@ type CapacitorConfig = {
 };
 
 const config = {
-  appId: "com.gather.app",
-  appName: "Gather",
+  appId: "com.usegather.app",
+  appName: "Usegather",
   webDir: "www",
   bundledWebRuntime: false,
 } satisfies CapacitorConfig;

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Politique de confidentialité — Gather",
+  title: "Politique de confidentialité — Usegather",
 };
 
 export default function ConfidentialitePage() {
@@ -20,7 +20,7 @@ export default function ConfidentialitePage() {
 
         <section className="space-y-3 text-sm leading-relaxed text-slate-300">
           <p>
-            Gather permet à un groupe de rassembler les photos et vidéos d’un
+            Usegather permet à un groupe de rassembler les photos et vidéos d’un
             événement dans un espace commun (« coffre »), accessible via un code
             PIN ou un QR code. Cette page explique quelles données nous
             collectons, pourquoi, et comment vous pouvez exercer vos droits.
@@ -106,7 +106,7 @@ export default function ConfidentialitePage() {
 
           <h2 className="pt-4 text-lg font-semibold text-slate-100">Responsable</h2>
           <p>
-            Le responsable du traitement est l’équipe Gather, dans le cadre d’un
+            Le responsable du traitement est l’équipe Usegather, dans le cadre d’un
             projet en cours de développement non encore immatriculé. L’identité
             juridique complète du responsable sera précisée lors de
             l’immatriculation de la structure.

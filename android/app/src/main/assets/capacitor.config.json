@@ -1,10 +1,10 @@
 {
-	"appId": "com.gather.mvp",
-	"appName": "Gather",
+	"appId": "com.usegather.app",
+	"appName": "Usegather",
 	"webDir": "public",
 	"bundledWebRuntime": false,
 	"server": {
-		"url": "https://gather-mvp.vercel.app",
+		"url": "https://usegather.app",
 		"androidScheme": "https"
 	}
 }

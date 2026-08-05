@@ -992,7 +992,7 @@ const pin = params.pin;
       .replace(/(^-|-$)/g, "");
 
     const date = new Date().toISOString().split("T")[0];
-    return `${normalizedName || "gather-event"}_${date}_${label}.zip`;
+    return `${normalizedName || "usegather-event"}_${date}_${label}.zip`;
   };
 
   const downloadPhotos = async (

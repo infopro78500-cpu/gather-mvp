@@ -8,7 +8,7 @@ export default function InvestisseurV2Page() {
         {/* HERO */}
         <section className="space-y-6">
           <p className="text-xs uppercase tracking-[0.2em] text-emerald-400/80">
-            Gather • Investisseurs early
+            Usegather • Investisseurs early
           </p>
 
           <h1 className="text-3xl md:text-4xl font-bold leading-tight">
@@ -17,7 +17,7 @@ export default function InvestisseurV2Page() {
           </h1>
 
           <p className="text-slate-300 max-w-2xl">
-            📸 Gather permet à un groupe de récupérer toutes les photos d&apos;un
+            📸 Usegather permet à un groupe de récupérer toutes les photos d&apos;un
             événement en un seul endroit, via un QR code ou un code PIN.
             L&apos;ambition : créer le réflexe&nbsp;
             <span className="italic">
@@ -53,16 +53,16 @@ export default function InvestisseurV2Page() {
             href="/infos/investissement-fonctionnement#resume"
             className="block text-xs text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline"
           >
-            Je veux d’abord comprendre Gather et le fonctionnement général (résumé)
+            Je veux d’abord comprendre Usegather et le fonctionnement général (résumé)
           </Link>
         </div>
         </section>
 
-        {/* Pourquoi Gather a du potentiel ? */}
+        {/* Pourquoi Usegather a du potentiel ? */}
         <section className="grid gap-10 md:grid-cols-2">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold">
-              Pourquoi Gather a du potentiel&nbsp;?
+              Pourquoi Usegather a du potentiel&nbsp;?
             </h2>
             <ul className="space-y-2 text-sm text-slate-300">
               <li className="flex gap-2">
@@ -89,7 +89,7 @@ export default function InvestisseurV2Page() {
               <li className="flex gap-2">
                 <span>🧰</span>
                 <span>
-                  Gather propose un réflexe simple&nbsp;: un coffre commun avec
+                  Usegather propose un réflexe simple&nbsp;: un coffre commun avec
                   QR code / PIN, tout le monde dépose et repart avec tout.
                 </span>
               </li>
@@ -123,7 +123,7 @@ export default function InvestisseurV2Page() {
               <li className="flex gap-2">
                 <span>🚀</span>
                 <span>
-                  Gather vise à devenir ce standard du partage de moments
+                  Usegather vise à devenir ce standard du partage de moments
                   collectifs.
                 </span>
               </li>
@@ -172,7 +172,7 @@ export default function InvestisseurV2Page() {
               Modèle d&apos;investissement
             </p>
             <p className="mt-3 text-sm text-slate-300">
-              Gather ne vend pas des parts de société classiques. Chaque
+              Usegather ne vend pas des parts de société classiques. Chaque
               contribution génère des points basés sur le{" "}
               <span className="font-semibold text-emerald-300">
                 montant investi × multiplicateur
@@ -251,7 +251,7 @@ export default function InvestisseurV2Page() {
               </p>
               <p className="mt-2 text-slate-300">
                 Passage à l&apos;échelle en Europe, partenariats stratégiques et
-                consolidation de Gather comme référence du partage photo
+                consolidation de Usegather comme référence du partage photo
                 d&apos;événements.
               </p>
             </div>
@@ -262,7 +262,7 @@ export default function InvestisseurV2Page() {
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">La vision sur 3 ans</h2>
           <p className="text-sm text-slate-300">
-            L&apos;ambition de Gather est d&apos;installer un réflexe simple&nbsp;:{" "}
+            L&apos;ambition de Usegather est d&apos;installer un réflexe simple&nbsp;:{" "}
             <span className="italic">
               &quot;On crée un coffre, on scanne le QR, tout le monde repart
               avec les photos.&quot;
@@ -336,7 +336,7 @@ export default function InvestisseurV2Page() {
               </p>
               <p className="mt-2 text-slate-300">
                 Identité visuelle, interface claire, onboarding fluide, tout ce
-                qui rend Gather agréable à utiliser.
+                qui rend Usegather agréable à utiliser.
               </p>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
@@ -345,7 +345,7 @@ export default function InvestisseurV2Page() {
               </p>
               <p className="mt-2 text-slate-300">
                 Tests sur le terrain, premiers événements, marketing ciblé et
-                activation d&apos;ambassadeurs pour faire connaître Gather.
+                activation d&apos;ambassadeurs pour faire connaître Usegather.
               </p>
             </div>
           </div>
@@ -376,7 +376,7 @@ export default function InvestisseurV2Page() {
                   plafond de <strong>1000 €</strong> par personne.
                 </li>
                 <li>✨ Multiplicateurs les plus élevés (x20, x15, x12 selon le moment d&apos;entrée).</li>
-                <li>📣 Rôle d&apos;ambassadeur naturel de Gather.</li>
+                <li>📣 Rôle d&apos;ambassadeur naturel de Usegather.</li>
                 <li>🎯 Place privilégiée dans la redistribution future.</li>
               </ul>
             </div>
@@ -456,14 +456,14 @@ export default function InvestisseurV2Page() {
           <p className="text-[11px] text-slate-500">
             ⚠️ Comme tout projet en early stage, il existe un risque élevé.
             L&apos;objectif est d&apos;être clair, transparent et aligné avec
-            les personnes qui choisissent de soutenir Gather.
+            les personnes qui choisissent de soutenir Usegather.
           </p>
         </section>
 
         {/* Rentabilité & sources de revenus */}
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">
-            Quand Gather devient rentable&nbsp;?
+            Quand Usegather devient rentable&nbsp;?
           </h2>
           <p className="text-sm text-slate-300">
             À partir de{" "}
@@ -471,7 +471,7 @@ export default function InvestisseurV2Page() {
               40 000 à 60 000 utilisateurs actifs
             </span>
             , les revenus récurrents peuvent couvrir les coûts
-            (infrastructure, développement, marketing) et rendre Gather
+            (infrastructure, développement, marketing) et rendre Usegather
             rentable. Les principales sources de revenus sont alignées avec
             l&apos;usage réel de l&apos;app.
           </p>
@@ -519,7 +519,7 @@ export default function InvestisseurV2Page() {
           </p>
 
           <Link
-            href="mailto:contact@gather.app?subject=Investissement%20Gather"
+            href="mailto:contact@usegather.app?subject=Investissement%20Usegather"
             className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-400"
           >
             Discuter d&apos;un investissement

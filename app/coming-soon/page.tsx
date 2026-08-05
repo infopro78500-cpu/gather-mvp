@@ -8,7 +8,7 @@ export default function ComingSoonPage() {
         <section className="space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full bg-teal-500/10 px-3 py-1 border border-teal-500/40 text-teal-300 text-xs font-medium">
             <span className="h-2 w-2 rounded-full bg-teal-400 animate-pulse" />
-            <span>Gather — Coming Soon</span>
+            <span>Usegather — Coming Soon</span>
           </div>
 
           <div className="space-y-3">
@@ -20,7 +20,7 @@ export default function ComingSoonPage() {
               </span>
             </h1>
             <p className="text-sm sm:text-base text-slate-300 max-w-xl">
-              Gather permet à un groupe de créer un coffre photo éphémère : un QR
+              Usegather permet à un groupe de créer un coffre photo éphémère : un QR
               code, un PIN, tout le monde dépose ses photos au même endroit, sans
               compte. À la fin, chacun repart avec l&apos;intégralité des
               souvenirs.
@@ -61,7 +61,7 @@ export default function ComingSoonPage() {
 
           <div className="space-y-2 text-sm text-slate-400">
             <p className="font-medium text-slate-200">
-              On construit Gather avec une communauté de personnes engagées.
+              On construit Usegather avec une communauté de personnes engagées.
             </p>
             <p>
               Investisseurs, contributeurs, ambassadeurs, testeurs… chacun

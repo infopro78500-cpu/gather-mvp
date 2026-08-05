@@ -156,7 +156,7 @@ export function LandingForm() {
             name="interest_ambassador"
             className="h-4 w-4 rounded border-slate-600 bg-slate-900"
           />
-          <span>Je peux parler de Gather autour de moi</span>
+          <span>Je peux parler de Usegather autour de moi</span>
         </label>
         <label className="flex items-center gap-2 text-sm text-slate-200">
           <input
@@ -164,7 +164,7 @@ export function LandingForm() {
             name="interest_beta_tester"
             className="h-4 w-4 rounded border-slate-600 bg-slate-900"
           />
-          <span>Je veux tester Gather en avant-première</span>
+          <span>Je veux tester Usegather en avant-première</span>
         </label>
       </div>
 
@@ -191,7 +191,7 @@ export function LandingForm() {
         />
         <span>
           J’accepte que mes informations soient utilisées pour être recontacté·e
-          au sujet de Gather. Voir la{" "}
+          au sujet de Usegather. Voir la{" "}
           <a
             href="/legal/confidentialite"
             target="_blank"
@@ -210,7 +210,7 @@ export function LandingForm() {
         disabled={loading}
         className="w-full rounded-md bg-teal-500 hover:bg-teal-400 disabled:bg-teal-700 text-slate-950 font-semibold py-2 text-sm transition"
       >
-        {loading ? "Envoi en cours..." : "Rejoindre l’aventure Gather"}
+        {loading ? "Envoi en cours..." : "Rejoindre l’aventure Usegather"}
       </button>
 
       {done && (

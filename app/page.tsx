@@ -91,12 +91,12 @@ export default function CreateEventPage() {
         {/* Bloc gauche : branding / pitch */}
         <div className="flex-1 flex flex-col justify-between gap-4">
           <div>
-            {/* Logo Gather */}
+            {/* Logo Usegather */}
             <div className="mb-4 flex items-center gap-3">
               <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center overflow-hidden">
                 <Image
-                  src="/gather-logo.png"
-                  alt="Gather logo"
+                  src="/usegather-logo.png"
+                  alt="Usegather logo"
                   width={48}
                   height={48}
                   priority
@@ -105,7 +105,7 @@ export default function CreateEventPage() {
               </div>
               <div className="flex flex-col">
                 <span className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
-                  Gather-MVP
+                  Usegather
                 </span>
                 <span className="text-xs text-slate-500">
                   Coffres photo partagés
@@ -232,7 +232,7 @@ export default function CreateEventPage() {
                 href="/coming-soon"
                 className="inline-block px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm border border-slate-700"
               >
-                Participer à l’aventure Gather 🚀
+                Participer à l’aventure Usegather 🚀
               </a>
             </div>
           </div>
