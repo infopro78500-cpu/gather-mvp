@@ -459,11 +459,14 @@ export async function listRecentOrders(days = 14): Promise<OrderSummary[]> {
   const supabase = getClient();
   if (!supabase) return [];
   const cutoff = new Date(Date.now() - days * 24 * 60 * 60_000).toISOString();
+  // Tri DÉCROISSANT avant la limite : si la fenêtre dépasse 1000 lignes (pic
+  // haute saison), ce sont les plus ANCIENNES qui sortent de l'écran, jamais
+  // les commandes du jour (bug relevé par l'audit UX §8.2).
   const { data, error } = await supabase
     .from("print_queue")
     .select("*")
     .gt("created_at", cutoff)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(1000);
   if (error) throw new Error(`orders : ${error.message}`);
   const rows = (data ?? []) as QueueRow[];
@@ -507,10 +510,13 @@ export async function listRecentOrders(days = 14): Promise<OrderSummary[]> {
           : allPrinted
             ? "imprimee"
             : "en_lot",
-      oldest: g[0].created_at,
+      // Les lignes arrivent désormais du plus récent au plus ancien : la plus
+      // ancienne pièce du groupe est la dernière.
+      oldest: g[g.length - 1].created_at,
     });
   }
-  return orders.reverse();
+  // Groupes insérés du plus récent au plus ancien — déjà dans le bon ordre.
+  return orders;
 }
 
 /** Marque expédiées toutes les pièces données (action « expédiée »). */
