@@ -18,6 +18,8 @@
 
 - **Migration appliquée en prod** (Nico, via SQL Editor) : tables `print_queue`/`print_batches` + bucket `print-files` vérifiés par preflight ✅. `ATELIER_SECRET` généré et posé en local — **à reporter sur Vercel** (avec `RESEND_API_KEY`/`PRINT_EMAIL_TO`/`PRINT_EMAIL_FROM` le moment venu ; `PRINT_ENABLED` reste éteint).
 
+- **Test de bout en bout réussi** (local, sur la vraie infra) : 8 commandes simulées → fichiers figés dans `print-files` → lot auto-formé au seuil de 8 → liens signés 8/8 → dashboard opérationnel (retirage testé — 2 pièces requeued). Email « non parti » = comportement dégradé attendu sans clé Resend. Données de test intégralement nettoyées (base 0/0, buckets purgés).
+
 **Reste à faire (inchangé du 04/08)** : brancher `usegather.app` sur Vercel, nouveau logo, vérifier la boîte mail, partager le cockpit aux 4.
 
 ---
