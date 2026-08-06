@@ -16,6 +16,8 @@
 
 - **Socle technique impression codé** (« fait tout ce qu'on peut faire » — Nico) : migration `print_queue`/`print_batches` + bucket privé `print-files` (isolé de la purge des coffres), catalogue draft (`lib/print/catalog.ts`, source unique, formats > 40×60 rigides marqués en attente de validation), file transposée de Renka (`lib/print/queue.ts` : claim atomique, rollback, zombies, lots par matière, fichiers figés à la commande), `POST /api/print/order` fermée par `PRINT_ENABLED` (Stripe passera devant), email atelier Resend (bon de tri, liens signés 7 j), dashboard `/atelier?cle=` (compteurs, forcer l'envoi, imprimé/expédié/retirage, bon de tri imprimable), cron `/api/print/flush` (7 h : zombies, lots complets + partiels > 2 j, purge), scripts `preflight`/`simulate-orders`, doc opérateur `process-fabrication-photo.md` (sections ⟨À CONFIRMER⟩). Pas d'imposition (question n°9) ni de paiement (prérequis) — assumé.
 
+- **Migration appliquée en prod** (Nico, via SQL Editor) : tables `print_queue`/`print_batches` + bucket `print-files` vérifiés par preflight ✅. `ATELIER_SECRET` généré et posé en local — **à reporter sur Vercel** (avec `RESEND_API_KEY`/`PRINT_EMAIL_TO`/`PRINT_EMAIL_FROM` le moment venu ; `PRINT_ENABLED` reste éteint).
+
 **Reste à faire (inchangé du 04/08)** : brancher `usegather.app` sur Vercel, nouveau logo, vérifier la boîte mail, partager le cockpit aux 4.
 
 ---
