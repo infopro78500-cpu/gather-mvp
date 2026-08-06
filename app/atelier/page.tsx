@@ -21,12 +21,15 @@ export default async function AtelierPage({
 
   if (!secret || cle !== secret) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-neutral-950 text-neutral-100">
-        <div className="text-center space-y-2 p-8">
-          <p className="text-4xl">🔒</p>
-          <h1 className="text-xl font-semibold">Accès atelier</h1>
-          <p className="text-neutral-400">
-            Lien invalide — demander le lien d&apos;accès à Nico.
+      <main className="min-h-screen flex items-center justify-center bg-[#F6F6F4] text-[#1A1A18]">
+        <div className="text-center space-y-2 rounded-2xl border border-[#E2E1DC] bg-white p-10">
+          <h1 className="text-xl font-semibold">
+            <span className="font-light">use</span>
+            <span className="font-bold">gather</span>
+            <span className="text-[#6B6A63]"> × Printerkut</span>
+          </h1>
+          <p className="text-[#6B6A63]">
+            Lien d&apos;accès invalide — demander le lien atelier à Nico.
           </p>
         </div>
       </main>

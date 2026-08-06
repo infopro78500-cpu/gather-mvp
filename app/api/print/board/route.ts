@@ -1,27 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
 import { materialLabel } from "@/lib/print/email";
+import { getVariant, resolutionBadge } from "@/lib/print/catalog";
 import {
   BATCH_SIZE,
+  MAX_WAIT_DAYS,
   listBatchPieces,
   listBoardPieces,
   listRecentOrders,
+  listUnprintedBatches,
   markBatchPrinted,
   markOrderShipped,
   maybeBuildBatch,
-  queueStatus,
   recentBatches,
   removePendingPiece,
   requeuePiece,
   signPrintFile,
+  type QueueRow,
 } from "@/lib/print/queue";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // API du tableau de bord atelier — accès par SECRET DÉDIÉ (ATELIER_SECRET),
-// volontairement distinct de CRON_SECRET : le secret du cron ne doit jamais
-// transiter par un navigateur (pattern Renka).
+// volontairement distinct de CRON_SECRET (le secret du cron ne transite
+// jamais par un navigateur).
+//
+// Deux modes (audit UX §8.3, pattern Renka) :
+//  - GET             → résumé LÉGER pollé toutes les 10 s : compteurs du jour,
+//                      file en cours (avec vignettes — liste courte par
+//                      construction), lots SANS détail pièce.
+//  - GET ?batch=<id> → détail d'UN lot à la demande : pièces avec vignette,
+//                      lien fichier signé, résolution, provenance retirage.
 function authorized(request: NextRequest): boolean {
   const secret = process.env.ATELIER_SECRET;
   if (!secret) return false;
@@ -30,6 +40,15 @@ function authorized(request: NextRequest): boolean {
     request.headers.get("x-atelier-cle") === secret
   );
 }
+
+function pieceResolution(p: QueueRow): "ok" | "acceptable" | "insufficient" | null {
+  if (!p.px_width || !p.px_height) return null;
+  const variant = getVariant(p.product, p.format, { includePending: true });
+  if (!variant) return null;
+  return resolutionBadge(p.px_width, p.px_height, variant.format);
+}
+
+const THUMB_LINK_DAYS = 1;
 
 export async function GET(request: NextRequest) {
   if (!authorized(request)) {
@@ -40,44 +59,69 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Supabase non configuré." }, { status: 503 });
   }
 
+  const batchId = request.nextUrl.searchParams.get("batch");
+
   try {
-    const [pieces, batches, orders, status] = await Promise.all([
+    // ---- Mode détail : les pièces d'UN lot, chargées au clic.
+    if (batchId) {
+      const pieces = await listBatchPieces(batchId);
+      const detailed = await Promise.all(
+        pieces.map(async (p, i) => ({
+          id: p.id,
+          slot: (p.slot_index ?? i) + 1,
+          order_ref: p.order_ref,
+          customer_name: p.customer_name,
+          product: p.product,
+          format: p.format,
+          thumbUrl: p.thumb_path
+            ? await signPrintFile(supabase, p.thumb_path, THUMB_LINK_DAYS)
+            : null,
+          link: p.file_path ? await signPrintFile(supabase, p.file_path, 2) : null,
+          resolution: pieceResolution(p),
+          requeuedFrom: p.requeued_from ?? null,
+        }))
+      );
+      return NextResponse.json({ batchId, pieces: detailed });
+    }
+
+    // ---- Mode léger : le poll de 10 s.
+    const [boardPieces, unprinted, history, orders] = await Promise.all([
       listBoardPieces(),
+      listUnprintedBatches(),
       recentBatches(10),
       listRecentOrders(14),
-      queueStatus(),
     ]);
 
-    // Liens signés à la demande (jamais stockés) : lots récents non purgés.
-    const batchesWithLinks = await Promise.all(
-      batches.map(async (b) => {
-        const batchPieces = await listBatchPieces(b.id);
-        const links = await Promise.all(
-          batchPieces.map((p) =>
-            p.file_path ? signPrintFile(supabase, p.file_path, 2) : Promise.resolve(null)
-          )
-        );
-        return {
-          ...b,
-          materialLabel: materialLabel(b.material),
-          pieces: batchPieces.map((p, i) => ({
-            id: p.id,
-            slot: (p.slot_index ?? i) + 1,
-            order_ref: p.order_ref,
-            customer_name: p.customer_name,
-            product: p.product,
-            format: p.format,
-            link: links[i],
-          })),
-        };
-      })
-    );
+    const now = Date.now();
+    const lateCutoff = now - MAX_WAIT_DAYS * 24 * 60 * 60_000;
+    const pendingPieces = boardPieces.filter((p) => p.status === "pending");
+    const perMaterial = new Map<string, number>();
+    for (const p of pendingPieces) {
+      perMaterial.set(p.material, (perMaterial.get(p.material) ?? 0) + 1);
+    }
 
-    return NextResponse.json({
-      batchSize: BATCH_SIZE,
-      pending: status.pending,
-      oldestPendingAt: status.oldestPendingAt,
-      pieces: pieces.map((p) => ({
+    const today = {
+      toPrint: {
+        pieces: unprinted.reduce((sum, b) => sum + b.piece_count, 0),
+        lots: unprinted.length,
+      },
+      late: pendingPieces.filter((p) => new Date(p.created_at).getTime() < lateCutoff)
+        .length,
+      pending: {
+        total: pendingPieces.length,
+        perMaterial: [...perMaterial.entries()].map(([material, count]) => ({
+          material,
+          label: materialLabel(material),
+          count,
+        })),
+      },
+      toShip: orders.filter((o) => o.status === "imprimee").length,
+    };
+
+    // File en cours : liste courte par construction (bornée par les seuils de
+    // lot) → vignettes signées à chaque poll acceptables (cache : P1-6).
+    const pieces = await Promise.all(
+      boardPieces.map(async (p) => ({
         id: p.id,
         created_at: p.created_at,
         status: p.status,
@@ -87,8 +131,31 @@ export async function GET(request: NextRequest) {
         format: p.format,
         material: p.material,
         materialLabel: materialLabel(p.material),
-      })),
-      batches: batchesWithLinks,
+        thumbUrl: p.thumb_path
+          ? await signPrintFile(supabase, p.thumb_path, THUMB_LINK_DAYS)
+          : null,
+        resolution: pieceResolution(p),
+        requeuedFrom: p.requeued_from ?? null,
+      }))
+    );
+
+    const lightBatch = (b: (typeof unprinted)[number]) => ({
+      id: b.id,
+      created_at: b.created_at,
+      piece_count: b.piece_count,
+      material: b.material,
+      materialLabel: materialLabel(b.material),
+      emailed_at: b.emailed_at,
+      printed_at: b.printed_at,
+    });
+
+    return NextResponse.json({
+      batchSize: BATCH_SIZE,
+      maxWaitDays: MAX_WAIT_DAYS,
+      today,
+      pieces,
+      batchesToDo: unprinted.map(lightBatch),
+      batchesDone: history.filter((b) => b.printed_at).map(lightBatch),
       orders,
     });
   } catch (e) {

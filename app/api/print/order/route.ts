@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
     for (const [i, piece] of piecesInput.entries()) {
       const variant = getVariant(String(piece.productId), String(piece.formatId));
       if (!variant) continue; // déjà validé plus haut
-      const filePath = await freezeSourceFile(
+      const frozen = await freezeSourceFile(
         supabase,
         String(piece.sourcePath),
         orderRef,
@@ -163,9 +163,14 @@ export async function POST(req: NextRequest) {
         material: variant.product.material,
         price_cents: variant.format.priceCents,
         source_path: String(piece.sourcePath),
-        file_path: filePath,
-        px_width: typeof piece.pxWidth === "number" ? piece.pxWidth : null,
-        px_height: typeof piece.pxHeight === "number" ? piece.pxHeight : null,
+        file_path: frozen.filePath,
+        thumb_path: frozen.thumbPath,
+        // Dimensions mesurées côté serveur (fiables pour 100 % des pièces) ;
+        // repli sur celles transmises par le client si sharp a échoué.
+        px_width:
+          frozen.pxWidth ?? (typeof piece.pxWidth === "number" ? piece.pxWidth : null),
+        px_height:
+          frozen.pxHeight ?? (typeof piece.pxHeight === "number" ? piece.pxHeight : null),
         notes,
       });
     }

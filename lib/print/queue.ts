@@ -16,6 +16,7 @@
 
 import "server-only";
 
+import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
 import { pickBatchGroup } from "@/lib/print/groups";
@@ -39,6 +40,8 @@ export const ZOMBIE_CLAIM_MINUTES = 15;
 export const RETENTION_DAYS = Number(process.env.PRINT_RETENTION_DAYS) || 30;
 /** Durée de validité des liens signés envoyés à l'atelier. */
 export const SIGNED_LINK_DAYS = 7;
+/** Côté long des vignettes générées au gel du fichier (audit UX §6.1). */
+const THUMB_LONG_EDGE = 480;
 
 export interface QueuedPiece {
   event_id: string;
@@ -52,6 +55,11 @@ export interface QueuedPiece {
   price_cents: number;
   source_path: string;
   file_path: string;
+  /** Vignette générée au gel du fichier (peut manquer : base non migrée,
+   *  génération échouée — l'UI affiche alors un pictogramme neutre). */
+  thumb_path?: string | null;
+  /** Pièce d'origine en cas de retirage (traçabilité, audit UX §6.7). */
+  requeued_from?: string | null;
   px_width?: number | null;
   px_height?: number | null;
   notes?: string | null;
@@ -79,17 +87,25 @@ function getClient(): SupabaseClient | null {
   return getSupabaseAdminClient();
 }
 
+export interface FrozenFile {
+  filePath: string;
+  thumbPath: string | null;
+  pxWidth: number | null;
+  pxHeight: number | null;
+}
+
 /**
  * Copie une photo du coffre vers le bucket print-files (fichier de production
- * figé). Cross-bucket : download + upload (storage.copy ne traverse pas les
- * buckets). Renvoie le chemin cible, ou lève si la source est introuvable.
+ * figé) et génère sa vignette + ses dimensions réelles au passage (le fichier
+ * est déjà en mémoire — audit UX §6.1). La vignette et les dimensions sont
+ * best-effort : leur échec ne bloque JAMAIS une commande.
  */
 export async function freezeSourceFile(
   supabase: SupabaseClient,
   sourcePath: string,
   orderRef: string,
   index: number
-): Promise<string> {
+): Promise<FrozenFile> {
   const { data, error } = await supabase.storage
     .from(EVENT_PHOTOS_BUCKET)
     .download(sourcePath);
@@ -97,7 +113,8 @@ export async function freezeSourceFile(
     throw new Error(`photo introuvable dans le coffre : ${sourcePath}`);
   }
   const ext = (sourcePath.split(".").pop() || "jpg").toLowerCase().slice(0, 5);
-  const targetPath = `queue/${orderRef}/${index + 1}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+  const stem = `queue/${orderRef}/${index + 1}-${crypto.randomUUID().slice(0, 8)}`;
+  const targetPath = `${stem}.${ext}`;
   const bytes = new Uint8Array(await data.arrayBuffer());
   const { error: upErr } = await supabase.storage
     .from(PRINT_BUCKET)
@@ -106,7 +123,31 @@ export async function freezeSourceFile(
       upsert: false,
     });
   if (upErr) throw new Error(`copie vers print-files échouée : ${upErr.message}`);
-  return targetPath;
+
+  let thumbPath: string | null = null;
+  let pxWidth: number | null = null;
+  let pxHeight: number | null = null;
+  try {
+    const image = sharp(Buffer.from(bytes), { failOn: "none" });
+    const meta = await image.metadata();
+    // Dimensions dans le sens d'affichage (l'EXIF peut tourner l'image).
+    const rotated = (meta.orientation ?? 1) >= 5;
+    pxWidth = (rotated ? meta.height : meta.width) ?? null;
+    pxHeight = (rotated ? meta.width : meta.height) ?? null;
+    const thumb = await image
+      .rotate() // applique l'orientation EXIF
+      .resize(THUMB_LONG_EDGE, THUMB_LONG_EDGE, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 70 })
+      .toBuffer();
+    const candidate = `${stem}-thumb.jpg`;
+    const { error: thumbErr } = await supabase.storage
+      .from(PRINT_BUCKET)
+      .upload(candidate, new Uint8Array(thumb), { contentType: "image/jpeg" });
+    if (!thumbErr) thumbPath = candidate;
+  } catch (e) {
+    console.warn(`[print] vignette non générée pour ${sourcePath}`, e);
+  }
+  return { filePath: targetPath, thumbPath, pxWidth, pxHeight };
 }
 
 /** URL signée d'un fichier de production (email atelier, dashboard). */
@@ -122,16 +163,30 @@ export async function signPrintFile(
   return data?.signedUrl ?? null;
 }
 
-/** Insère les pièces d'une commande dans la file. Renvoie le nombre inséré. */
+/** Insère les pièces d'une commande dans la file. Renvoie le nombre inséré.
+ *  Base pas encore migrée (colonnes thumb_path / requeued_from absentes) :
+ *  retente sans la colonne fautive plutôt que de perdre la mise en file
+ *  (pattern Renka — la migration 20260806 est additive et optionnelle). */
 export async function enqueuePieces(pieces: QueuedPiece[]): Promise<number> {
   const supabase = getClient();
   if (!pieces.length || !supabase) return 0;
-  const { data, error } = await supabase
-    .from("print_queue")
-    .insert(pieces.map((p) => ({ ...p })))
-    .select("id");
-  if (error) throw new Error(`print_queue insert : ${error.message}`);
-  return data?.length ?? 0;
+  let payload: Record<string, unknown>[] = pieces.map((p) => ({ ...p }));
+  const optional = ["thumb_path", "requeued_from"];
+  for (;;) {
+    const { data, error } = await supabase
+      .from("print_queue")
+      .insert(payload)
+      .select("id");
+    if (!error) return data?.length ?? 0;
+    const missing = optional.find((col) => error.message.includes(col));
+    if (!missing) throw new Error(`print_queue insert : ${error.message}`);
+    optional.splice(optional.indexOf(missing), 1);
+    payload = payload.map((p) => {
+      const { [missing]: _drop, ...rest } = p;
+      void _drop;
+      return rest;
+    });
+  }
 }
 
 async function releaseClaim(supabase: SupabaseClient, batchId: string) {
@@ -279,29 +334,55 @@ export async function purgeOldPrintFiles(): Promise<number> {
   const supabase = getClient();
   if (!supabase) return 0;
   const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60_000).toISOString();
-  const { data, error } = await supabase
-    .from("print_queue")
-    .select("id, file_path")
-    .eq("status", "batched")
-    .neq("file_path", "")
-    .lt("claimed_at", cutoff)
-    .limit(200);
-  if (error) throw new Error(`purge select : ${error.message}`);
-  if (!data?.length) return 0;
-  const paths = data.map((r: { file_path: string }) => r.file_path).filter(Boolean);
+  // Vignette purgée EN MÊME TEMPS que le fichier de production (audit UX
+  // §6.8) — sélection tolérante si la colonne thumb_path n'est pas migrée.
+  let rows: { id: string; file_path: string; thumb_path?: string | null }[] | null = null;
+  let hasThumbColumn = true;
+  {
+    const { data, error } = await supabase
+      .from("print_queue")
+      .select("id, file_path, thumb_path")
+      .eq("status", "batched")
+      .neq("file_path", "")
+      .lt("claimed_at", cutoff)
+      .limit(200);
+    if (error && error.message.includes("thumb_path")) {
+      hasThumbColumn = false;
+      const retry = await supabase
+        .from("print_queue")
+        .select("id, file_path")
+        .eq("status", "batched")
+        .neq("file_path", "")
+        .lt("claimed_at", cutoff)
+        .limit(200);
+      if (retry.error) throw new Error(`purge select : ${retry.error.message}`);
+      rows = retry.data;
+    } else if (error) {
+      throw new Error(`purge select : ${error.message}`);
+    } else {
+      rows = data;
+    }
+  }
+  if (!rows?.length) return 0;
+  const paths = rows
+    .flatMap((r) => [r.file_path, r.thumb_path ?? null])
+    .filter((p): p is string => Boolean(p));
   if (paths.length) {
     const { error: rmErr } = await supabase.storage.from(PRINT_BUCKET).remove(paths);
     if (rmErr) throw new Error(`purge storage : ${rmErr.message}`);
   }
+  const clear: Record<string, unknown> = hasThumbColumn
+    ? { file_path: "", thumb_path: null }
+    : { file_path: "" };
   const { error: updErr } = await supabase
     .from("print_queue")
-    .update({ file_path: "" })
+    .update(clear)
     .in(
       "id",
-      data.map((r: { id: string }) => r.id)
+      rows.map((r) => r.id)
     );
   if (updErr) throw new Error(`purge update : ${updErr.message}`);
-  return data.length;
+  return rows.length;
 }
 
 /** Retire une pièce EN ATTENTE (annulation, doublon). Conditionnel pending. */
@@ -360,13 +441,36 @@ export async function requeuePiece(
   if (dlErr || !blob)
     return { ok: false, error: "copie du fichier impossible (disparu ?)" };
   const ext = piece.file_path.split(".").pop() || "jpg";
-  const newPath = `queue/requeue/${crypto.randomUUID().slice(0, 12)}.${ext}`;
+  const stem = `queue/requeue/${crypto.randomUUID().slice(0, 12)}`;
+  const newPath = `${stem}.${ext}`;
   const { error: upErr } = await supabase.storage
     .from(PRINT_BUCKET)
     .upload(newPath, new Uint8Array(await blob.arrayBuffer()), {
       contentType: blob.type || "image/jpeg",
     });
   if (upErr) return { ok: false, error: `re-upload échoué : ${upErr.message}` };
+
+  // La vignette suit la pièce (c'est justement celle qu'on va ré-inspecter) —
+  // best-effort, jamais bloquant.
+  let newThumb: string | null = null;
+  if (piece.thumb_path) {
+    try {
+      const { data: thumbBlob } = await supabase.storage
+        .from(PRINT_BUCKET)
+        .download(piece.thumb_path);
+      if (thumbBlob) {
+        const candidate = `${stem}-thumb.jpg`;
+        const { error: thumbErr } = await supabase.storage
+          .from(PRINT_BUCKET)
+          .upload(candidate, new Uint8Array(await thumbBlob.arrayBuffer()), {
+            contentType: "image/jpeg",
+          });
+        if (!thumbErr) newThumb = candidate;
+      }
+    } catch {
+      newThumb = null;
+    }
+  }
 
   const inserted = await enqueuePieces([
     {
@@ -381,6 +485,8 @@ export async function requeuePiece(
       price_cents: piece.price_cents,
       source_path: piece.source_path,
       file_path: newPath,
+      thumb_path: newThumb,
+      requeued_from: piece.id,
       px_width: piece.px_width ?? null,
       px_height: piece.px_height ?? null,
       notes: piece.notes ?? null,
@@ -412,6 +518,19 @@ export interface BatchRow {
   file_paths: string[];
   emailed_at: string | null;
   printed_at: string | null;
+}
+
+/** Lots non imprimés — la charge de travail du jour (bandeau Aujourd'hui). */
+export async function listUnprintedBatches(): Promise<BatchRow[]> {
+  const supabase = getClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("print_batches")
+    .select("*")
+    .is("printed_at", null)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(`unprinted batches : ${error.message}`);
+  return (data ?? []) as BatchRow[];
 }
 
 /** Derniers lots (historique du dashboard). */
