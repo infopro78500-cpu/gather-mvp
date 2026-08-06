@@ -4,6 +4,15 @@
 
 ---
 
+## Session 06/08/2026 — Refonte photo-first du dashboard atelier
+
+**Contexte** : retour de Nico sur la maquette atelier (« on peut faire mille fois mieux — notre domaine, c'est la photo ») → audit UX par l'agent `ux-design`, décisions actées, refonte P0 livrée le jour même.
+
+- **Audit UX** (`docs/audit-ux-atelier.md`) : 5 scénarios opérateur (règle des < 5 s), architecture de l'information refondue, spec photo-first, tenue en charge 20/80/200 pièces/j, design système, priorisation P0/P1/P2. **Bug réel trouvé au passage** : troncature de `listRecentOrders` (tri croissant avant limite → les commandes les plus récentes disparaissaient de l'écran en pic) — corrigé immédiatement. Autre correction d'hypothèse : transformation d'images Supabase = offre payante non active → vignettes générées maison via `sharp`.
+- **Décisions actées** (Nico, 06/08) : palette claire (un fond sombre fausse le jugement des photos avant impression) + périmètre P0 complet — double écriture journal-decisions + Notion (Type=Décision).
+- **Refonte P0 livrée** : vignettes `sharp` 480 px générées au gel du fichier + dimensions mesurées serveur (badge résolution fiable à 100 %), migration additive `thumb_path`/`requeued_from` (code tolérant si non appliquée), API en deux modes (poll léger 10 s / détail de lot à la demande `&batch=`), bandeau « Aujourd'hui » (à imprimer / en retard / en file par matière / à expédier), mosaïques photo, pattern sélectionner-puis-agir (panneau contextuel, confirmation désarmée au changement de sélection), erreurs en langage humain (réseau ≠ lien invalide), traçabilité des retirages, pastilles matière, icônes SVG. `check:release` vert, testé en local (mode dégradé sans migration : fonctionnel).
+- **Reste** : coller la migration 2 lignes (Nico), re-test visuel complet avec vignettes, puis P1 (onglets/recherche, modale d'aperçu avec indicateur de cadrage, design système finalisé).
+
 ## Session 05/08/2026 — Accès à distance + commits du rebranding
 
 **Contexte** : mise en place du pilotage de Claude Code depuis le téléphone, puis commit du travail du 04/08 resté en attente.

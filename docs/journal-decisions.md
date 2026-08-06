@@ -13,6 +13,11 @@ Format d'une entrée :
 
 ---
 
+## 2026-08-06 — Le dashboard atelier passe photo-first, en palette claire
+**Décision** : refonte P0 du tableau de bord atelier selon l'audit UX (`docs/audit-ux-atelier.md`) — vignettes générées côté serveur (sharp), mosaïques de photos, bandeau « Aujourd'hui », pattern sélectionner-puis-agir, erreurs en langage humain, traçabilité des retirages — et bascule en **palette claire** (fond neutre clair, cartes blanches), le sombre actuel devenant couleur d'accent.
+**Pourquoi** : un outil dont le métier est de juger des photos avant impression ne doit pas fausser leur lecture — un entourage sombre biaise la perception de luminosité/saturation (c'est pourquoi les outils photo pro utilisent un gris clair neutre) ; et un écran clair reste lisible en atelier éclairé. Validé par Nico le 06/08/2026 (palette claire + périmètre P0 complet).
+**Impact** : `/atelier` refondu ; migration additive (`thumb_path`, `requeued_from`) ; `sharp` en dépendance explicite ; les règles durables (palette, pastilles matière, tailles tactiles, icônes) alimenteront un futur `DESIGN.md` ; l'app grand public reste sombre — le choix ne concerne que l'outil atelier.
+
 ## 2026-08-04 — Mise en place du pilotage multi-équipe (cockpit Notion + docs pivots)
 **Décision** : Usegather adopte le système de pilotage éprouvé sur le projet Renka : cockpit Notion partagé aux 4 associés (base Tâches — Branche ×7, Type Tâche/Décision, Priorité, **Qui**) + 4 docs pivots versionnés (`decisions-validees`, `journal-decisions`, `journal-sessions`, `roadmap`) + CLAUDE.md + 3 agents (`cadrage-produit`, `data-analytics`, `ux-design`).
 **Pourquoi** : 10 fichiers .md en vrac à la racine, pas de journal, le *pourquoi* des choix vivait dans des conversations — intransmissible à une équipe de 4. Le système Renka a fait ses preuves (double écriture Notion↔git, rituels courts, décisions = objets de première classe).
