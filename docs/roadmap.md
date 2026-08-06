@@ -14,6 +14,7 @@ Format : **NOW** (cycle en cours) / **NEXT** (prochain) / **LATER** (plus tard) 
 - [ ] **[Pilotage — Nico]** Partager le cockpit Notion aux 4 associés + installer les rituels (matin 2 min, dimanche 10 min, point équipe hebdo 15 min)
 - [ ] **[Pilotage — équipe]** Choisir les 3 KPI du cockpit + objectif 90 jours
 - [ ] **[Structure — Jérem]** RDV Luxembourg : éligibilité Fit4Start, structure FR-LU, substance (`strategie/briefing-luxembourg.md`)
+- [ ] **[Produit — Nico]** Faire valider l'audit impression Printerkut avec l'atelier : grille formats × matières × prix + 10 questions (`strategie/audit-integration-printerkut.md`)
 
 ## 🟡 NEXT
 
@@ -35,6 +36,7 @@ Format : **NOW** (cycle en cours) / **NEXT** (prochain) / **LATER** (plus tard) 
 
 ## ✅ DONE
 
+- [x] **05/08/2026** — Socle technique impression Printerkut : file d'attente transposée de Renka (lots par matière, claim atomique, cron), catalogue **draft**, dashboard atelier `/atelier`, scripts + doc opérateur. Restent pour ouvrir : grille validée par l'atelier, Stripe devant la file, tunnel photo dans l'app
 - [x] **04/08/2026** — Renommage code complet Gather → Usegather (vérifié, `check:release` vert)
 - [x] **04/08/2026** — Système de pilotage installé (cockpit Notion équipe + docs pivots + agents)
 - [x] **13/03/2026** — Marque « Usegather » **enregistrée** INPI n° 5200774 (déposée 20/11/2025)
