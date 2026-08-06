@@ -36,6 +36,7 @@ Format : **NOW** (cycle en cours) / **NEXT** (prochain) / **LATER** (plus tard) 
 
 ## ✅ DONE
 
+- [x] **06/08/2026** — Dashboard atelier pro (P0+P1+P2 de l'audit UX) : photo-first (vignettes serveur, mosaïques, cadrage), palette claire actée, recherche/onglets/stats, seuils par matière prêts. Migration vignettes appliquée en prod
 - [x] **05/08/2026** — Socle technique impression Printerkut : file d'attente transposée de Renka (lots par matière, claim atomique, cron), catalogue **draft**, dashboard atelier `/atelier`, scripts + doc opérateur. Restent pour ouvrir : grille validée par l'atelier, Stripe devant la file, tunnel photo dans l'app
 - [x] **04/08/2026** — Renommage code complet Gather → Usegather (vérifié, `check:release` vert)
 - [x] **04/08/2026** — Système de pilotage installé (cockpit Notion équipe + docs pivots + agents)
