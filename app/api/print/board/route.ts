@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
 import { materialLabel } from "@/lib/print/email";
 import { getVariant, resolutionBadge } from "@/lib/print/catalog";
+import { MATERIAL_LABELS } from "@/lib/print/catalog";
 import {
   BATCH_SIZE,
   MAX_WAIT_DAYS,
+  batchSizeFor,
+  batchStats,
   listBatchPieces,
   listBoardPieces,
   listRecentOrders,
@@ -12,6 +15,7 @@ import {
   markBatchPrinted,
   markOrderShipped,
   maybeBuildBatch,
+  piecesPerDay,
   recentBatches,
   removePendingPiece,
   requeuePiece,
@@ -50,6 +54,40 @@ function pieceResolution(p: QueueRow): "ok" | "acceptable" | "insufficient" | nu
 
 const THUMB_LINK_DAYS = 1;
 
+// Cache des URLs signées (audit P1-6) : évite de re-signer les mêmes chemins
+// à chaque poll de 10 s. Portée : l'instance serverless (best effort — un
+// cold start repart à vide, sans conséquence).
+const signCache = new Map<string, { url: string; expiresAt: number }>();
+
+async function cachedSign(
+  supabase: NonNullable<ReturnType<typeof getSupabaseAdminClient>>,
+  path: string,
+  days: number
+): Promise<string | null> {
+  const hit = signCache.get(path);
+  if (hit && hit.expiresAt > Date.now()) return hit.url;
+  const url = await signPrintFile(supabase, path, days);
+  if (url) {
+    // Marge de 10 % avant l'expiration réelle du lien.
+    signCache.set(path, {
+      url,
+      expiresAt: Date.now() + days * 24 * 60 * 60_000 * 0.9,
+    });
+    if (signCache.size > 2000) {
+      // Borne mémoire : purge des entrées expirées, puis des plus anciennes.
+      for (const [k, v] of signCache) {
+        if (v.expiresAt <= Date.now()) signCache.delete(k);
+      }
+      while (signCache.size > 2000) {
+        const first = signCache.keys().next().value;
+        if (!first) break;
+        signCache.delete(first);
+      }
+    }
+  }
+  return url;
+}
+
 export async function GET(request: NextRequest) {
   if (!authorized(request)) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
@@ -59,9 +97,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Supabase non configuré." }, { status: 503 });
   }
 
-  const batchId = request.nextUrl.searchParams.get("batch");
+  const params = request.nextUrl.searchParams;
+  const batchId = params.get("batch");
+  const wantStats = params.get("stats") === "1";
+  const days = Math.min(30, Math.max(1, Number(params.get("days")) || 7));
+  const historyLimit = Math.min(50, Math.max(1, Number(params.get("history")) || 10));
 
   try {
+    // ---- Mode stats : chargé à la demande (ligne de charge + calendrier).
+    if (wantStats) {
+      const [perDay, batches7] = await Promise.all([piecesPerDay(30), batchStats(7)]);
+      return NextResponse.json({ perDay, batches7 });
+    }
+
     // ---- Mode détail : les pièces d'UN lot, chargées au clic.
     if (batchId) {
       const pieces = await listBatchPieces(batchId);
@@ -74,10 +122,12 @@ export async function GET(request: NextRequest) {
           product: p.product,
           format: p.format,
           thumbUrl: p.thumb_path
-            ? await signPrintFile(supabase, p.thumb_path, THUMB_LINK_DAYS)
+            ? await cachedSign(supabase, p.thumb_path, THUMB_LINK_DAYS)
             : null,
-          link: p.file_path ? await signPrintFile(supabase, p.file_path, 2) : null,
+          link: p.file_path ? await cachedSign(supabase, p.file_path, 2) : null,
           resolution: pieceResolution(p),
+          pxWidth: p.px_width ?? null,
+          pxHeight: p.px_height ?? null,
           requeuedFrom: p.requeued_from ?? null,
         }))
       );
@@ -88,8 +138,8 @@ export async function GET(request: NextRequest) {
     const [boardPieces, unprinted, history, orders] = await Promise.all([
       listBoardPieces(),
       listUnprintedBatches(),
-      recentBatches(10),
-      listRecentOrders(14),
+      recentBatches(historyLimit),
+      listRecentOrders(days),
     ]);
 
     const now = Date.now();
@@ -132,9 +182,11 @@ export async function GET(request: NextRequest) {
         material: p.material,
         materialLabel: materialLabel(p.material),
         thumbUrl: p.thumb_path
-          ? await signPrintFile(supabase, p.thumb_path, THUMB_LINK_DAYS)
+          ? await cachedSign(supabase, p.thumb_path, THUMB_LINK_DAYS)
           : null,
         resolution: pieceResolution(p),
+        pxWidth: p.px_width ?? null,
+        pxHeight: p.px_height ?? null,
         requeuedFrom: p.requeued_from ?? null,
       }))
     );
@@ -149,9 +201,15 @@ export async function GET(request: NextRequest) {
       printed_at: b.printed_at,
     });
 
+    const batchSizes = Object.fromEntries(
+      Object.keys(MATERIAL_LABELS).map((m) => [m, batchSizeFor(m)])
+    );
+
     return NextResponse.json({
       batchSize: BATCH_SIZE,
+      batchSizes,
       maxWaitDays: MAX_WAIT_DAYS,
+      daysWindow: days,
       today,
       pieces,
       batchesToDo: unprinted.map(lightBatch),

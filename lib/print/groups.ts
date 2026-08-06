@@ -20,20 +20,36 @@ export function materialKey(material: string | null | undefined): string {
 }
 
 /**
+ * Résout le seuil de lot d'une matière : valeur dédiée si fournie (réglage
+ * `PRINT_BATCH_SIZE_<MATIERE>` côté serveur), sinon le seuil global. Fonction
+ * pure — la lecture d'environnement reste dans lib/print/queue.ts.
+ */
+export function resolveBatchSize(
+  material: string | null | undefined,
+  overrides: Readonly<Record<string, number>>,
+  fallback: number
+): number {
+  const dedicated = overrides[materialKey(material)];
+  return dedicated && dedicated > 0 ? dedicated : fallback;
+}
+
+/**
  * Choisit le groupe de pièces du PROCHAIN lot parmi les pièces `pending`
  * triées par ancienneté (ordre d'entrée préservé) :
  *  - sans `force` : premier groupe (par pièce la plus ancienne) qui atteint
- *    batchSize — null si aucun n'est complet ;
+ *    son seuil — null si aucun n'est complet ;
  *  - avec `force` : le groupe de la pièce LA PLUS ANCIENNE (des appels
  *    répétés vident les groupes suivants lot par lot).
- * Renvoie le groupe ENTIER (l'appelant tronque à batchSize).
+ * `batchSize` : seuil global (number) ou seuil par matière (fonction).
+ * Renvoie le groupe ENTIER (l'appelant tronque au seuil de la matière).
  */
 export function pickBatchGroup<T extends GroupablePiece>(
   rows: readonly T[],
-  batchSize: number,
+  batchSize: number | ((material: string | null | undefined) => number),
   force: boolean
 ): T[] | null {
   if (!rows.length) return null;
+  const sizeFor = typeof batchSize === "number" ? () => batchSize : batchSize;
   const groups = new Map<string, T[]>();
   for (const r of rows) {
     const k = materialKey(r.material);
@@ -42,6 +58,7 @@ export function pickBatchGroup<T extends GroupablePiece>(
     else groups.set(k, [r]);
   }
   if (force) return groups.get(materialKey(rows[0].material)) ?? null;
-  for (const g of groups.values()) if (g.length >= batchSize) return g;
+  for (const [key, g] of groups.entries())
+    if (g.length >= sizeFor(key)) return g;
   return null;
 }

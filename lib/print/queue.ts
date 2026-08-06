@@ -19,7 +19,8 @@ import "server-only";
 import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
-import { pickBatchGroup } from "@/lib/print/groups";
+import { pickBatchGroup, resolveBatchSize } from "@/lib/print/groups";
+import { MATERIAL_LABELS } from "@/lib/print/catalog";
 import { sendBatchEmail } from "@/lib/print/email";
 
 export const EVENT_PHOTOS_BUCKET = "event-photos";
@@ -32,6 +33,24 @@ function clamp(n: number, lo: number, hi: number): number {
 /** Pièces par lot — la bonne valeur par machine/matière est à caler avec
  *  l'atelier (question n°9) ; réglable sans redéploiement. */
 export const BATCH_SIZE = clamp(Number(process.env.PRINT_BATCH_SIZE) || 8, 1, 50);
+
+/** Seuils dédiés par matière (optionnels) : PRINT_BATCH_SIZE_PAPIER_PHOTO,
+ *  PRINT_BATCH_SIZE_CANVAS, … — plomberie prête pour la décision « seuil par
+ *  matière » (question n°9) ; tant qu'ils ne sont pas posés, seuil global. */
+export const BATCH_SIZE_OVERRIDES: Readonly<Record<string, number>> = Object.fromEntries(
+  Object.keys(MATERIAL_LABELS)
+    .map((material) => {
+      const envName = `PRINT_BATCH_SIZE_${material.toUpperCase().replace(/-/g, "_")}`;
+      const value = Number(process.env[envName]);
+      return [material, value > 0 ? clamp(value, 1, 50) : 0] as const;
+    })
+    .filter(([, v]) => v > 0)
+);
+
+/** Seuil de lot effectif d'une matière. */
+export function batchSizeFor(material: string | null | undefined): number {
+  return resolveBatchSize(material, BATCH_SIZE_OVERRIDES, BATCH_SIZE);
+}
 /** Ancienneté max d'une pièce en attente avant lot partiel (cron). */
 export const MAX_WAIT_DAYS = Number(process.env.PRINT_MAX_WAIT_DAYS) || 2;
 /** Claim plus vieux que ça sans issue = zombie (crash pendant construction). */
@@ -220,10 +239,10 @@ export async function maybeBuildBatch(opts?: {
   const allPending = (pendingRows ?? []) as QueueRow[];
   if (!allPending.length) return null;
 
-  const group = pickBatchGroup(allPending, BATCH_SIZE, force);
+  const group = pickBatchGroup(allPending, (m) => batchSizeFor(m), force);
   if (!group) return null;
-  const candidates = group.slice(0, BATCH_SIZE);
-  const material = candidates[0]?.material ?? "";
+  const material = group[0]?.material ?? "";
+  const candidates = group.slice(0, batchSizeFor(material));
 
   const batchId = crypto.randomUUID();
   const ids = candidates.map((c) => c.id);
@@ -658,6 +677,52 @@ export async function markBatchPrinted(batchId: string): Promise<void> {
     .update({ printed_at: new Date().toISOString() })
     .eq("id", batchId);
   if (error) throw new Error(`marquage imprimé : ${error.message}`);
+}
+
+/** Pièces créées par jour sur `days` jours (vue calendrier de charge). */
+export async function piecesPerDay(
+  days = 30
+): Promise<{ date: string; count: number }[]> {
+  const supabase = getClient();
+  if (!supabase) return [];
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60_000).toISOString();
+  const { data, error } = await supabase
+    .from("print_queue")
+    .select("created_at")
+    .gt("created_at", cutoff)
+    .limit(10000);
+  if (error) throw new Error(`pieces per day : ${error.message}`);
+  const byDay = new Map<string, number>();
+  for (const row of (data ?? []) as { created_at: string }[]) {
+    const day = row.created_at.slice(0, 10);
+    byDay.set(day, (byDay.get(day) ?? 0) + 1);
+  }
+  const out: { date: string; count: number }[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 24 * 60 * 60_000).toISOString().slice(0, 10);
+    out.push({ date, count: byDay.get(date) ?? 0 });
+  }
+  return out;
+}
+
+/** Taille moyenne de lot et volume sur `days` jours (aide à la décision
+ *  « seuil par matière », audit P2-4). */
+export async function batchStats(
+  days = 7
+): Promise<{ batches: number; avgSize: number | null }> {
+  const supabase = getClient();
+  if (!supabase) return { batches: 0, avgSize: null };
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60_000).toISOString();
+  const { data, error } = await supabase
+    .from("print_batches")
+    .select("piece_count")
+    .gt("created_at", cutoff)
+    .limit(2000);
+  if (error) throw new Error(`batch stats : ${error.message}`);
+  const rows = (data ?? []) as { piece_count: number }[];
+  if (!rows.length) return { batches: 0, avgSize: null };
+  const total = rows.reduce((s, b) => s + b.piece_count, 0);
+  return { batches: rows.length, avgSize: Math.round((total / rows.length) * 10) / 10 };
 }
 
 /** Nombre de pièces en attente + date de la plus ancienne. */

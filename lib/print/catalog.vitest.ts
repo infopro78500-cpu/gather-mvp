@@ -6,7 +6,7 @@ import {
   resolutionBadge,
   volumeDiscountPercent,
 } from "./catalog";
-import { pickBatchGroup } from "./groups";
+import { pickBatchGroup, resolveBatchSize } from "./groups";
 
 describe("catalogue impression", () => {
   it("expose des clés stables uniques (produit et format)", () => {
@@ -86,5 +86,15 @@ describe("regroupement par matière", () => {
   it("regroupe les matières null ensemble", () => {
     const rows = [piece(null, 1), piece(null, 2)];
     expect(pickBatchGroup(rows, 2, false)?.length).toBe(2);
+  });
+
+  it("applique un seuil dédié par matière quand il existe", () => {
+    expect(resolveBatchSize("plexi", { plexi: 3 }, 8)).toBe(3);
+    expect(resolveBatchSize("canvas", { plexi: 3 }, 8)).toBe(8);
+    expect(resolveBatchSize(null, {}, 8)).toBe(8);
+    // Un seuil fonction : le groupe plexi part à 3 même si le global est 8.
+    const rows = [piece("plexi", 1), piece("plexi", 2), piece("plexi", 3), piece("canvas", 4)];
+    const group = pickBatchGroup(rows, (m) => resolveBatchSize(m, { plexi: 3 }, 8), false);
+    expect(group?.map((p) => p.tag)).toEqual([1, 2, 3]);
   });
 });
