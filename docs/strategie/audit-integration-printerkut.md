@@ -19,12 +19,15 @@ Documentation opérateur de référence côté Renka : `Lika-NFC\lika-app\docs\p
 | Machine | Rôle | Capacité (specs constructeur) | Produits possibles |
 |---|---|---|---|
 | **HP Latex 700W** | Souple, rouleau | Laize **1,63 m**, encre **blanche**, médias ≤ 0,5 mm | Poster papier photo (mat/satin), **toile canvas** (à monter sur châssis), vinyle adhésif, papier peint photo — jusqu'à ~150×220 cm |
-| **Mimaki UV « MkII »** (à plat) | Rigide | **Selon modèle** — voir question n°1 | Impression directe Dibond, plexi, PVC/Forex, bois (+ blanc de soutien + vernis, maîtrisés par l'atelier depuis Renka) |
+| **Gongzheng H2513GN PRO** (à plat, UV) | Rigide | Table **2650×1325 mm**, impression **max 2500×1300 mm**, épaisseur média **≤ 100 mm**, têtes Ricoh Gen6, encre UV RKA-3 Greenguard Gold, configurations **2×Blanc + CMJN + Vernis** | Acrylique/PMMA, aluminium (Dibond), carton plume, PVC, cuir, **verre**, bois, carrelage céramique… en direct, jusqu'à 250×130 cm |
+| **Mimaki UJF-6042 MkII** (à plat, existante) | Petits objets rigides | Plateau 61×42 cm | Petites séries, objets, plaques ≤ A2 |
 
-**⚠️ Question n°1 (conditionne toute l'offre rigide)** : quel(s) modèle(s) Mimaki exactement ?
-- **UJF-6042 MkII** (documentée côté Renka) : plateau **61 × 42 cm** → rigide direct **jusqu'à 40×60 maximum**.
-- **JFX200-2513** (grande table **2,5 × 1,3 m**) : rigide direct jusqu'à 120×180 → panneaux de bienvenue 70×100, grands formats déco.
-- Sans grande table, les rigides > 40×60 restent possibles par **contrecollage** (tirage Latex collé sur panneau — pratique standard du marché, cf. WhiteWall « contrecollé ») **si** l'atelier pratique le contrecollage.
+**✅ Question n°1 — RÉPONDUE (06/08/2026)** : l'atelier s'équipe d'une **Gongzheng H2513GN PRO**. Conséquences majeures :
+- **Plus aucun plafond de format en rigide** : Dibond, plexi, PVC jusqu'à 250×130 cm en impression directe. Tous les astérisques « à valider » de la grille §4 tombent — 60×90, 70×100, 80×120, 100×150 et au-delà sont produisibles en interne, sans contrecollage.
+- **Encre blanche + vernis** : ouvre des produits que le marché grand public ne sert pas — impression sur **plexi transparent** et **plexi diffusant rétroéclairé** (blanc de soutien maîtrisé), effets sandwich, vernis sélectif, impression sur supports colorés/foncés.
+- **Épaisseur 100 mm et verre/bois/carrelage** : objets et supports que les labos photo ne proposent pas.
+- **Productivité** : 52 m²/h en mode Photo 6×KCMY, 84 m²/h en production — la contrainte n'est plus la machine mais la finition (découpe, montage, emballage).
+- Le vrai sujet devient donc la **découpe et la finition** (qui coupe les plaques aux formats finis ? quelle table de découpe ?) et la **logistique d'expédition des grands formats**.
 
 ## 3. Ce que dit le marché (relevé web du 05/08/2026)
 
@@ -135,8 +138,8 @@ Prix TTC cibles « prix cassé » (30-40 % sous le marché **net**), calés sur 
 
 ## 6. Les questions à faire valider par l'atelier (la liste pour le frère)
 
-1. **Machine rigide** : UJF-6042 MkII (A2) seulement, ou grande table JFX 2,5×1,3 m ? → débloque (ou non) les rigides > 40×60 et le panneau de bienvenue 70×100.
-2. **Contrecollage** : tirage Latex contrecollé sur Dibond/PVC — pratiqué ? matériel ?
+1. ~~**Machine rigide**~~ → **RÉPONDU le 06/08/2026 : Gongzheng H2513GN PRO** (250×130 cm, 100 mm d'épaisseur, blanc + vernis). Nouvelle question à la place : **quand arrive-t-elle, et quelle table de découpe** pour sortir les formats finis des plaques ?
+2. **Contrecollage** : encore utile pour certains rendus (fine art contrecollé), ou tout en impression directe ?
 3. **Toile** : montage sur châssis maîtrisé ? fournisseur/coût châssis par format ? caisse américaine ?
 4. **Découpe** : découpe aux formats finis des sorties rouleau (massicot / table de découpe) ?
 5. **Tirages 10×15 & albums** : d'autres machines à l'atelier (minilab, presse, reliure) ? sous-traitance envisageable ? ou on lance la V1 sans ?
