@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   PRINT_PRODUCTS,
   getVariant,
+  orderMarginCents,
   orderTotalCents,
   resolutionBadge,
   volumeDiscountPercent,
 } from "./catalog";
 import { pickBatchGroup, resolveBatchSize } from "./groups";
+
+const EUR_2990 = 2990;
+const EUR_1050 = 1050;
 
 describe("catalogue impression", () => {
   it("expose des clés stables uniques (produit et format)", () => {
@@ -22,21 +26,29 @@ describe("catalogue impression", () => {
     }
   });
 
-  it("exclut par défaut les formats en attente de validation atelier", () => {
-    expect(getVariant("forex", "70x100")).toBeNull();
-    expect(getVariant("forex", "70x100", { includePending: true })).not.toBeNull();
-    expect(getVariant("poster", "80x120")).not.toBeNull();
+  it("garde une marge positive sur chaque variante", () => {
+    for (const product of PRINT_PRODUCTS) {
+      for (const format of product.formats) {
+        expect(format.priceCents).toBeGreaterThan(format.costCents);
+      }
+    }
   });
 
   it("refuse produit ou format inconnus", () => {
     expect(getVariant("mug", "30x40")).toBeNull();
     expect(getVariant("poster", "10x15")).toBeNull();
+    // Le 70×100 n'existe que sur le panneau de bienvenue, pas sur le Forex nu.
+    expect(getVariant("forex", "70x100")).toBeNull();
+    expect(getVariant("panneau-bienvenue", "70x100")).not.toBeNull();
   });
 
   it("applique la remise volume par palier", () => {
     expect(volumeDiscountPercent(1)).toBe(0);
     expect(volumeDiscountPercent(2)).toBe(10);
-    expect(volumeDiscountPercent(3)).toBe(15);
+    expect(volumeDiscountPercent(5)).toBe(20);
+    expect(volumeDiscountPercent(10)).toBe(30);
+    expect(volumeDiscountPercent(25)).toBe(35);
+    expect(volumeDiscountPercent(50)).toBe(40);
     // 2 posters 30x40 : 690 − 10 % = 621 par pièce.
     expect(
       orderTotalCents([
@@ -45,6 +57,22 @@ describe("catalogue impression", () => {
       ])
     ).toBe(621 * 2);
     expect(orderTotalCents([{ productId: "poster", formatId: "inconnu" }])).toBeNull();
+  });
+
+  it("exclut les produits signature de la remise volume", () => {
+    // Prix de valeur perçue : pas de comparable marché, pas de prix cassé.
+    const pieces = Array.from({ length: 10 }, () => ({
+      productId: "retroeclaire",
+      formatId: "40x60",
+    }));
+    const plein = getVariant("retroeclaire", "40x60")!.format.priceCents * 10;
+    expect(orderTotalCents(pieces)).toBe(plein);
+  });
+
+  it("calcule une marge de commande cohérente", () => {
+    const marge = orderMarginCents([{ productId: "forex", formatId: "40x60" }]);
+    // 29,90 € − 10,50 € de coût de revient.
+    expect(marge).toBe(EUR_2990 - EUR_1050);
   });
 
   it("évalue la résolution dans le meilleur sens (portrait/paysage)", () => {

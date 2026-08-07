@@ -47,7 +47,7 @@ function authorized(request: NextRequest): boolean {
 
 function pieceResolution(p: QueueRow): "ok" | "acceptable" | "insufficient" | null {
   if (!p.px_width || !p.px_height) return null;
-  const variant = getVariant(p.product, p.format, { includePending: true });
+  const variant = getVariant(p.product, p.format);
   if (!variant) return null;
   return resolutionBadge(p.px_width, p.px_height, variant.format);
 }

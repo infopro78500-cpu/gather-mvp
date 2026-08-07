@@ -2,22 +2,27 @@
 // prix (pattern offer.ts de Renka : « un prix se change ICI, jamais en dur
 // dans le JSX »).
 //
-// ⚠️ STATUT : GRILLE DRAFT du 05/08/2026 — issue de l'audit
-// docs/strategie/audit-integration-printerkut.md, EN ATTENTE de validation
-// par l'atelier (grille + question n°1 sur la machine rigide). Ne rien
-// exposer publiquement tant que PRINT_ENABLED n'est pas actif et que les
-// variantes `pendingWorkshopValidation` n'ont pas été tranchées.
+// ⚠️ STATUT : grille V1 du 07/08/2026 issue de
+// docs/strategie/gamme-produits-impression.md — coûts matière réels (Antalis,
+// Plexi-Cindar), prix marché nets relevés, positionnement 10-25 % en dessous.
+// EN ATTENTE de validation par l'atelier (grille de cession + 10 questions).
+// Rien n'est exposé publiquement tant que PRINT_ENABLED n'est pas actif.
+//
+// La machine est connue depuis le 06/08/2026 : Gongzheng H2513GN PRO
+// (2500×1300 mm, épaisseur 100 mm, blanc + vernis) — plus aucun plafond de
+// format en rigide.
 
 /** Matière chargée en machine — clé de regroupement : un lot = UNE matière. */
 export type MaterialId =
-  | "papier-photo"   // Latex 700W, rouleau
-  | "canvas"         // Latex 700W, rouleau + châssis
-  | "forex"          // Mimaki UV, plaque PVC 5 mm
-  | "dibond"         // Mimaki UV, plaque alu 3 mm
-  | "plexi";         // Mimaki UV, plaque 4 mm (blanc de soutien)
+  | "papier-photo" // Latex 700W, rouleau
+  | "canvas" // Latex 700W, rouleau + châssis
+  | "forex" // Gongzheng UV, PVC expansé 3 mm
+  | "dibond" // Gongzheng UV, alu composite 3 mm
+  | "plexi" // Gongzheng UV, PMMA 3 mm (blanc de soutien)
+  | "plexi-diffusant"; // Gongzheng UV, PMMA opale — produits rétroéclairés
 
 /** Machine de production — détermine la logique de regroupement. */
-export type Machine = "latex-700w" | "mimaki-uv";
+export type Machine = "latex-700w" | "gongzheng-uv";
 
 export interface PrintFormat {
   /** Clé stable ("30x40") — stockée en base, ne jamais renommer. */
@@ -25,9 +30,9 @@ export interface PrintFormat {
   widthCm: number;
   heightCm: number;
   priceCents: number;
-  /** Format conditionné à la réponse atelier (grande table JFX ou
-   *  contrecollage) — question n°1 de l'audit. Exclu tant que non validé. */
-  pendingWorkshopValidation?: boolean;
+  /** Coût de revient estimé (matière + encre + accroche + emballage), pour
+   *  le suivi de marge — jamais affiché au client. */
+  costCents: number;
 }
 
 export interface PrintProduct {
@@ -37,25 +42,79 @@ export interface PrintProduct {
   material: MaterialId;
   machine: Machine;
   description: string;
+  /** Produit « signature » : pas de comparable marché, prix de valeur
+   *  perçue — la règle du prix cassé NE s'y applique PAS (audit §9). */
+  signature?: boolean;
+  /** Produit à date impérative (jour J) : doit sortir de la file normale
+   *  par la voie express, sans attendre le seuil de lot. */
+  timeCritical?: boolean;
   formats: PrintFormat[];
 }
 
 const EUR = (euros: number): number => Math.round(euros * 100);
 
-/** La grille V1 (draft audit 05/08/2026) — prix TTC en centimes. */
+/** La grille V1 — prix TTC en centimes, coûts de revient estimés. */
 export const PRINT_PRODUCTS: readonly PrintProduct[] = [
+  {
+    id: "forex",
+    label: "Panneau Forex",
+    material: "forex",
+    machine: "gongzheng-uv",
+    description: "PVC expansé 3 mm, impression UV directe — léger et rigide",
+    formats: [
+      { id: "20x30", widthCm: 20, heightCm: 30, priceCents: EUR(14.9), costCents: EUR(5.4) },
+      { id: "30x40", widthCm: 30, heightCm: 40, priceCents: EUR(19.9), costCents: EUR(7.8) },
+      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(29.9), costCents: EUR(10.5) },
+      { id: "50x70", widthCm: 50, heightCm: 70, priceCents: EUR(39.9), costCents: EUR(13.7) },
+      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(49.9), costCents: EUR(18.0) },
+      { id: "80x120", widthCm: 80, heightCm: 120, priceCents: EUR(79.9), costCents: EUR(28.7) },
+      { id: "100x150", widthCm: 100, heightCm: 150, priceCents: EUR(129), costCents: EUR(40.6) },
+    ],
+  },
+  {
+    id: "dibond",
+    label: "Panneau aluminium",
+    material: "dibond",
+    machine: "gongzheng-uv",
+    description: "Aluminium composite 3 mm — finition galerie",
+    formats: [
+      { id: "20x30", widthCm: 20, heightCm: 30, priceCents: EUR(16.9), costCents: EUR(7.0) },
+      { id: "30x40", widthCm: 30, heightCm: 40, priceCents: EUR(24.9), costCents: EUR(11.0) },
+      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(34.9), costCents: EUR(17.0) },
+      { id: "50x70", widthCm: 50, heightCm: 70, priceCents: EUR(44.9), costCents: EUR(23.1) },
+      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(59.9), costCents: EUR(32.5) },
+      { id: "80x120", widthCm: 80, heightCm: 120, priceCents: EUR(99.9), costCents: EUR(54.4) },
+      { id: "100x150", widthCm: 100, heightCm: 150, priceCents: EUR(149), costCents: EUR(80.9) },
+    ],
+  },
+  {
+    id: "plexi",
+    label: "Plexiglas",
+    material: "plexi",
+    machine: "gongzheng-uv",
+    description: "PMMA 3 mm, impression directe avec blanc de soutien — effet profondeur",
+    formats: [
+      { id: "20x30", widthCm: 20, heightCm: 30, priceCents: EUR(17.9), costCents: EUR(6.3) },
+      { id: "30x40", widthCm: 30, heightCm: 40, priceCents: EUR(27.9), costCents: EUR(9.6) },
+      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(44.9), costCents: EUR(14.2) },
+      { id: "50x70", widthCm: 50, heightCm: 70, priceCents: EUR(64.9), costCents: EUR(19.1) },
+      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(84.9), costCents: EUR(26.3) },
+      { id: "80x120", widthCm: 80, heightCm: 120, priceCents: EUR(139), costCents: EUR(43.4) },
+    ],
+  },
   {
     id: "poster",
     label: "Poster photo",
     material: "papier-photo",
     machine: "latex-700w",
-    description: "Papier photo mat ou satiné ~250 g",
+    description: "Papier photo 200 g semi-brillant",
     formats: [
-      { id: "30x40", widthCm: 30, heightCm: 40, priceCents: EUR(6.9) },
-      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(9.9) },
-      { id: "50x70", widthCm: 50, heightCm: 70, priceCents: EUR(12.9) },
-      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(14.9) },
-      { id: "80x120", widthCm: 80, heightCm: 120, priceCents: EUR(24.9) },
+      { id: "30x40", widthCm: 30, heightCm: 40, priceCents: EUR(6.9), costCents: EUR(2.7) },
+      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(9.9), costCents: EUR(3.4) },
+      { id: "50x70", widthCm: 50, heightCm: 70, priceCents: EUR(12.9), costCents: EUR(4.5) },
+      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(14.9), costCents: EUR(5.5) },
+      { id: "80x120", widthCm: 80, heightCm: 120, priceCents: EUR(24.9), costCents: EUR(10.4) },
+      { id: "100x150", widthCm: 100, heightCm: 150, priceCents: EUR(39.9), costCents: EUR(13.4) },
     ],
   },
   {
@@ -63,81 +122,101 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
     label: "Toile canvas sur châssis",
     material: "canvas",
     machine: "latex-700w",
-    description: "Toile imprimée Latex, montée sur châssis bois",
+    description: "Toile polycoton 310 g, montée sur châssis bois",
+    // Marge la plus faible de la gamme (33-44 %) : châssis + 46 % de chute de
+    // toile. On ne descend pas sous le 30×40 (cf. gamme-produits §5.2).
     formats: [
-      { id: "30x40", widthCm: 30, heightCm: 40, priceCents: EUR(19.9) },
-      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(29.9) },
-      { id: "50x70", widthCm: 50, heightCm: 70, priceCents: EUR(44.9) },
-      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(49.9) },
-      { id: "80x120", widthCm: 80, heightCm: 120, priceCents: EUR(69.9) },
+      { id: "30x40", widthCm: 30, heightCm: 40, priceCents: EUR(21.9), costCents: EUR(12.3) },
+      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(29.9), costCents: EUR(18.1) },
+      { id: "50x70", widthCm: 50, heightCm: 70, priceCents: EUR(39.9), costCents: EUR(22.9) },
+      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(49.9), costCents: EUR(30.7) },
+      { id: "80x120", widthCm: 80, heightCm: 120, priceCents: EUR(69.9), costCents: EUR(46.7) },
+      { id: "100x150", widthCm: 100, heightCm: 150, priceCents: EUR(99), costCents: EUR(64.9) },
     ],
   },
   {
-    id: "forex",
-    label: "Panneau Forex (PVC)",
+    id: "panneau-bienvenue",
+    label: "Panneau de bienvenue",
     material: "forex",
-    machine: "mimaki-uv",
-    description: "PVC expansé 5 mm, impression UV directe",
+    machine: "gongzheng-uv",
+    description: "Forex 3 mm, jour J — porte le QR du coffre",
+    timeCritical: true,
     formats: [
-      { id: "30x40", widthCm: 30, heightCm: 40, priceCents: EUR(19.9) },
-      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(29.9) },
-      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(44.9), pendingWorkshopValidation: true },
-      { id: "70x100", widthCm: 70, heightCm: 100, priceCents: EUR(49.9), pendingWorkshopValidation: true },
+      { id: "50x70", widthCm: 50, heightCm: 70, priceCents: EUR(49.9), costCents: EUR(13.7) },
+      { id: "70x100", widthCm: 70, heightCm: 100, priceCents: EUR(69.9), costCents: EUR(20.3) },
     ],
   },
   {
-    id: "dibond",
-    label: "Alu-Dibond",
-    material: "dibond",
-    machine: "mimaki-uv",
-    description: "Panneau aluminium composite 3 mm",
+    id: "retroeclaire",
+    label: "Tableau rétroéclairé « Day & Night »",
+    material: "plexi-diffusant",
+    machine: "gongzheng-uv",
+    description:
+      "Plexi diffusant quadri-blanc-quadri en caisson LED — une image de jour, une autre à l'allumage",
+    signature: true,
+    // Marché 649-1098 €. Le coût est presque entièrement le caisson LED
+    // (313-350 € tout fait) — à confirmer avec l'atelier (question §11.5).
     formats: [
-      { id: "30x40", widthCm: 30, heightCm: 40, priceCents: EUR(24.9) },
-      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(34.9) },
-      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(54.9), pendingWorkshopValidation: true },
+      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(399), costCents: EUR(330) },
+      { id: "50x70", widthCm: 50, heightCm: 70, priceCents: EUR(499), costCents: EUR(390) },
     ],
   },
   {
-    id: "plexi",
-    label: "Plexiglas",
+    id: "vitrail",
+    label: "Vitrail photo",
     material: "plexi",
-    machine: "mimaki-uv",
-    description: "Plexi 4 mm, impression directe avec blanc de soutien",
+    machine: "gongzheng-uv",
+    description:
+      "Plexi transparent à blanc sélectif — sujets opaques, fond transparent, à poser devant une fenêtre",
+    signature: true,
     formats: [
-      { id: "30x40", widthCm: 30, heightCm: 40, priceCents: EUR(29.9) },
-      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(39.9) },
-      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(69) , pendingWorkshopValidation: true },
+      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(89), costCents: EUR(16) },
+      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(149), costCents: EUR(29) },
+      { id: "80x120", widthCm: 80, heightCm: 120, priceCents: EUR(249), costCents: EUR(47) },
     ],
   },
 ];
 
-/** Remise volume V1 (draft) : −10 % dès 2 pièces, −15 % dès 3 pièces. */
+/**
+ * Remise volume V1 — notre avantage structurel : N pièces du même événement
+ * sont produites dans la même passe et expédiées dans le même colis, donc le
+ * forfait d'accroche et d'emballage s'amortit. Le marché photo-déco ne
+ * propose qu'un −10 % dès 2 produits (gamme-produits §6).
+ */
 export function volumeDiscountPercent(pieceCount: number): number {
-  if (pieceCount >= 3) return 15;
+  if (pieceCount >= 50) return 40;
+  if (pieceCount >= 25) return 35;
+  if (pieceCount >= 10) return 30;
+  if (pieceCount >= 5) return 20;
   if (pieceCount >= 2) return 10;
   return 0;
 }
+
+/** Option d'accroche : 4 entretoises inox coûtent ~15 € — jamais incluses. */
+export const HANGING_KIT_CENTS = EUR(19.9);
+
+/** Franchise de port (le marché va de 69 € à 200 €). */
+export const FREE_SHIPPING_THRESHOLD_CENTS = EUR(79);
 
 export interface PrintVariant {
   product: PrintProduct;
   format: PrintFormat;
 }
 
-/** Variante par clés stables — null si inconnue OU non validée atelier. */
-export function getVariant(
-  productId: string,
-  formatId: string,
-  opts?: { includePending?: boolean }
-): PrintVariant | null {
+/** Variante par clés stables — null si inconnue. */
+export function getVariant(productId: string, formatId: string): PrintVariant | null {
   const product = PRINT_PRODUCTS.find((p) => p.id === productId);
   if (!product) return null;
   const format = product.formats.find((f) => f.id === formatId);
   if (!format) return null;
-  if (format.pendingWorkshopValidation && !opts?.includePending) return null;
   return { product, format };
 }
 
-/** Total en centimes, remise volume appliquée (arrondi par pièce). */
+/**
+ * Total en centimes, remise volume appliquée (arrondi par pièce).
+ * Les produits **signature** sont exclus de la remise : ils n'ont pas de
+ * comparable marché, et un prix cassé y détruit la valeur perçue (§9).
+ */
 export function orderTotalCents(
   pieces: { productId: string; formatId: string }[]
 ): number | null {
@@ -146,18 +225,35 @@ export function orderTotalCents(
   for (const piece of pieces) {
     const v = getVariant(piece.productId, piece.formatId);
     if (!v) return null;
-    total += Math.round((v.format.priceCents * (100 - discount)) / 100);
+    const rate = v.product.signature ? 0 : discount;
+    total += Math.round((v.format.priceCents * (100 - rate)) / 100);
   }
   return total;
+}
+
+/** Marge brute estimée d'une commande, en centimes (suivi interne). */
+export function orderMarginCents(
+  pieces: { productId: string; formatId: string }[]
+): number | null {
+  const total = orderTotalCents(pieces);
+  if (total === null) return null;
+  let cost = 0;
+  for (const piece of pieces) {
+    const v = getVariant(piece.productId, piece.formatId);
+    if (!v) return null;
+    cost += v.format.costCents;
+  }
+  return total - cost;
 }
 
 /** Libellé matière pour l'email atelier et le dashboard. */
 export const MATERIAL_LABELS: Record<MaterialId, string> = {
   "papier-photo": "Papier photo (Latex 700W — rouleau)",
   canvas: "Toile canvas (Latex 700W — rouleau + châssis)",
-  forex: "Forex PVC 5 mm (Mimaki UV)",
-  dibond: "Alu-Dibond 3 mm (Mimaki UV)",
-  plexi: "Plexi 4 mm (Mimaki UV — blanc de soutien)",
+  forex: "Forex PVC 3 mm (Gongzheng UV)",
+  dibond: "Aluminium composite 3 mm (Gongzheng UV)",
+  plexi: "Plexi 3 mm (Gongzheng UV — blanc de soutien)",
+  "plexi-diffusant": "Plexi diffusant (Gongzheng UV — rétroéclairé)",
 };
 
 /**

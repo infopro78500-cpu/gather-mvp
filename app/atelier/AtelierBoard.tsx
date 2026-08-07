@@ -256,7 +256,7 @@ function cropBands(
   product: string,
   format: string
 ): { horizontal: number; vertical: number; label: string } | null {
-  const variant = getVariant(product, format, { includePending: true });
+  const variant = getVariant(product, format);
   if (!variant || !pxWidth || !pxHeight) return null;
   const { widthCm, heightCm } = variant.format;
   const imgRatio = pxWidth / pxHeight;
