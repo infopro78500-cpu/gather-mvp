@@ -1,6 +1,6 @@
 # Usegather (ex-Gather) — coffres photo d'événement
 
-App de partage photo d'événement : l'organisateur crée un « coffre » (PIN 6 chiffres + QR code), les invités déposent photos/vidéos **sans compte**, tout le monde télécharge l'album en ZIP. Éphémère par défaut (24 h / 7 jours), purge automatique du stockage à expiration. Beachhead : **le mariage, en France** (~220 000/an). Monétisation cible : freemium + **impression via Printerkut** (partenaire de production dédié, société du frère de Nico).
+App de partage photo d'événement : l'organisateur crée un « coffre » (PIN 6 chiffres + QR code), les invités déposent photos/vidéos **sans compte**, tout le monde télécharge l'album en ZIP. Éphémère par défaut (24 h / 7 jours), purge automatique du stockage à expiration. Beachhead : **le mariage, en France** (251 000 unions en 2025, INSEE). Monétisation cible : freemium + **impression via Printerkut** (partenaire de production dédié, société du frère de Nico).
 
 Stack : Next.js 16 (App Router) + React 19 + TypeScript + Tailwind 4 · Supabase (Postgres, Storage bucket privé `event-photos`, URLs signées) · Vercel · Capacitor 6 (embryonnaire, appId `com.usegather.app`).
 

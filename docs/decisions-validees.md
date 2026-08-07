@@ -15,7 +15,7 @@
 ## 2. Positionnement
 
 - **Le produit** : coffre photo éphémère d'événement — un QR/PIN, tout le monde dépose **sans compte**, tout le monde repart avec tout. 24 h ou 7 jours, puis purge (préservation possible).
-- **Beachhead : le mariage, en France** (~220 000/an) — fort potentiel d'impression, viralité invités. Les autres verticales (écoles, corporate, festivals) viennent après.
+- **Beachhead : le mariage, en France** — **251 000 unions en 2025** (INSEE ; le marché est en hausse depuis 2023, l'ancien chiffre de « 220 000 » était celui de 2019). Fort potentiel d'impression, viralité invités. Les autres verticales (clubs de sport, corporate, écoles) viennent après.
 - **Différenciateur — les 5 cases que personne ne coche ensemble** : sans compte + offline + multi-OS + impression intégrée + EU/RGPD.
 - **Le deck reste honnête** (v2, juillet 2026) : traction beta = 50+ événements / 700+ photos (fait), 0 actif à l'instant T (fait aussi) — aucun claim gonflé.
 

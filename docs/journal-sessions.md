@@ -4,6 +4,17 @@
 
 ---
 
+## Session 07/08/2026 — Gamme produits impression V1
+
+**Contexte** : l'atelier s'équipe d'une **Gongzheng H2513GN PRO** (flatbed UV 2500×1300, ép. 100 mm, blanc + vernis) → la question n°1 de l'audit d'intégration est répondue, plus aucun plafond de format en rigide. Nico demande une gamme complète, chiffrée, par secteur.
+
+- **Quatre recherches lancées en parallèle** (coûts matière au m², marché rigide, marché souple, analyse sectorielle). Coupées par la limite de session à mi-parcours, puis **relancées en mode restitution** — les quatre ont rendu leur moisson sans nouvelle recherche web. Méthode à retenir : un agent coupé garde son contexte, `SendMessage` récupère le travail déjà fait.
+- **Livrable** : `docs/strategie/gamme-produits-impression.md` — coûts matière réels (Antalis avec références SKU, Plexi-Cindar, chassis-en-bois, Facilembal), grilles de prix par support avec marge calculée, dégressif, gammes par secteur (mariage/clubs/corporate/scolaire), 5 produits signature, 10 questions atelier mises à jour.
+- **Trois découvertes structurantes** : le forfait de 17-21 €/pièce du marché **vient de l'accroche** (4 entretoises inox = 14,96 €) et de l'emballage · la **toile est notre pire marge** (33-44 %) et le **Forex la meilleure** (61-71 %) · le **plexi diffusant coûte 29 €/m²** quand le rétroéclairé se vend 649-1 098 €.
+- **Code** : `lib/print/catalog.ts` réécrit (6 supports + 4 signature, coûts de revient suivis, dégressif jusqu'à −40 %, signature exclue de la remise, option accroche, franchise de port). Tests mis à jour.
+- **Correction factuelle** : marché mariage à **251 000/an** (INSEE 2025), pas 220 000 (chiffre 2019) — répercuté dans `decisions-validees.md` et `CLAUDE.md`.
+- **Reste à faire** : voie express pour les produits à date impérative (bloquant pour le jour J), seconde passe de benchmark (Pixum/CEWE/Photobox non relevés), devis atelier sur l'aluminium et les caissons LED.
+
 ## Session 06/08/2026 — Refonte photo-first du dashboard atelier
 
 **Contexte** : retour de Nico sur la maquette atelier (« on peut faire mille fois mieux — notre domaine, c'est la photo ») → audit UX par l'agent `ux-design`, décisions actées, refonte P0 livrée le jour même.
