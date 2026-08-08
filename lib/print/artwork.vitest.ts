@@ -13,7 +13,7 @@ import { getVariant } from "./catalog";
 const outDir = process.env.PRINT_ARTWORK_OUT ?? fs.mkdtempSync(path.join(os.tmpdir(), "artwork-"));
 
 describe("visuels générés de la papeterie du jour J", () => {
-  it("rend un présentoir 7×10 à 300 dpi", async () => {
+  it("rend un présentoir 7 × 10,5 à 300 dpi", async () => {
     const format = getVariant("presentoir", "moyen-lot-10")!.format;
     const png = await renderGeneratedArtwork(format, {
       joinUrl: "https://usegather.app/join?pin=123456",
@@ -25,9 +25,10 @@ describe("visuels générés de la papeterie du jour J", () => {
     fs.writeFileSync(path.join(outDir, "presentoir-7x10.png"), png);
 
     const meta = await sharp(png).metadata();
-    // 7 × 10 cm à 300 dpi.
+    // Face imprimée 7 × 10,5 cm à 300 dpi — le pied de 5 cm n'est pas
+    // imprimé, il n'entre que dans l'encombrement plateau (piecesPerPass).
     expect(meta.width).toBe(827);
-    expect(meta.height).toBe(1181);
+    expect(meta.height).toBe(1240);
     expect(meta.format).toBe("png");
   });
 

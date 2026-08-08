@@ -45,6 +45,14 @@ export interface PrintFormat {
   costCents: number;
   /** Nombre de pièces livrées, pour les lots de petites pièces. Défaut 1. */
   packQuantity?: number;
+  /**
+   * Encombrement de la pièce à plat sur le plateau, quand il diffère de la
+   * face visible — cas du chevalet, dont le pied s'ajoute à la hauteur
+   * imprimée. C'est cet encombrement qui commande l'imposition, pas le
+   * format vu par le client. Défaut : les cotes de la face visible.
+   */
+  blankWidthCm?: number;
+  blankHeightCm?: number;
 }
 
 export interface PrintProduct {
@@ -216,17 +224,22 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
     // encodage unitaire par table, contrôle par tap, puis VERROUILLAGE en
     // lecture seule (un présentoir traîne toute une soirée à portée de tous).
     nfc: true,
-    // Deux tailles au catalogue fournisseur, reprises telles quelles.
-    // Rendement plateau 610×420 : 36 pièces par passe en moyen, 25 en grand.
+    // Cotes réelles du bon de commande fournisseur (08/08/2026) :
+    //   moyen : 105 + 50 × 70 mm  → face 7,0 × 10,5, à plat 7,0 × 15,5
+    //   grand : 127,5 + 50 × 76 mm → face 7,6 × 12,75, à plat 7,6 × 17,75
+    // Le « + 50 » est le pied : il occupe le plateau sans être la face vue
+    // par le client. Rendement réel : 18 pièces par passe en moyen, 16 en
+    // grand (et non 36/25, qui ne comptait que la face imprimée).
+    // Coût : chevalet 1,20 $ pièce + quote-part DDP ≈ 1,40 $ ≈ 1,23 €.
     formats: [
-      { id: "moyen-lot-5", widthCm: 7, heightCm: 10, priceCents: EUR(45), costCents: EUR(15), packQuantity: 5 },
-      { id: "moyen-lot-10", widthCm: 7, heightCm: 10, priceCents: EUR(79), costCents: EUR(28), packQuantity: 10 },
-      { id: "moyen-lot-15", widthCm: 7, heightCm: 10, priceCents: EUR(109), costCents: EUR(40), packQuantity: 15 },
-      { id: "moyen-lot-20", widthCm: 7, heightCm: 10, priceCents: EUR(135), costCents: EUR(52), packQuantity: 20 },
-      { id: "grand-lot-5", widthCm: 7.5, heightCm: 12, priceCents: EUR(55), costCents: EUR(18), packQuantity: 5 },
-      { id: "grand-lot-10", widthCm: 7.5, heightCm: 12, priceCents: EUR(99), costCents: EUR(34), packQuantity: 10 },
-      { id: "grand-lot-15", widthCm: 7.5, heightCm: 12, priceCents: EUR(135), costCents: EUR(49), packQuantity: 15 },
-      { id: "grand-lot-20", widthCm: 7.5, heightCm: 12, priceCents: EUR(169), costCents: EUR(64), packQuantity: 20 },
+      { id: "moyen-lot-5", widthCm: 7, heightCm: 10.5, blankHeightCm: 15.5, priceCents: EUR(45), costCents: EUR(10), packQuantity: 5 },
+      { id: "moyen-lot-10", widthCm: 7, heightCm: 10.5, blankHeightCm: 15.5, priceCents: EUR(79), costCents: EUR(18), packQuantity: 10 },
+      { id: "moyen-lot-15", widthCm: 7, heightCm: 10.5, blankHeightCm: 15.5, priceCents: EUR(109), costCents: EUR(26), packQuantity: 15 },
+      { id: "moyen-lot-20", widthCm: 7, heightCm: 10.5, blankHeightCm: 15.5, priceCents: EUR(135), costCents: EUR(35), packQuantity: 20 },
+      { id: "grand-lot-5", widthCm: 7.6, heightCm: 12.75, blankHeightCm: 17.75, priceCents: EUR(55), costCents: EUR(12), packQuantity: 5 },
+      { id: "grand-lot-10", widthCm: 7.6, heightCm: 12.75, blankHeightCm: 17.75, priceCents: EUR(99), costCents: EUR(21), packQuantity: 10 },
+      { id: "grand-lot-15", widthCm: 7.6, heightCm: 12.75, blankHeightCm: 17.75, priceCents: EUR(135), costCents: EUR(30), packQuantity: 15 },
+      { id: "grand-lot-20", widthCm: 7.6, heightCm: 12.75, blankHeightCm: 17.75, priceCents: EUR(169), costCents: EUR(40), packQuantity: 20 },
     ],
   },
   {
@@ -303,8 +316,10 @@ export function fitsUvBed(format: PrintFormat): boolean {
  * cale les seuils de lot par matière (PRINT_BATCH_SIZE_<MATIERE>).
  */
 export function piecesPerPass(format: PrintFormat): number {
-  const w = format.widthCm * 10;
-  const h = format.heightCm * 10;
+  // On raisonne sur l'encombrement à plat : un chevalet occupe le plateau
+  // avec son pied déplié, pas seulement sa face imprimée.
+  const w = (format.blankWidthCm ?? format.widthCm) * 10;
+  const h = (format.blankHeightCm ?? format.heightCm) * 10;
   const grid = (pieceW: number, pieceH: number) =>
     Math.floor(UV_BED_MM.width / pieceW) * Math.floor(UV_BED_MM.height / pieceH);
   return Math.max(grid(w, h), grid(h, w));

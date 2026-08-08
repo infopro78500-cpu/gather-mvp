@@ -29,16 +29,24 @@ Restent à la charge de l'atelier : l'impression, **l'encodage unitaire par tabl
 
 > *Note d'honnêteté sur la version précédente de cette page : j'y écrivais qu'il ne fallait « jamais poser de puce ». La règle vaut chez Renka pour leurs cartes, où l'alternative intégrée est un produit standard — mais Renka lui-même utilise un tag rapporté sur son petit carré 10×10 du Pack Mobilité (~0,92 €). La règle n'est donc pas absolue ; elle l'est ici parce que le support intégré existe et qu'on l'a.*
 
-### Formats disponibles
+### Le bon de commande — données réelles (08/08/2026)
 
-Le catalogue fournisseur propose deux tailles, reprises telles quelles (cotes Renka, `lika-app/src/lib/offer.ts`) :
+Ligne 5 du bon fournisseur : **`Acrylic Ntag215 stand card` — 1,20 $ pièce**, 50 unités (25 de chaque taille), cotes `127,5 + 50 × 76 mm` et `105 + 50 × 70 mm`. Puce **NTAG215** confirmée — la même que les cartes Renka, 504 octets utiles, très largement de quoi loger une URL courte.
 
-| Taille | Cotes (l × h) | Pièces par passe (plateau 610×420) | QR imprimé |
-|---|---|---|---|
-| **Moyen** | 7 × 10 cm | **36** | ~4,3 cm |
-| **Grand** | 7,5 × 12 cm | **25** | ~4,7 cm |
+**Le « + 50 mm », c'est le pied**, et c'est le détail qui change le calcul : la pièce occupe le plateau **à plat, pied compris**, alors que le client ne voit que la face imprimée.
 
-Un QR de 4,3 cm se scanne largement (2 cm suffisent en pratique). Les deux tailles sont au catalogue ; le moyen est le format naturel sur une table dressée, le grand pour les tables d'honneur ou les mariages où le présentoir doit se voir de loin.
+| Taille | Face imprimée | À plat sur le plateau | Pièces par passe (610×420) | QR imprimé |
+|---|---|---|---|---|
+| **Moyen** | 7,0 × 10,5 cm | 7,0 × **15,5** cm | **18** | ~4,3 cm |
+| **Grand** | 7,6 × 12,75 cm | 7,6 × **17,75** cm | **16** | ~4,7 cm |
+
+*(À ne compter que la face visible on aurait cru 32 et 24 — presque le double. Le rendement réel se calcule sur l'encombrement à plat ; c'est figé dans un test.)*
+
+Un QR de 4,3 cm se scanne largement (2 cm suffisent en pratique). Le moyen est le format naturel sur une table dressée, le grand pour les tables d'honneur ou les salles où le présentoir doit se voir de loin.
+
+**Coût réel** : 1,20 $ + quote-part des 120 $ de DDP répartis sur les 715 $ de marchandise ≈ **1,40 $ rendu, soit ~1,23 €**. C'est **deux fois moins que mon estimation prudente** de 2 à 2,50 €.
+
+**Contrainte d'approvisionnement à connaître** : production **8 à 12 jours ouvrés** après paiement, plus le transport. Avec 50 chevalets en stock, on couvre deux à trois mariages de 15 tables. Sur un produit à date impérative, **le réassort est un délai à anticiper** — c'est la vraie limite du produit, pas la production interne.
 
 ---
 
@@ -120,21 +128,21 @@ Renka a validé une grille Point Fixe : **29 €** le présentoir 7×10 posé, *
 
 | Lot | Prix | Par table | Coût estimé | Marge |
 |---|---|---|---|---|
-| 5 tables | **45,00 €** | 9,00 € | ~15 € | 67 % |
-| 10 tables | **79,00 €** | 7,90 € | ~28 € | 65 % |
-| 15 tables | **109,00 €** | 7,27 € | ~40 € | 63 % |
-| 20 tables | **135,00 €** | 6,75 € | ~52 € | 61 % |
+| 5 tables | **45,00 €** | 9,00 € | ~10 € | **78 %** |
+| 10 tables | **79,00 €** | 7,90 € | ~18 € | **77 %** |
+| 15 tables | **109,00 €** | 7,27 € | ~26 € | **76 %** |
+| 20 tables | **135,00 €** | 6,75 € | ~35 € | **74 %** |
 
 **Grand — 7,5 × 12 cm**
 
 | Lot | Prix | Par table | Coût estimé | Marge |
 |---|---|---|---|---|
-| 5 tables | **55,00 €** | 11,00 € | ~18 € | 67 % |
-| 10 tables | **99,00 €** | 9,90 € | ~34 € | 66 % |
-| 15 tables | **135,00 €** | 9,00 € | ~49 € | 64 % |
-| 20 tables | **169,00 €** | 8,45 € | ~64 € | 62 % |
+| 5 tables | **55,00 €** | 11,00 € | ~12 € | **78 %** |
+| 10 tables | **99,00 €** | 9,90 € | ~21 € | **79 %** |
+| 15 tables | **135,00 €** | 9,00 € | ~30 € | **78 %** |
+| 20 tables | **169,00 €** | 8,45 € | ~40 € | **76 %** |
 
-Coût estimé : chevalet à tag intégré (~2 à 2,50 € pièce), impression, encodage unitaire, emballage. **Le prix d'achat du chevalet est le chiffre le plus incertain de cette page** — il vient directement du fournisseur, c'est la première donnée à obtenir.
+Coût = chevalet rendu **1,23 €** (chiffre réel du bon de commande) + impression UV + encodage unitaire + emballage. **Marges de 74 à 79 %** — le chevalet ne pèse qu'un tiers du coût de revient, le reste est de la main-d'œuvre, donc le vrai levier est le **temps d'encodage par pièce**, pas le prix d'achat.
 
 Comparaison : Renka vend son présentoir moyen **29 € l'unité** ; dix coûteraient 290 €. À 79 €, on est très en dessous — justifié par le volume et par le fait qu'on ne vend pas un support de prospection commerciale mais un accessoire d'événement, acheté par lot.
 
@@ -142,12 +150,14 @@ Comparaison : Renka vend son présentoir moyen **29 € l'unité** ; dix coûter
 
 ## 9. Ce qu'il faut décider avant de produire
 
-1. ~~**Le fournisseur**~~ → ✅ **RÉSOLU** : celui du Point Fixe de Renka, chevalet livré tag inclus. Reste à obtenir **le prix d'achat par pièce et la quantité minimale** — c'est la donnée qui verrouille la grille §8.
-2. ~~**Le format**~~ → ✅ deux tailles au catalogue : **7 × 10** et **7,5 × 12**, reprises du fournisseur.
-3. **Le modèle exact de puce** (NTAG213 ou 215 ?) et **la position de l'antenne** dans le chevalet — à mesurer sur un échantillon avant de figer les gabarits photo.
-4. **L'outil d'encodage** : encodeur USB + script, ou application mobile à la main ? **Combien de temps par pièce** — c'est ce qui détermine si un mariage de 15 tables reste rentable.
-5. **Le verrouillage** en lecture seule après contrôle : confirmé, et avec quel outil ?
-6. **L'impression sur ce support** : le chevalet passe-t-il sous la Mimaki tel quel, ou faut-il un gabarit de maintien ? (chez Renka, les cartes sont tenues dans un gabarit 23 cases — il faudra l'équivalent)
+1. ~~**Le fournisseur**~~ → ✅ commande passée le 08/08/2026, 50 chevalets (25 de chaque taille) à **1,20 $ pièce**.
+2. ~~**Le format**~~ → ✅ **7,0 × 10,5** et **7,6 × 12,75** de face, pied de 5 cm en plus à plat.
+3. ~~**Le modèle de puce**~~ → ✅ **NTAG215**.
+4. **La position de l'antenne** dans le chevalet — à mesurer sur un exemplaire dès réception, **avant** de figer les gabarits photo. C'est le seul point de la liste qui peut faire rater des pièces.
+5. **L'outil d'encodage** : encodeur USB + script, ou application mobile à la main ? **Combien de temps par pièce** — le chevalet ne pèse qu'un tiers du coût de revient, l'encodage est le vrai levier de marge.
+6. **Le verrouillage** en lecture seule après contrôle : avec quel outil, et intégré à quelle étape ?
+7. **Le gabarit de maintien** : le chevalet passe-t-il sous la Mimaki tel quel, ou faut-il un gabarit ? Chez Renka les cartes sont tenues dans un gabarit 23 cases dont la géométrie est figée et validée sur tirage réel — il faudra l'équivalent, calé sur **18 pièces par passe en moyen, 16 en grand**.
+8. **Le réassort** : 8 à 12 jours ouvrés de production plus le transport. À intégrer au stock de sécurité, sur un produit dont la date de livraison ne se négocie pas.
 
 ---
 

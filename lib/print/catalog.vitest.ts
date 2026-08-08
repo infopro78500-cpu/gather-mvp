@@ -135,6 +135,10 @@ describe("catalogue impression", () => {
     expect(per("forex", "40x60")).toBe(1);
     // Au-delà, la pièce n'entre plus : contrecollage.
     expect(per("forex", "50x70")).toBe(0);
+    // Le chevalet occupe le plateau avec son PIED déplié, pas seulement sa
+    // face imprimée — sinon on surestime le rendement de près du double.
+    expect(per("presentoir", "moyen-lot-10")).toBe(18);
+    expect(per("presentoir", "grand-lot-10")).toBe(16);
     expect(fitsUvBed(getVariant("forex", "40x60")!.format)).toBe(true);
     expect(fitsUvBed(getVariant("forex", "100x150")!.format)).toBe(false);
   });
