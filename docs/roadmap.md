@@ -18,6 +18,8 @@ Format : **NOW** (cycle en cours) / **NEXT** (prochain) / **LATER** (plus tard) 
 
 ## 🟡 NEXT
 
+- [ ] **[Produit — équipe]** Trancher les **galeries par table** (un présentoir + un QR par table, mots privés aux mariés) — l'idée rend le présentoir indispensable et dimensionné par le nombre de tables (`strategie/idee-galeries-par-table.md`). Prérequis technique = le chantier voie express + fichiers générés
+
 - [ ] **[Structure]** Trancher l'immatriculation (LU vs FR) → créer la société + pacte d'associés avec vesting + **cession de la marque INPI à la société**
 - [ ] **[Tech]** Supabase offre payante (prérequis relance — leçon incident juillet)
 - [ ] **[Produit]** V1 « lançable » : comptes hôtes, intégration impression Printerkut, paiement, sécurité par événement
