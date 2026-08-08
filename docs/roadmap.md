@@ -18,7 +18,7 @@ Format : **NOW** (cycle en cours) / **NEXT** (prochain) / **LATER** (plus tard) 
 
 ## 🟡 NEXT
 
-- [ ] **[Impression — Nico]** **Présentoir NFC** — fournisseur trouvé (chevalet tag inclus, 7×10 et 7,5×12). Commande passée (50 chevalets NTAG215 à 1,20 $, 8-12 j ouvrés). Reste : **outil et temps d'encodage par pièce** (le vrai levier de marge), verrouillage lecture seule, gabarit de maintien sous la Mimaki (18 pièces/passe en moyen, 16 en grand), puis **première série testée** (`strategie/presentoir-nfc.md`)
+- [ ] **[Impression — Nico]** **Présentoir NFC** — fournisseur trouvé (chevalet tag inclus, 7×10 et 7,5×12). Commande passée (50 chevalets NTAG215 à 1,20 $, 8-12 j ouvrés). Reste : **outil et temps d'encodage par pièce** (le seul vrai inconnu, et le levier de marge), verrouillage lecture seule, **gabarit PVC découpé sur la Summa** (18 pièces/passe en moyen, 16 en grand — géométrie en source unique code ↔ fichier de découpe), puis **première série testée** (`strategie/presentoir-nfc.md`)
 - [ ] **[Produit]** **Galeries par table** — un présentoir + un QR par table ; partage par défaut vers l'album commun avec étiquette de table, messagerie privée aux mariés en second geste (arbitrage tranché le 07/08). Rend le présentoir indispensable et dimensionné par le nombre de tables. Prérequis = chantier voie express + fichiers générés · à tester sur un vrai mariage avant industrialisation (`strategie/idee-galeries-par-table.md`)
 
 - [ ] **[Structure]** Trancher l'immatriculation (LU vs FR) → créer la société + pacte d'associés avec vesting + **cession de la marque INPI à la société**

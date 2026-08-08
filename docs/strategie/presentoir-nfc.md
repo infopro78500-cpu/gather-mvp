@@ -155,12 +155,38 @@ Comparaison : Renka vend son présentoir moyen **29 € l'unité** ; dix coûter
 4. ~~**La position de l'antenne**~~ → ✅ sans objet : on imprime en quadri, ça n'écrante rien (§5).
 5. **L'outil d'encodage** : encodeur USB + script, ou application mobile à la main ? **Combien de temps par pièce** — le chevalet ne pèse qu'un tiers du coût de revient, l'encodage est le vrai levier de marge. *C'est désormais le seul vrai inconnu.*
 6. **Le verrouillage** en lecture seule après contrôle : avec quel outil, et intégré à quelle étape ?
-7. **Le gabarit de maintien** : le chevalet passe-t-il sous la Mimaki tel quel, ou faut-il un gabarit ? Chez Renka les cartes sont tenues dans un gabarit 23 cases dont la géométrie est figée et validée sur tirage réel — il faudra l'équivalent, calé sur **18 pièces par passe en moyen, 16 en grand**.
+7. ~~**Le gabarit de maintien**~~ → ✅ **résolu : découpé sur la table Summa**, en PVC ou en bois (§11).
 8. **Le réassort** : 8 à 12 jours ouvrés de production plus le transport. À intégrer au stock de sécurité, sur un produit dont la date de livraison ne se négocie pas.
 
 ---
 
-## 10. Le piège à éviter, tiré de Renka
+## 10. Le gabarit de maintien — découpé sur la Summa
+
+L'atelier a une **table de découpe Summa** : le gabarit se fabrique en interne, en **PVC ou en bois**, sans dépendre de personne. C'est la bonne façon de faire — Renka a exactement ça (un gabarit 23 cases qui tient les cartes pendant l'impression), et c'est ce qui rend l'imposition fiable.
+
+**Cinq règles à respecter en le dessinant, toutes tirées de leur expérience :**
+
+1. **Une seule source de vérité pour la géométrie.** Chez Renka, `GABARIT_SLOTS` vit dans le code (`lib/impose.ts`) et sert **à la fois** à l'imposition des fichiers et au dessin physique du gabarit. Un module pur, importé par le serveur, les scripts et l'interface. Si les deux divergent, chaque tirage est décalé. **Le fichier de découpe Summa doit être généré à partir de cette constante**, pas dessiné à côté.
+2. **Valider sur un tirage réel, puis figer.** Leur règle d'or n°5 : *« ne pas toucher `lib/impose.ts` sans nouveau tirage de contrôle »*. Le gabarit se mesure au raster sur une vraie sortie, pas sur le plan théorique.
+3. **Du jeu dans chaque case, et du fond perdu à l'impression.** Renka imprime 3 mm de débord et laisse 0,75 mm de jeu autour de la coupe : la pièce bouge un peu dans sa case, et sans débord on verrait un liseré blanc sur un bord. Même principe ici.
+4. **Le PVC plutôt que le bois.** Le bois travaille avec l'humidité, et un gabarit qui bouge de quelques dixièmes décale toute la planche. Le Forex est déjà en stock, dimensionnellement stable, et se découpe proprement sur la Summa.
+5. **La profondeur compte.** Le chevalet doit affleurer, sinon la tête d'impression passe trop haut ou accroche. À caler sur l'épaisseur réelle de l'acrylique à réception.
+
+**Deux gabarits, ou un seul ?** Les deux tailles n'ont pas le même encombrement à plat (7,0 × 15,5 et 7,6 × 17,75) et pas le même rendement (18 et 16 pièces). Un gabarit par taille est plus simple et plus sûr qu'un gabarit mixte — et de toute façon **une planche = une matière, donc une taille** : on ne mélange pas.
+
+## 11. Le vrai apport de la Summa : elle débloque toute la gamme rigide
+
+Le gabarit n'est que l'usage le plus immédiat. Une table de découpe à plat répond à une question restée ouverte dans l'audit de gamme (`gamme-produits-impression.md` §11.3) : **qui découpe les formats finis dans les plaques ?**
+
+Conséquences pour le catalogue :
+
+- **Les formats rigides ne dépendent plus d'un sous-traitant.** On achète la plaque entière (le €/m² Antalis est quasi identique quel que soit le format), on imprime, on découpe au format fini. Le poste « découpe » sort des inconnues.
+- **La découpe de forme devient possible.** C'est un produit que le marché facture cher : SubliPix facture **+100 € HT minimum** une découpe non rectangulaire. Un présentoir en forme de cœur, une plaque contournée, un panneau arrondi — c'est du différenciant à coût quasi nul chez nous.
+- **Le rainage** (fold/crease) est disponible sur ces tables : de quoi fabriquer nous-mêmes des chevalets, des supports pliés, des marque-places sur pied — sans dépendre du fournisseur asiatique et de ses 8-12 jours de production.
+
+Ce dernier point mérite d'être creusé : si la Summa sait rainer l'acrylique fin ou le Forex, **une partie de la papeterie du jour J peut se produire entièrement en interne**, sans stock ni délai d'import. Le chevalet NFC resterait acheté (pour la puce), mais les marque-places et les petits supports non-NFC pourraient être faits maison.
+
+## 12. Le piège à éviter, tiré de Renka
 
 Leur famille Point Fixe est **en ligne, tarifée et photographiée — sans aucun process de fabrication documenté** : ni matière, ni fournisseur, ni étape d'impression, ni contrôle qualité. Elle a été *vendue avant d'être industrialisée*.
 

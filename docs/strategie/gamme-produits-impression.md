@@ -413,6 +413,7 @@ Les 10 questions du document de validation restent valables, sauf la n°1 (répo
 1. **Ta grille de cession** (prix atelier → Usegather) sur chaque ligne des §4 et §5.1–5.2 — c'est la base du contrat d'approvisionnement.
 2. **Aluminium : quel grade ?** ACM générique (~22–27 €/m²), DiLite (40 €/m²) ou Dibond® de marque (64 €/m²) ? *Devis prioritaire — l'écart change toute la marge.*
 3. **Les formats > 40×60 en rigide** : contrecollage (tirage Latex marouflé) confirmé ? Quel temps de main-d'œuvre par pièce ? *Détermine si la grille tient jusqu'au 100×150 avant la Gongzheng.*
+   → **La découpe, elle, est résolue** : l'atelier a une **table de découpe Summa** (08/08/2026). Les formats finis se sortent des plaques en interne, la découpe de forme devient possible (le marché la facture +100 € HT minimum), et le rainage ouvre la fabrication maison de chevalets et supports pliés. Détail : `presentoir-nfc.md` §11.
 4. **Accroche** : quel système par défaut, et à quel prix d'achat en volume ? (l'entretoise à 3,74 € pièce est le poste qui écrase les petits formats)
 5. **Châssis toile** : achat prêt à monter (11,04 € le 40×60) ou baguette au mètre (3,76 €/ml dès 100 m) ? *C'est le levier de la marge la plus faible de la gamme.*
 6. **Confirmer les pièces par passe** : 4 × 20×30, 2 × 30×40, 1 × 40×60 sur le plateau 610×420 — et lequel des deux Mimaki tourne en priorité ? *(détermine les seuils de lot par matière)*
