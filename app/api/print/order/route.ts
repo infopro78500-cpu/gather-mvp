@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
-import { getVariant, orderTotalCents, resolutionBadge } from "@/lib/print/catalog";
+import {
+  getVariant,
+  orderTotalCents,
+  requiresCoffrePhoto,
+  resolutionBadge,
+} from "@/lib/print/catalog";
+import { defaultCallToAction, renderGeneratedArtwork } from "@/lib/print/artwork";
 import {
   enqueuePieces,
   freezeSourceFile,
   maybeBuildBatch,
+  storeGeneratedArtwork,
   type QueuedPiece,
 } from "@/lib/print/queue";
 
@@ -39,11 +46,14 @@ function makeOrderRef(): string {
 }
 
 interface PieceInput {
-  sourcePath: string;
+  /** Photo du coffre. Absent pour la papeterie du jour J (visuel généré). */
+  sourcePath?: string;
   productId: string;
   formatId: string;
   pxWidth?: number;
   pxHeight?: number;
+  /** Papeterie du jour J : ligne secondaire du visuel (table, prénom…). */
+  label?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -97,16 +107,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Validation de chaque pièce : chemin borné au coffre, variante au
-  // catalogue (formats non validés atelier exclus), résolution suffisante.
-  for (const piece of piecesInput) {
-    const path = clean(piece?.sourcePath, 400);
-    if (!path || !path.startsWith(`${eventId}/`) || path.includes("..")) {
-      return NextResponse.json(
-        { success: false, error: "INVALID_SOURCE_PATH" },
-        { status: 422 }
-      );
+  // Échéance impérative (date de l'événement) : elle sort la commande de la
+  // logique de seuil et la fait partir par la voie express.
+  const dueDateRaw = clean(body.dueDate, 40);
+  let dueAt: string | null = null;
+  if (dueDateRaw) {
+    const parsed = new Date(dueDateRaw);
+    if (Number.isNaN(parsed.getTime())) {
+      return NextResponse.json({ success: false, error: "INVALID_DUE_DATE" }, { status: 422 });
     }
+    dueAt = parsed.toISOString();
+  }
+
+  // Validation de chaque pièce : variante au catalogue, et selon le produit
+  // soit un chemin borné au coffre, soit un visuel à générer.
+  for (const piece of piecesInput) {
     const variant = getVariant(String(piece?.productId), String(piece?.formatId));
     if (!variant) {
       return NextResponse.json(
@@ -114,7 +129,25 @@ export async function POST(req: NextRequest) {
         { status: 422 }
       );
     }
+    const path = clean(piece?.sourcePath, 400);
+    if (requiresCoffrePhoto(variant.product)) {
+      // Produit né d'une photo : le chemin est obligatoire et borné au coffre.
+      if (!path || !path.startsWith(`${eventId}/`) || path.includes("..")) {
+        return NextResponse.json(
+          { success: false, error: "INVALID_SOURCE_PATH" },
+          { status: 422 }
+        );
+      }
+    } else if (path && (!path.startsWith(`${eventId}/`) || path.includes(".."))) {
+      // Papeterie du jour J : la photo est facultative, mais si elle est
+      // fournie elle reste bornée au coffre.
+      return NextResponse.json(
+        { success: false, error: "INVALID_SOURCE_PATH" },
+        { status: 422 }
+      );
+    }
     if (
+      path &&
       typeof piece.pxWidth === "number" &&
       typeof piece.pxHeight === "number" &&
       resolutionBadge(piece.pxWidth, piece.pxHeight, variant.format) === "insufficient"
@@ -139,19 +172,52 @@ export async function POST(req: NextRequest) {
 
   const orderRef = makeOrderRef();
 
+  // La papeterie du jour J a besoin des données du coffre pour composer son
+  // visuel (QR de dépôt, titre, PIN de repli).
+  const needsArtwork = piecesInput.some((p) => {
+    const v = getVariant(String(p.productId), String(p.formatId));
+    return v && !requiresCoffrePhoto(v.product) && !clean(p.sourcePath, 400);
+  });
+  let eventRow: { name: string | null; pin: string | null } | null = null;
+  if (needsArtwork) {
+    const { data } = await supabase
+      .from("events")
+      .select("name, pin")
+      .eq("id", eventId)
+      .single();
+    eventRow = (data as { name: string | null; pin: string | null } | null) ?? null;
+    if (!eventRow?.pin) {
+      return NextResponse.json(
+        { success: false, error: "EVENT_NOT_FOUND" },
+        { status: 422 }
+      );
+    }
+  }
+  const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || req.nextUrl.origin;
+
   // Fichiers de production FIGÉS : copie immédiate hors du coffre (le coffre
-  // expire en 24 h / 7 jours, pas la commande).
+  // expire en 24 h / 7 jours, pas la commande) — ou visuel composé par l'app
+  // pour la papeterie du jour J, qui n'a pas de photo source.
   const queued: QueuedPiece[] = [];
   try {
     for (const [i, piece] of piecesInput.entries()) {
       const variant = getVariant(String(piece.productId), String(piece.formatId));
       if (!variant) continue; // déjà validé plus haut
-      const frozen = await freezeSourceFile(
-        supabase,
-        String(piece.sourcePath),
-        orderRef,
-        i
-      );
+      const sourcePath = clean(piece.sourcePath, 400);
+      const frozen = sourcePath
+        ? await freezeSourceFile(supabase, sourcePath, orderRef, i)
+        : await storeGeneratedArtwork(
+            supabase,
+            await renderGeneratedArtwork(variant.format, {
+              joinUrl: `${origin}/join?pin=${eventRow!.pin}`,
+              title: eventRow!.name?.trim() || "Notre événement",
+              subtitle: clean(piece.label, 80),
+              callToAction: defaultCallToAction(variant.product.id),
+              pin: eventRow!.pin,
+            }),
+            orderRef,
+            i
+          );
       queued.push({
         event_id: eventId,
         order_ref: orderRef,
@@ -162,9 +228,10 @@ export async function POST(req: NextRequest) {
         format: variant.format.id,
         material: variant.product.material,
         price_cents: variant.format.priceCents,
-        source_path: String(piece.sourcePath),
+        source_path: sourcePath,
         file_path: frozen.filePath,
         thumb_path: frozen.thumbPath,
+        due_at: dueAt,
         // Dimensions mesurées côté serveur (fiables pour 100 % des pièces) ;
         // repli sur celles transmises par le client si sharp a échoué.
         px_width:
@@ -183,10 +250,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Construction des lots complets APRÈS la réponse (pattern Renka after()) —
-  // le client ne voit jamais l'attente ; le cron rattrape le reste.
+  // Construction des lots APRÈS la réponse (pattern Renka after()) — le
+  // client ne voit jamais l'attente ; le cron rattrape le reste.
   after(async () => {
     try {
+      // Voie express d'abord : une pièce datée ne doit jamais attendre le
+      // seuil de lot. Elle part dès la commande.
+      if (dueAt) {
+        for (let i = 0; i < 3; i++) {
+          const built = await maybeBuildBatch({ express: true });
+          if (!built) break;
+        }
+      }
       for (let i = 0; i < 3; i++) {
         const built = await maybeBuildBatch();
         if (!built) break;
@@ -201,5 +276,6 @@ export async function POST(req: NextRequest) {
     orderRef,
     pieceCount: queued.length,
     totalCents,
+    express: Boolean(dueAt),
   });
 }

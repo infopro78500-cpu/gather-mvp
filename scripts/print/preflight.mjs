@@ -68,6 +68,24 @@ if (!url || !key) {
     );
   }
 
+  // 2b. Colonnes des migrations suivantes (le code tolère leur absence, mais
+  // les vignettes, la traçabilité des retirages et la voie express en
+  // dépendent).
+  const columnChecks = [
+    ["print_queue", "thumb_path", "vignettes du dashboard", "20260806120000_add_print_thumbnails.sql"],
+    ["print_queue", "requeued_from", "traçabilité des retirages", "20260806120000_add_print_thumbnails.sql"],
+    ["print_queue", "due_at", "VOIE EXPRESS (papeterie du jour J)", "20260807120000_add_print_express_and_generated.sql"],
+    ["print_batches", "due_at", "urgence affichée sur les lots", "20260807120000_add_print_express_and_generated.sql"],
+  ];
+  for (const [table, column, usage, migration] of columnChecks) {
+    const { error } = await supabase.from(table).select(column).limit(1);
+    check(
+      `colonne ${table}.${column}`,
+      !error,
+      error ? `absente — ${usage} inactif ; coller supabase/migrations/${migration}` : ""
+    );
+  }
+
   // 3. Buckets.
   const { data: buckets, error: bucketErr } = await supabase.storage.listBuckets();
   const names = new Set((buckets ?? []).map((b) => b.name));

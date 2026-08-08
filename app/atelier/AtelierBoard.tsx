@@ -29,6 +29,7 @@ interface QueuePieceLite {
   pxWidth: number | null;
   pxHeight: number | null;
   requeuedFrom: string | null;
+  dueAt: string | null;
 }
 
 interface BatchLite {
@@ -39,6 +40,7 @@ interface BatchLite {
   materialLabel: string;
   emailed_at: string | null;
   printed_at: string | null;
+  dueAt: string | null;
 }
 
 interface BatchPieceDetail {
@@ -54,6 +56,7 @@ interface BatchPieceDetail {
   pxWidth: number | null;
   pxHeight: number | null;
   requeuedFrom: string | null;
+  dueAt: string | null;
 }
 
 interface BoardOrder {
@@ -77,6 +80,7 @@ interface BoardData {
     late: number;
     pending: { total: number; perMaterial: { material: string; label: string; count: number }[] };
     toShip: number;
+    express: { count: number; nextDueAt: string | null };
   };
   pieces: QueuePieceLite[];
   batchesToDo: BatchLite[];
@@ -219,6 +223,36 @@ function ageLabel(iso: string | null): string {
   return `${Math.floor(hours / 24)} j`;
 }
 
+/** Jours restants avant une échéance (négatif = dépassée). */
+function daysUntil(iso: string): number {
+  const startOfDay = (x: Date) =>
+    new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  return Math.round((startOfDay(new Date(iso)) - startOfDay(new Date())) / 86_400_000);
+}
+
+/** Étiquette d'urgence d'une pièce ou d'un lot à date impérative. */
+function DueBadge({ dueAt, compact }: { dueAt: string | null; compact?: boolean }) {
+  if (!dueAt) return null;
+  const left = daysUntil(dueAt);
+  const critical = left <= 2;
+  const date = new Date(dueAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  const label =
+    left < 0 ? "en retard" : left === 0 ? "aujourd'hui" : left === 1 ? "demain" : `J−${left}`;
+  return (
+    <span
+      title={`À livrer pour le ${new Date(dueAt).toLocaleDateString("fr-FR")}`}
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[13px] font-semibold"
+      style={{
+        backgroundColor: critical ? "#FEE2E2" : "#FEF3C7",
+        color: critical ? "#8C1D1D" : "#7A5410",
+      }}
+    >
+      ⏱ {label}
+      {!compact && <span className="font-normal"> · {date}</span>}
+    </span>
+  );
+}
+
 /** Aujourd'hui / Hier / Cette semaine / Plus ancien (audit §4.3). */
 function dayGroup(iso: string): string {
   const d = new Date(iso);
@@ -304,6 +338,7 @@ function PieceTile({
   slot,
   requeued,
   resolution,
+  dueAt,
   selected,
   dimmed,
   onClick,
@@ -314,6 +349,7 @@ function PieceTile({
   slot?: number;
   requeued: boolean;
   resolution: QueuePieceLite["resolution"];
+  dueAt?: string | null;
   selected: boolean;
   dimmed: boolean;
   onClick: () => void;
@@ -358,7 +394,10 @@ function PieceTile({
           </span>
         )}
       </span>
-      <span className="mt-1 block truncate text-[12px] text-[var(--at-text-2)]">{caption}</span>
+      <span className="mt-1 flex items-center justify-between gap-1 truncate text-[12px] text-[var(--at-text-2)]">
+        <span className="truncate">{caption}</span>
+        {dueAt && <DueBadge dueAt={dueAt} compact />}
+      </span>
     </button>
   );
 }
@@ -689,20 +728,41 @@ export default function AtelierBoard({ cle }: { cle: string }) {
                 )}
               </p>
             </div>
-            <div
-              className={
-                data && data.today.late > 0
-                  ? "rounded-xl border border-[#F1B5B5] bg-[#FEE2E2] p-4 text-[#8C1D1D]"
-                  : `${card} p-4`
-              }
-            >
-              <p className="text-3xl font-semibold tabular-nums">
-                {data ? (data.today.late > 0 ? data.today.late : <IconCheck />) : "…"}
-              </p>
-              <p className={`mt-1 text-sm ${data && data.today.late > 0 ? "" : "text-[var(--at-text-2)]"}`}>
-                {data && data.today.late > 0 ? `en retard (> ${data.maxWaitDays} j)` : "à jour"}
-              </p>
-            </div>
+            {(() => {
+              // Une seule tuile pour l'urgence, par ordre de gravité :
+              // les pièces datées (jour J) priment sur le simple retard de file.
+              const expressCount = data?.today.express?.count ?? 0;
+              const late = data?.today.late ?? 0;
+              const alert = expressCount > 0 || late > 0;
+              return (
+                <div
+                  className={
+                    alert
+                      ? "rounded-xl border border-[#F1B5B5] bg-[#FEE2E2] p-4 text-[#8C1D1D]"
+                      : `${card} p-4`
+                  }
+                >
+                  <p className="text-3xl font-semibold tabular-nums">
+                    {!data ? "…" : expressCount > 0 ? expressCount : late > 0 ? late : <IconCheck />}
+                  </p>
+                  <p className={`mt-1 text-sm ${alert ? "" : "text-[var(--at-text-2)]"}`}>
+                    {!data
+                      ? "urgence"
+                      : expressCount > 0
+                        ? `à date impérative${
+                            data.today.express.nextDueAt
+                              ? ` · le plus proche ${new Date(
+                                  data.today.express.nextDueAt
+                                ).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`
+                              : ""
+                          }`
+                        : late > 0
+                          ? `en retard (> ${data.maxWaitDays} j)`
+                          : "à jour"}
+                  </p>
+                </div>
+              );
+            })()}
             <div className={`${card} p-4`}>
               <p className="text-3xl font-semibold tabular-nums">
                 {data ? data.today.pending.total : "…"}
@@ -780,6 +840,7 @@ export default function AtelierBoard({ cle }: { cle: string }) {
                       badge={piece.format}
                       requeued={Boolean(piece.requeuedFrom)}
                       resolution={piece.resolution}
+                      dueAt={piece.dueAt}
                       dimmed={false}
                       selected={selection?.kind === "queue" && selection.piece.id === piece.id}
                       onClick={() => setSelection({ kind: "queue", piece })}
@@ -814,6 +875,7 @@ export default function AtelierBoard({ cle }: { cle: string }) {
                   <p className="flex flex-wrap items-center gap-2 font-medium">
                     Lot {batch.id.slice(0, 6)}
                     <MaterialChip material={batch.material} label={batch.materialLabel} />
+                    <DueBadge dueAt={batch.dueAt} />
                     <span className="text-sm text-[var(--at-text-2)]">
                       {batch.piece_count} pièce{batch.piece_count > 1 ? "s" : ""} · reçu il y a{" "}
                       {ageLabel(batch.created_at)}
@@ -854,6 +916,7 @@ export default function AtelierBoard({ cle }: { cle: string }) {
                         slot={piece.slot}
                         requeued={Boolean(piece.requeuedFrom)}
                         resolution={piece.resolution}
+                        dueAt={piece.dueAt}
                         dimmed={Boolean(q) && !matches(piece.customer_name, piece.order_ref)}
                         selected={selection?.kind === "batch" && selection.piece.id === piece.id}
                         onClick={() =>
@@ -929,6 +992,7 @@ export default function AtelierBoard({ cle }: { cle: string }) {
                               slot={piece.slot}
                               requeued={Boolean(piece.requeuedFrom)}
                               resolution={piece.resolution}
+                              dueAt={piece.dueAt}
                               dimmed={Boolean(q) && !matches(piece.customer_name, piece.order_ref)}
                               selected={selection?.kind === "batch" && selection.piece.id === piece.id}
                               onClick={() =>
@@ -1244,8 +1308,9 @@ export default function AtelierBoard({ cle }: { cle: string }) {
               )}
             </button>
             <div className="min-w-0 flex-1 space-y-1 text-sm">
-              <p className="font-medium">
+              <p className="flex flex-wrap items-center gap-2 font-medium">
                 {selection.piece.order_ref} · {selection.piece.customer_name}
+                <DueBadge dueAt={selection.piece.dueAt} />
               </p>
               <p className="text-[var(--at-text-2)]">
                 {selection.piece.product} {selection.piece.format}

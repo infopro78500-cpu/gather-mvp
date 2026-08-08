@@ -72,8 +72,13 @@ export interface QueuedPiece {
   format: string;
   material: string;
   price_cents: number;
-  source_path: string;
+  /** Chemin d'origine dans le coffre. Absent pour la papeterie du jour J :
+   *  ces visuels sont composés par l'app, pas tirés d'une photo d'invité. */
+  source_path?: string | null;
   file_path: string;
+  /** Échéance impérative (date de l'événement) — une pièce datée ne subit
+   *  jamais le seuil de lot, elle part par la voie express. */
+  due_at?: string | null;
   /** Vignette générée au gel du fichier (peut manquer : base non migrée,
    *  génération échouée — l'UI affiche alors un pictogramme neutre). */
   thumb_path?: string | null;
@@ -100,6 +105,8 @@ export interface BatchResult {
   pieceCount: number;
   material: string;
   emailed: boolean;
+  /** Échéance la plus proche du lot, si des pièces sont datées. */
+  dueAt: string | null;
 }
 
 function getClient(): SupabaseClient | null {
@@ -169,6 +176,51 @@ export async function freezeSourceFile(
   return { filePath: targetPath, thumbPath, pxWidth, pxHeight };
 }
 
+/**
+ * Range un visuel COMPOSÉ PAR L'APP (papeterie du jour J : présentoir,
+ * panneau, marque-place) dans le bucket de production, avec sa vignette.
+ * Même contrat de sortie que `freezeSourceFile` — la file ne fait ensuite
+ * aucune différence entre une photo du coffre et un visuel généré.
+ */
+export async function storeGeneratedArtwork(
+  supabase: SupabaseClient,
+  artwork: Buffer,
+  orderRef: string,
+  index: number
+): Promise<FrozenFile> {
+  const stem = `queue/${orderRef}/${index + 1}-${crypto.randomUUID().slice(0, 8)}`;
+  const targetPath = `${stem}.png`;
+  const { error } = await supabase.storage
+    .from(PRINT_BUCKET)
+    .upload(targetPath, new Uint8Array(artwork), {
+      contentType: "image/png",
+      upsert: false,
+    });
+  if (error) throw new Error(`dépôt du visuel généré échoué : ${error.message}`);
+
+  let thumbPath: string | null = null;
+  let pxWidth: number | null = null;
+  let pxHeight: number | null = null;
+  try {
+    const image = sharp(artwork, { failOn: "none" });
+    const meta = await image.metadata();
+    pxWidth = meta.width ?? null;
+    pxHeight = meta.height ?? null;
+    const thumb = await image
+      .resize(THUMB_LONG_EDGE, THUMB_LONG_EDGE, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 70 })
+      .toBuffer();
+    const candidate = `${stem}-thumb.jpg`;
+    const { error: thumbErr } = await supabase.storage
+      .from(PRINT_BUCKET)
+      .upload(candidate, new Uint8Array(thumb), { contentType: "image/jpeg" });
+    if (!thumbErr) thumbPath = candidate;
+  } catch (e) {
+    console.warn(`[print] vignette non générée pour le visuel ${targetPath}`, e);
+  }
+  return { filePath: targetPath, thumbPath, pxWidth, pxHeight };
+}
+
 /** URL signée d'un fichier de production (email atelier, dashboard). */
 export async function signPrintFile(
   supabase: SupabaseClient,
@@ -190,7 +242,7 @@ export async function enqueuePieces(pieces: QueuedPiece[]): Promise<number> {
   const supabase = getClient();
   if (!pieces.length || !supabase) return 0;
   let payload: Record<string, unknown>[] = pieces.map((p) => ({ ...p }));
-  const optional = ["thumb_path", "requeued_from"];
+  const optional = ["thumb_path", "requeued_from", "due_at"];
   for (;;) {
     const { data, error } = await supabase
       .from("print_queue")
@@ -222,25 +274,39 @@ async function releaseClaim(supabase: SupabaseClient, batchId: string) {
  */
 export async function maybeBuildBatch(opts?: {
   force?: boolean;
+  /** Voie express : ne considère que les pièces à échéance impérative et
+   *  part IMMÉDIATEMENT, sans attendre le seuil de lot. */
+  express?: boolean;
 }): Promise<BatchResult | null> {
   const supabase = getClient();
   if (!supabase) return null;
   const force = opts?.force === true;
+  const express = opts?.express === true;
 
   // Lecture large : le prochain groupe complet n'est pas forcément constitué
-  // des pièces les plus anciennes toutes matières confondues.
-  const { data: pendingRows, error: selErr } = await supabase
-    .from("print_queue")
-    .select("*")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(400);
-  if (selErr) throw new Error(`print_queue select : ${selErr.message}`);
+  // des pièces les plus anciennes toutes matières confondues. En express, on
+  // trie par échéance : la plus urgente commande le lot.
+  let query = supabase.from("print_queue").select("*").eq("status", "pending");
+  if (express) {
+    query = query.not("due_at", "is", null).order("due_at", { ascending: true });
+  } else {
+    query = query.order("created_at", { ascending: true });
+  }
+  const { data: pendingRows, error: selErr } = await query.limit(400);
+  if (selErr) {
+    // Base pas encore migrée : pas de colonne due_at, donc pas de file express.
+    if (express && selErr.message.includes("due_at")) return null;
+    throw new Error(`print_queue select : ${selErr.message}`);
+  }
   const allPending = (pendingRows ?? []) as QueueRow[];
   if (!allPending.length) return null;
 
-  const group = pickBatchGroup(allPending, (m) => batchSizeFor(m), force);
-  if (!group) return null;
+  // En express le seuil ne s'applique pas : on prend la matière de la pièce
+  // la plus urgente et on emmène tout ce qui l'accompagne.
+  const group = express
+    ? allPending.filter((p) => p.material === allPending[0].material)
+    : pickBatchGroup(allPending, (m) => batchSizeFor(m), force);
+  if (!group?.length) return null;
   const material = group[0]?.material ?? "";
   const candidates = group.slice(0, batchSizeFor(material));
 
@@ -259,21 +325,33 @@ export async function maybeBuildBatch(opts?: {
   if (claimErr) throw new Error(`print_queue claim : ${claimErr.message}`);
   const claimedIds = new Set((claimed ?? []).map((c: { id: string }) => c.id));
   if (claimedIds.size === 0) return null;
-  if (claimedIds.size < candidates.length && !force) {
+  if (claimedIds.size < candidates.length && !force && !express) {
     // Une exécution concurrente nous est passée devant : on relâche tout.
     await releaseClaim(supabase, batchId);
     return null;
   }
   const rows = candidates.filter((c) => claimedIds.has(c.id));
 
+  // Échéance la plus proche du lot : elle pilote l'urgence affichée et le
+  // ton de l'email atelier.
+  const dueDates = rows.map((r) => r.due_at).filter((d): d is string => Boolean(d));
+  const dueAt = dueDates.length ? dueDates.sort()[0] : null;
+
   try {
     // 1. Le lot existe en base même si l'email échoue ensuite.
-    const { error: batchErr } = await supabase.from("print_batches").insert({
+    const batchRecord: Record<string, unknown> = {
       id: batchId,
       piece_count: rows.length,
       material,
       file_paths: rows.map((r) => r.file_path),
-    });
+    };
+    if (dueAt) batchRecord.due_at = dueAt;
+    let { error: batchErr } = await supabase.from("print_batches").insert(batchRecord);
+    if (batchErr && batchErr.message.includes("due_at")) {
+      // Base pas encore migrée : le lot part quand même.
+      delete batchRecord.due_at;
+      ({ error: batchErr } = await supabase.from("print_batches").insert(batchRecord));
+    }
     if (batchErr) throw new Error(`print_batches insert : ${batchErr.message}`);
 
     await Promise.all(
@@ -291,7 +369,7 @@ export async function maybeBuildBatch(opts?: {
     try {
       const links: (string | null)[] = [];
       for (const row of rows) links.push(await signPrintFile(supabase, row.file_path));
-      await sendBatchEmail(batchId, rows, links);
+      await sendBatchEmail(batchId, rows, links, dueAt);
       await supabase
         .from("print_batches")
         .update({ emailed_at: new Date().toISOString() })
@@ -301,7 +379,7 @@ export async function maybeBuildBatch(opts?: {
       console.error(`[print] email du lot ${batchId} échoué`, e);
     }
 
-    return { batchId, pieceCount: rows.length, material, emailed };
+    return { batchId, pieceCount: rows.length, material, emailed, dueAt };
   } catch (e) {
     // Rollback complet : les pièces redeviennent pending (le lot orphelin en
     // base est bénin — supprimé ci-dessous, best-effort).
@@ -537,6 +615,24 @@ export interface BatchRow {
   file_paths: string[];
   emailed_at: string | null;
   printed_at: string | null;
+  due_at?: string | null;
+}
+
+/** Y a-t-il des pièces datées en attente ? (déclenche la voie express) */
+export async function hasPendingExpress(): Promise<boolean> {
+  const supabase = getClient();
+  if (!supabase) return false;
+  const { data, error } = await supabase
+    .from("print_queue")
+    .select("id")
+    .eq("status", "pending")
+    .not("due_at", "is", null)
+    .limit(1);
+  if (error) {
+    if (error.message.includes("due_at")) return false; // base non migrée
+    throw new Error(`express check : ${error.message}`);
+  }
+  return (data?.length ?? 0) > 0;
 }
 
 /** Lots non imprimés — la charge de travail du jour (bandeau Aujourd'hui). */

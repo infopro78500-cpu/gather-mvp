@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   hasOverduePending,
+  hasPendingExpress,
   maybeBuildBatch,
   purgeOldPrintFiles,
   recoverZombieClaims,
@@ -12,6 +13,7 @@ export const dynamic = "force-dynamic";
 const MAX_BATCHES_PER_RUN = 10;
 
 // Filet de sécurité quotidien de la file d'impression (pattern Renka) :
+//  0. VOIE EXPRESS : les pièces à date impérative partent d'abord, sans seuil ;
 //  1. récupère les claims zombies (crash pendant une construction de lot) ;
 //  2. construit tous les lots COMPLETS en attente ;
 //  3. si la pièce la plus ancienne attend depuis plus de PRINT_MAX_WAIT_DAYS,
@@ -36,6 +38,16 @@ export async function GET(request: NextRequest) {
   try {
     const zombies = await recoverZombieClaims();
 
+    // Voie express en premier : les pièces à date impérative (papeterie du
+    // jour J) partent sans jamais attendre le seuil de lot.
+    let expressBatches = 0;
+    for (let i = 0; i < MAX_BATCHES_PER_RUN; i++) {
+      if (!(await hasPendingExpress())) break;
+      const built = await maybeBuildBatch({ express: true });
+      if (!built) break;
+      expressBatches += 1;
+    }
+
     let fullBatches = 0;
     for (let i = 0; i < MAX_BATCHES_PER_RUN; i++) {
       const built = await maybeBuildBatch();
@@ -55,7 +67,13 @@ export async function GET(request: NextRequest) {
 
     const purgedFiles = await purgeOldPrintFiles();
 
-    return NextResponse.json({ zombies, fullBatches, partialBatches, purgedFiles });
+    return NextResponse.json({
+      zombies,
+      expressBatches,
+      fullBatches,
+      partialBatches,
+      purgedFiles,
+    });
   } catch (e) {
     console.error("[print flush]", e);
     return NextResponse.json(

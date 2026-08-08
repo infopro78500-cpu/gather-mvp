@@ -129,6 +129,7 @@ export async function GET(request: NextRequest) {
           pxWidth: p.px_width ?? null,
           pxHeight: p.px_height ?? null,
           requeuedFrom: p.requeued_from ?? null,
+          dueAt: p.due_at ?? null,
         }))
       );
       return NextResponse.json({ batchId, pieces: detailed });
@@ -166,6 +167,14 @@ export async function GET(request: NextRequest) {
         })),
       },
       toShip: orders.filter((o) => o.status === "imprimee").length,
+      // Pièces à date impérative encore en file, et l'échéance la plus proche.
+      express: (() => {
+        const dated = boardPieces
+          .map((p) => p.due_at)
+          .filter((d): d is string => Boolean(d))
+          .sort();
+        return { count: dated.length, nextDueAt: dated[0] ?? null };
+      })(),
     };
 
     // File en cours : liste courte par construction (bornée par les seuils de
@@ -188,6 +197,7 @@ export async function GET(request: NextRequest) {
         pxWidth: p.px_width ?? null,
         pxHeight: p.px_height ?? null,
         requeuedFrom: p.requeued_from ?? null,
+        dueAt: p.due_at ?? null,
       }))
     );
 
@@ -199,6 +209,7 @@ export async function GET(request: NextRequest) {
       materialLabel: materialLabel(b.material),
       emailed_at: b.emailed_at,
       printed_at: b.printed_at,
+      dueAt: b.due_at ?? null,
     });
 
     const batchSizes = Object.fromEntries(

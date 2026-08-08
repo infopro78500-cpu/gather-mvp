@@ -29,7 +29,8 @@ export function materialLabel(material: string): string {
 export async function sendBatchEmail(
   batchId: string,
   pieces: QueueRow[],
-  signedLinks: (string | null)[]
+  signedLinks: (string | null)[],
+  dueAt?: string | null
 ): Promise<void> {
   const key = process.env.RESEND_API_KEY;
   const to = process.env.PRINT_EMAIL_TO;
@@ -60,8 +61,25 @@ export async function sendBatchEmail(
     ? `<p style="background:#ffe0e0;border:1px solid #d33;border-radius:6px;padding:10px">⚠️ <strong>${missingLinks} lien(s) indisponible(s)</strong> — récupérer ces fichiers depuis le tableau de bord atelier.</p>`
     : "";
 
+  // Lot express : des pièces à date impérative (papeterie du jour J). Le
+  // délai commande tout — c'est l'information à voir en premier.
+  const dueLabel = dueAt ? new Date(dueAt).toLocaleDateString("fr-FR") : null;
+  const daysLeft = dueAt
+    ? Math.ceil((new Date(dueAt).getTime() - Date.now()) / 86_400_000)
+    : null;
+  const express = dueLabel
+    ? `<p style="background:#FEE2E2;border:2px solid #DC2626;border-radius:6px;padding:12px;font-size:16px">
+      ⏱️ <strong>LOT URGENT — à livrer pour le ${dueLabel}</strong>${
+        daysLeft !== null
+          ? ` (${daysLeft <= 0 ? "aujourd'hui ou dépassé" : `dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}`})`
+          : ""
+      }.<br>
+      Ce lot est parti <strong>sans attendre le seuil habituel</strong> : c'est de la papeterie de jour J, la date de l'événement ne bouge pas.</p>`
+    : "";
+
   const html = `
-    <h2>🖨️ Lot photo prêt — ${pieces.length} pièce${pieces.length > 1 ? "s" : ""} (lot ${shortId})</h2>
+    <h2>${dueLabel ? "⏱️ Lot URGENT" : "🖨️ Lot photo prêt"} — ${pieces.length} pièce${pieces.length > 1 ? "s" : ""} (lot ${shortId})</h2>
+    ${express}
     ${warn}
     <p style="background:#eef7f4;border:1px solid #2a9d8f;border-radius:6px;padding:10px">
     🪪 <strong>Matière du lot : ${esc(label)}</strong> — un lot = une seule matière à charger.</p>
@@ -84,7 +102,9 @@ export async function sendBatchEmail(
     body: JSON.stringify({
       from,
       to,
-      subject: `🖨️ Lot photo prêt — ${pieces.length} pièce${pieces.length > 1 ? "s" : ""} ${label} — ${date} (lot ${shortId})`,
+      subject: dueLabel
+        ? `⏱️ URGENT à livrer pour le ${dueLabel} — ${pieces.length} pièce${pieces.length > 1 ? "s" : ""} ${label} (lot ${shortId})`
+        : `🖨️ Lot photo prêt — ${pieces.length} pièce${pieces.length > 1 ? "s" : ""} ${label} — ${date} (lot ${shortId})`,
       html,
     }),
   });

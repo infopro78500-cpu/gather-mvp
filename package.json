@@ -31,6 +31,7 @@
     "mysql2": "^3.11.5",
     "next": "^16.0.9",
     "pg": "^8.13.1",
+    "qr.js": "0.0.0",
     "phosphor-react": "file:lib/phosphor-react",
     "react": "19.2.0",
     "react-dom": "19.2.0",
