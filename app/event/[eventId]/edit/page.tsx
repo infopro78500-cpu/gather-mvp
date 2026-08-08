@@ -447,8 +447,10 @@ function WeddingProSection({
           {tableCount > 0 && (
             <div className="mt-4">
               <p className="text-xs text-slate-400">
-                Le lien de chaque table — à encoder dans son QR (présentoirs à
-                venir via l&apos;impression) ou à partager tel quel :
+                Le lien de chaque table — c&apos;est lui qu&apos;on encode dans la
+                <strong> puce NFC</strong> du présentoir (l&apos;invité pose son
+                téléphone) et dans son QR de secours. En attendant les
+                présentoirs, il se partage tel quel :
               </p>
               <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
                 {Array.from({ length: tableCount }, (_, i) => i + 1).map((i) => (
