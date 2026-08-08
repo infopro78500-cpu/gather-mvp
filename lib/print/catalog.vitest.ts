@@ -59,14 +59,18 @@ describe("catalogue impression", () => {
     expect(orderTotalCents([{ productId: "poster", formatId: "inconnu" }])).toBeNull();
   });
 
-  it("exclut les produits signature de la remise volume", () => {
-    // Prix de valeur perçue : pas de comparable marché, pas de prix cassé.
-    const pieces = Array.from({ length: 10 }, () => ({
-      productId: "retroeclaire",
-      formatId: "40x60",
-    }));
-    const plein = getVariant("retroeclaire", "40x60")!.format.priceCents * 10;
-    expect(orderTotalCents(pieces)).toBe(plein);
+  it("s'en tient aux cinq supports produisibles aujourd'hui", () => {
+    // Décision Nico du 07/08/2026 : pas de produit dépendant de la Gongzheng
+    // (encre blanche, plexi diffusant) tant qu'elle n'est pas livrée.
+    expect(PRINT_PRODUCTS.some((p) => p.signature)).toBe(false);
+    const materials = new Set(PRINT_PRODUCTS.map((p) => p.material));
+    expect([...materials].sort()).toEqual([
+      "canvas",
+      "dibond",
+      "forex",
+      "papier-photo",
+      "plexi",
+    ]);
   });
 
   it("calcule une marge de commande cohérente", () => {

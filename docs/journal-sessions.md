@@ -13,7 +13,8 @@
 - **Trois découvertes structurantes** : le forfait de 17-21 €/pièce du marché **vient de l'accroche** (4 entretoises inox = 14,96 €) et de l'emballage · la **toile est notre pire marge** (33-44 %) et le **Forex la meilleure** (61-71 %) · le **plexi diffusant coûte 29 €/m²** quand le rétroéclairé se vend 649-1 098 €.
 - **Code** : `lib/print/catalog.ts` réécrit (6 supports + 4 signature, coûts de revient suivis, dégressif jusqu'à −40 %, signature exclue de la remise, option accroche, franchise de port). Tests mis à jour.
 - **Correction factuelle** : marché mariage à **251 000/an** (INSEE 2025), pas 220 000 (chiffre 2019) — répercuté dans `decisions-validees.md` et `CLAUDE.md`.
-- **Reste à faire** : voie express pour les produits à date impérative (bloquant pour le jour J), seconde passe de benchmark (Pixum/CEWE/Photobox non relevés), devis atelier sur l'aluminium et les caissons LED.
+- **Périmètre resserré en fin de session** (Nico) : la Gongzheng n'arrivant pas tout de suite, le lancement se fait sur les **cinq supports déjà maîtrisés** (Dibond, PVC, plexi, papier photo, canvas). Produits signature et décoration murale au m² passent en V2, spécifiés et chiffrés, en attente machine. Catalogue réduit à 5 matières / 6 produits, drapeau `signature` conservé pour la suite, questions atelier scindées V1 / V2.
+- **Reste à faire** : voie express pour les produits à date impérative (bloquant pour le jour J), grille de cession de l'atelier, devis grade aluminium, méthode de production des rigides > 40×60 (contrecollage ?), seconde passe de benchmark (Pixum/CEWE/Photobox non relevés).
 
 ## Session 06/08/2026 — Refonte photo-first du dashboard atelier
 

@@ -1,7 +1,19 @@
 # Gamme produits impression Usegather × Printerkut — V1
 
 > **Date** : 07/08/2026 · **Statut** : première version, **à valider avec l'atelier** (§11).
-> **Fait nouveau** : l'atelier s'équipe d'une **Gongzheng H2513GN PRO** (flatbed UV 2500×1300 mm, épaisseur 100 mm, encre **blanche** + **vernis**). Toutes les limites de format de l'audit du 05/08 tombent.
+>
+> ## ⚠️ Périmètre de lancement — décision Nico du 07/08/2026
+>
+> **La Gongzheng n'arrive pas tout de suite. On lance avec ce que l'atelier maîtrise déjà : Dibond, PVC, plexi, papier photo, canvas.**
+>
+> | | Contenu | Statut |
+> |---|---|---|
+> | **V1 — maintenant** | §4 (Forex, aluminium, plexi) et §5.1–5.2 (poster, toile) — **c'est ce qui est au catalogue du code** | actif |
+> | **V2 — à la livraison de la Gongzheng** | §5.3 (papier peint, adhésif mural) et §8 (rétroéclairé, vitrail à blanc sélectif, bloc épais, petites pièces) | spécifié, en attente machine |
+>
+> Les sections V2 restent dans ce document parce qu'elles sont chiffrées et prêtes — elles ne sont simplement pas vendables aujourd'hui. Le drapeau `signature` et son exclusion de la remise volume sont déjà câblés dans `lib/print/catalog.ts` pour les accueillir sans réécriture.
+>
+> **Fait acquis** : l'atelier s'équipe d'une **Gongzheng H2513GN PRO** (flatbed UV 2500×1300 mm, épaisseur 100 mm, encre **blanche** + **vernis**). À sa livraison, toutes les limites de format tombent et la gamme signature s'ouvre.
 > **Méthode** : relevés du 07/08/2026. Coûts matière : **Antalis e-shop (prix HT, références réelles)**, Plexi-Cindar, chassis-en-bois, Facilembal, Toutembal. Prix marché : LaboPhotos, Artdeqo, myposter, Negatif Plus, impression-panoramique, Popcarte, Veoprint, SubliPix. Les prix marché cités sont des **prix nets réellement payés**, jamais les prix barrés. Volumes : INSEE.
 
 ---
@@ -97,7 +109,9 @@
 
 ---
 
-## 4. Grille de prix — supports rigides
+## 4. Grille de prix — supports rigides *(V1, actif)*
+
+> **Question de production ouverte** : sans la Gongzheng, l'impression UV directe est plafonnée par la Mimaki UJF-6042 MkII à **61 × 42 cm**. Les formats au-delà de 40×60 se produisent donc aujourd'hui par **contrecollage** (tirage Latex sur vinyle adhésif laminé, marouflé sur le panneau) — pratique standard du marché. Le surcoût matière est faible (+4,4 €/m² : vinyle 2,29 + lamination 2,09), la main-d'œuvre est le vrai poste. **Les prix ci-dessous restent valables dans les deux méthodes** ; à confirmer avec l'atelier (question §11.3).
 
 Prix TTC. Coût = matière + encre + accroche légère + emballage, **base DiLite pour l'aluminium**. « Marché net » = le moins cher réellement payé.
 
@@ -173,7 +187,11 @@ Toile 12,80 €/m² **+ 46 % de chute** + châssis + étui : la finition domine.
 > **Conclusion contre-intuitive** : la toile, produit emblématique de la photo déco, est **notre pire marge (33–44 %)** quand le Forex atteint 64–71 %. Deux leviers : acheter la **baguette au mètre** (3,76 €/ml dès 100 m cumulés, contre 11,04 € le châssis 40×60 prêt à monter — **−32 %**), et ne pas descendre sous le 30×40. La toile reste au catalogue parce que le client la demande, pas parce qu'elle rapporte.
 > Option **caisse américaine** : coût 15,02 €, marché 28,99–49 € → **+34,90 €**.
 
-### 5.3 Décoration murale grand format — **la meilleure marge de tout le catalogue**
+### 5.3 Décoration murale grand format — **V2, pas au catalogue de lancement**
+
+*(La Latex 700W sait déjà le produire — c'est un choix de périmètre, pas une contrainte machine. À rouvrir dès que la gamme V1 tourne.)*
+
+**La meilleure marge de tout le catalogue.**
 
 Le papier peint intissé coûte **2,31 €/m²** et se vend **45 à 100 €/m² en déco panoramique**. Aucun labo photo français ne le vend correctement. La Latex 700W le produit nativement, en laize 1,63 m.
 
@@ -212,23 +230,23 @@ Le marché photo-déco n'a **aucune** grille volume digne de ce nom. Nous produi
 
 **Avant le jour J — les mariés, date impérative**
 
-| Produit | Marché | **Notre prix** |
-|---|---|---|
-| Panneau de bienvenue Forex 70×100 **+ QR du coffre** | 21,90 € (papier Popcarte) → ~60 € (spécialistes) | **69,90 €** |
-| Plan de table rigide 50×70 | 21,90 € (papier) | **34,90 €** |
-| **Panneau de bienvenue rétroéclairé** (signature) | sans comparable | **299,00 €** |
-| Photocall / backdrop 200×250 | 81–270 € | **99,00 €** |
-| Marque-places photo plexi (par 20) | absent du marché | **79,00 €** |
+| Produit | Marché | **Notre prix** | Statut |
+|---|---|---|---|
+| Panneau de bienvenue Forex 70×100 **+ QR du coffre** | 21,90 € (papier Popcarte) → ~60 € (spécialistes) | **69,90 €** | **V1** |
+| Plan de table rigide 50×70 | 21,90 € (papier) | **34,90 €** | **V1** |
+| Photocall / backdrop 200×250 | 81–270 € | **99,00 €** | V2 |
+| Panneau de bienvenue rétroéclairé | sans comparable | **299,00 €** | V2 |
+| Marque-places photo plexi (par 20) | absent du marché | **79,00 €** | V2 |
 
 **Après — les mariés ET les invités (le panier scale avec le nombre d'invités)**
 
-| Produit | Marché | **Notre prix** |
-|---|---|---|
-| Déco murale plexi 40×60 | 39,99–94,95 € | **44,90 €** |
-| Déco murale alu 40×60 | 39,99–51,95 € | **34,90 €** |
-| Toile 60×90 | 49,99 € | **49,90 €** |
-| Pack invité : 3 tirages 20×30 Forex | 60–96 € | **40,20 €** (−10 %) |
-| **Tableau rétroéclairé « Day & Night »** (signature) | 649–1 098 € | **399,00 €** |
+| Produit | Marché | **Notre prix** | Statut |
+|---|---|---|---|
+| Déco murale plexi 40×60 | 39,99–94,95 € | **44,90 €** | **V1** |
+| Déco murale alu 40×60 | 39,99–51,95 € | **34,90 €** | **V1** |
+| Toile 60×90 | 49,99 € | **49,90 €** | **V1** |
+| Pack invité : 3 tirages 20×30 Forex | 60–96 € | **40,20 €** (−10 %) | **V1** |
+| Tableau rétroéclairé « Day & Night » | 649–1 098 € | **399,00 €** | V2 |
 
 **L'insight à ne jamais perdre de vue** : personne ne fait le pont « photos des invités → impression ». Tous les acteurs partent des photos du couple ou du photographe. Nous sommes le seul pour qui **120 invités = 120 acheteurs potentiels**.
 
@@ -277,7 +295,11 @@ Le funéraire a le meilleur ratio urgence/insensibilité au prix, mais demande u
 
 ---
 
-## 8. Les produits signature — ce que personne ne peut copier
+## 8. Les produits signature — **V2, à la livraison de la Gongzheng**
+
+*Spécifiés et chiffrés, pas au catalogue de lancement : ils dépendent tous de l'encre blanche et du plexi diffusant. À rouvrir dès que la machine est installée et les réglages capturés.*
+
+### Ce que personne ne peut copier
 
 L'encre blanche et le plexi diffusant créent un avantage que **ni CEWE, ni Photoweb, ni Photobox ne peuvent égaler**.
 
@@ -333,16 +355,23 @@ Elle est **destructrice de valeur sur les produits signature** : il n'existe auc
 
 Les 10 questions du document de validation restent valables, sauf la n°1 (répondue par la machine). À ajouter, par ordre d'importance :
 
-1. **Combien de pièces de 20×30 tiennent sur une planche 2500×1300** après découpe, par matière ? *(le chiffre le plus important de tout ce document)*
-2. **Quand arrive la Gongzheng, et avec quelle table de découpe** pour sortir les formats finis ?
-3. **Aluminium : quel grade ?** ACM générique (~22–27 €/m²), DiLite (40 €/m²) ou Dibond® de marque (64 €/m²) ? *Devis prioritaire — l'écart change toute la marge.*
-4. **Plexi diffusant** : sais-tu l'approvisionner ? As-tu déjà fait du **quadri – blanc – quadri** (Day & Night) ?
-5. **Caissons LED** : achat tout fait (313–350 € relevés) ou fabrication maison ? *C'est ce qui détermine la marge du produit signature n°1.*
-6. **Accroche** : quel système par défaut, et à quel prix d'achat en volume ? (l'entretoise à 3,74 € pièce est le poste qui écrase les petits formats)
-7. **Encre UV Gongzheng / RKA-3** : prix au litre par couleur, blanc et vernis compris, et consommation de purge. *Aucune donnée publique n'existe.*
-8. **Encre latex** : relever les compteurs machine sur un mois de production réelle — la consommation en ml/m² n'est sourcée nulle part.
-9. **Emballage grand format** : comment expédier un 100×150 rigide, à quel coût ?
-10. **Ta grille de cession** (prix atelier → Usegather) sur chaque ligne des §4 et §5.
+### Pour lancer la V1 (les seules qui bloquent aujourd'hui)
+
+1. **Ta grille de cession** (prix atelier → Usegather) sur chaque ligne des §4 et §5.1–5.2 — c'est la base du contrat d'approvisionnement.
+2. **Aluminium : quel grade ?** ACM générique (~22–27 €/m²), DiLite (40 €/m²) ou Dibond® de marque (64 €/m²) ? *Devis prioritaire — l'écart change toute la marge.*
+3. **Les formats > 40×60 en rigide** : contrecollage (tirage Latex maroufflé) ou autre méthode ? Quel surcoût de main-d'œuvre ? *Détermine si la grille tient jusqu'au 100×150.*
+4. **Accroche** : quel système par défaut, et à quel prix d'achat en volume ? (l'entretoise à 3,74 € pièce est le poste qui écrase les petits formats)
+5. **Châssis toile** : achat prêt à monter (11,04 € le 40×60) ou baguette au mètre (3,76 €/ml dès 100 m) ? *C'est le levier de la marge la plus faible de la gamme.*
+6. **Combien de pièces de 30×40 tiennent sur une plaque** après découpe, par matière ? *(le « 23 cartes » de la photo — il détermine le seuil de lot)*
+7. **Encre latex** : relever les compteurs machine sur un mois de production réelle — la consommation en ml/m² n'est sourcée nulle part.
+8. **Emballage grand format** : comment expédier un 100×150 rigide, à quel coût ?
+
+### Pour préparer la V2 (à l'arrivée de la Gongzheng)
+
+9. **Quand arrive-t-elle, et avec quelle table de découpe** pour sortir les formats finis des plaques 2500×1300 ?
+10. **Plexi diffusant** : sais-tu l'approvisionner ? As-tu déjà fait du **quadri – blanc – quadri** (Day & Night) ?
+11. **Caissons LED** : achat tout fait (313–350 € relevés) ou fabrication maison ? *Détermine la marge du produit signature n°1.*
+12. **Encre UV Gongzheng / RKA-3** : prix au litre par couleur, blanc et vernis compris, et consommation de purge. *Aucune donnée publique n'existe.*
 
 ---
 

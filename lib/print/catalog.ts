@@ -5,24 +5,26 @@
 // ⚠️ STATUT : grille V1 du 07/08/2026 issue de
 // docs/strategie/gamme-produits-impression.md — coûts matière réels (Antalis,
 // Plexi-Cindar), prix marché nets relevés, positionnement 10-25 % en dessous.
-// EN ATTENTE de validation par l'atelier (grille de cession + 10 questions).
+// EN ATTENTE de validation par l'atelier (grille de cession + questions).
 // Rien n'est exposé publiquement tant que PRINT_ENABLED n'est pas actif.
 //
-// La machine est connue depuis le 06/08/2026 : Gongzheng H2513GN PRO
-// (2500×1300 mm, épaisseur 100 mm, blanc + vernis) — plus aucun plafond de
-// format en rigide.
+// PÉRIMÈTRE V1 (décision Nico du 07/08/2026) : on ne vend QUE les cinq
+// supports que l'atelier produit déjà — Dibond, PVC, plexi, papier photo,
+// canvas. La Gongzheng H2513GN PRO n'arrive pas tout de suite ; tout ce qui
+// dépend de son encre blanche et de son plexi diffusant (rétroéclairé Day &
+// Night, vitrail à blanc sélectif, bloc épais, petites pièces transparentes)
+// est décrit dans le document de gamme §8 et attend la machine.
 
 /** Matière chargée en machine — clé de regroupement : un lot = UNE matière. */
 export type MaterialId =
   | "papier-photo" // Latex 700W, rouleau
   | "canvas" // Latex 700W, rouleau + châssis
-  | "forex" // Gongzheng UV, PVC expansé 3 mm
-  | "dibond" // Gongzheng UV, alu composite 3 mm
-  | "plexi" // Gongzheng UV, PMMA 3 mm (blanc de soutien)
-  | "plexi-diffusant"; // Gongzheng UV, PMMA opale — produits rétroéclairés
+  | "forex" // PVC expansé 3 mm
+  | "dibond" // alu composite 3 mm
+  | "plexi"; // PMMA 3 mm
 
 /** Machine de production — détermine la logique de regroupement. */
-export type Machine = "latex-700w" | "gongzheng-uv";
+export type Machine = "latex-700w" | "uv-flatbed";
 
 export interface PrintFormat {
   /** Clé stable ("30x40") — stockée en base, ne jamais renommer. */
@@ -59,7 +61,7 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
     id: "forex",
     label: "Panneau Forex",
     material: "forex",
-    machine: "gongzheng-uv",
+    machine: "uv-flatbed",
     description: "PVC expansé 3 mm, impression UV directe — léger et rigide",
     formats: [
       { id: "20x30", widthCm: 20, heightCm: 30, priceCents: EUR(14.9), costCents: EUR(5.4) },
@@ -75,7 +77,7 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
     id: "dibond",
     label: "Panneau aluminium",
     material: "dibond",
-    machine: "gongzheng-uv",
+    machine: "uv-flatbed",
     description: "Aluminium composite 3 mm — finition galerie",
     formats: [
       { id: "20x30", widthCm: 20, heightCm: 30, priceCents: EUR(16.9), costCents: EUR(7.0) },
@@ -91,7 +93,7 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
     id: "plexi",
     label: "Plexiglas",
     material: "plexi",
-    machine: "gongzheng-uv",
+    machine: "uv-flatbed",
     description: "PMMA 3 mm, impression directe avec blanc de soutien — effet profondeur",
     formats: [
       { id: "20x30", widthCm: 20, heightCm: 30, priceCents: EUR(17.9), costCents: EUR(6.3) },
@@ -138,7 +140,7 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
     id: "panneau-bienvenue",
     label: "Panneau de bienvenue",
     material: "forex",
-    machine: "gongzheng-uv",
+    machine: "uv-flatbed",
     description: "Forex 3 mm, jour J — porte le QR du coffre",
     timeCritical: true,
     formats: [
@@ -146,36 +148,14 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
       { id: "70x100", widthCm: 70, heightCm: 100, priceCents: EUR(69.9), costCents: EUR(20.3) },
     ],
   },
-  {
-    id: "retroeclaire",
-    label: "Tableau rétroéclairé « Day & Night »",
-    material: "plexi-diffusant",
-    machine: "gongzheng-uv",
-    description:
-      "Plexi diffusant quadri-blanc-quadri en caisson LED — une image de jour, une autre à l'allumage",
-    signature: true,
-    // Marché 649-1098 €. Le coût est presque entièrement le caisson LED
-    // (313-350 € tout fait) — à confirmer avec l'atelier (question §11.5).
-    formats: [
-      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(399), costCents: EUR(330) },
-      { id: "50x70", widthCm: 50, heightCm: 70, priceCents: EUR(499), costCents: EUR(390) },
-    ],
-  },
-  {
-    id: "vitrail",
-    label: "Vitrail photo",
-    material: "plexi",
-    machine: "gongzheng-uv",
-    description:
-      "Plexi transparent à blanc sélectif — sujets opaques, fond transparent, à poser devant une fenêtre",
-    signature: true,
-    formats: [
-      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(89), costCents: EUR(16) },
-      { id: "60x90", widthCm: 60, heightCm: 90, priceCents: EUR(149), costCents: EUR(29) },
-      { id: "80x120", widthCm: 80, heightCm: 120, priceCents: EUR(249), costCents: EUR(47) },
-    ],
-  },
 ];
+
+// Les produits SIGNATURE (rétroéclairé Day & Night, vitrail à blanc sélectif,
+// bloc plexi épais, petites pièces transparentes) ne sont PAS au catalogue V1 :
+// ils dépendent de l'encre blanche et du plexi diffusant de la Gongzheng, qui
+// n'est pas encore livrée. Leur spécification et leurs prix sont prêts dans
+// docs/strategie/gamme-produits-impression.md §8 — le drapeau `signature` et
+// son exclusion de la remise volume sont déjà câblés ici pour les accueillir.
 
 /**
  * Remise volume V1 — notre avantage structurel : N pièces du même événement
@@ -250,10 +230,9 @@ export function orderMarginCents(
 export const MATERIAL_LABELS: Record<MaterialId, string> = {
   "papier-photo": "Papier photo (Latex 700W — rouleau)",
   canvas: "Toile canvas (Latex 700W — rouleau + châssis)",
-  forex: "Forex PVC 3 mm (Gongzheng UV)",
-  dibond: "Aluminium composite 3 mm (Gongzheng UV)",
-  plexi: "Plexi 3 mm (Gongzheng UV — blanc de soutien)",
-  "plexi-diffusant": "Plexi diffusant (Gongzheng UV — rétroéclairé)",
+  forex: "Forex PVC 3 mm (UV à plat)",
+  dibond: "Aluminium composite 3 mm (UV à plat)",
+  plexi: "Plexi 3 mm (UV à plat)",
 };
 
 /**
