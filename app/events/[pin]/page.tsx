@@ -20,6 +20,7 @@ import {
   type ContestLeaderboardEntry,
 } from "@/app/components/events/ContestLeaderboard";
 import { PhotoLightbox } from "@/app/components/events/PhotoLightbox";
+import PrintOrderFlow from "@/app/components/print/PrintOrderFlow";
 import { useToast } from "@/app/components/ui/ToastProvider";
 import {
   getUploaderDeviceId,
@@ -115,6 +116,7 @@ const pin = params.pin;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [printFlowOpen, setPrintFlowOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -1093,6 +1095,11 @@ const pin = params.pin;
     : "Afficher la galerie";
   const galleryToggleIcon = isCoffreOpen ? "🙈" : "👁️";
 
+  // Photos retenues pour l'impression, dans l'ordre de la galerie.
+  const photosToPrint = photos.filter((photo) =>
+    selectedPhotos.includes(photo.path)
+  );
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 px-4 py-6">
       <div className="w-full max-w-4xl rounded-3xl bg-slate-900/80 border border-slate-800 p-5 md:p-8 shadow-2xl space-y-6">
@@ -1163,6 +1170,25 @@ const pin = params.pin;
                       <span aria-hidden>{galleryToggleIcon}</span>
                       <span>{galleryToggleLabel}</span>
                     </button>
+                    {/* Point d'entrée de l'impression. Il ouvre la galerie et
+                        arme la sélection en un clic : sans lui, imprimer
+                        supposait de dénicher « Actions avancées » puis « Mode
+                        sélection » — trois étapes pour l'action qui monétise
+                        le coffre. */}
+                    {hasPhotos && !selectionMode && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCoffreOpen(true);
+                          setSelectionMode(true);
+                          setShowAdvancedActions(true);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-slate-950 shadow-sm transition-colors hover:bg-amber-400"
+                      >
+                        <span aria-hidden>🖨️</span>
+                        <span>Imprimer des photos</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1356,6 +1382,15 @@ const pin = params.pin;
                                 {selectedPhotos.length} photo(s) sélectionnée(s)
                               </p>
                               <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setPrintFlowOpen(true)}
+                                  disabled={selectedPhotos.length === 0}
+                                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-slate-950 shadow-sm transition-colors hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                  <span aria-hidden>🖨️</span>
+                                  Imprimer
+                                </button>
                                 <button
                                   type="button"
                                   onClick={handleDeleteSelected}
@@ -1560,6 +1595,17 @@ const pin = params.pin;
           </>
         )}
       </div>
+
+      {printFlowOpen && event && photosToPrint.length > 0 && (
+        <PrintOrderFlow
+          eventId={event.id}
+          photos={photosToPrint.map((photo) => ({
+            path: photo.path,
+            url: photo.url,
+          }))}
+          onClose={() => setPrintFlowOpen(false)}
+        />
+      )}
     </main>
   );
 }
