@@ -10,4 +10,8 @@ export type EventData = {
   contest_enabled_at?: string | null;
   contest_enabled_by?: string | null;
   contest_ends_at?: string | null;
+  /** Option Pro (chantier mariage) : galeries par table + mots aux mariés. */
+  pro_enabled_at?: string | null;
+  /** Nombre de tables du mariage — dimensionne QR et présentoirs. */
+  table_count?: number | null;
 };

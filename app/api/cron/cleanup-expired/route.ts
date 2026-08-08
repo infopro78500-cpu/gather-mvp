@@ -62,6 +62,30 @@ export async function GET(request: NextRequest) {
       deletedFiles += paths.length;
     }
 
+    // Chantier mariage : les mots privés et leurs photos suivent la même
+    // éphémérité que l'album (bucket private-notes + lignes en base).
+    const { data: noteFiles } = await supabase.storage
+      .from("private-notes")
+      .list(event.id, { limit: 2000 });
+    if (noteFiles?.length) {
+      await supabase.storage
+        .from("private-notes")
+        .remove(noteFiles.map((f) => `${event.id}/${f.name}`))
+        .then(
+          () => {},
+          () => {}
+        );
+      deletedFiles += noteFiles.length;
+    }
+    await supabase.from("private_notes").delete().eq("event_id", event.id).then(
+      () => {},
+      () => {} // table absente tant que la migration n'est pas appliquée
+    );
+    await supabase.from("photo_tables").delete().eq("event_id", event.id).then(
+      () => {},
+      () => {}
+    );
+
     await supabase
       .from("events")
       .update({ photos_purged_at: new Date().toISOString() })

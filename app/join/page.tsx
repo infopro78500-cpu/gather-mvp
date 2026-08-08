@@ -10,6 +10,9 @@ function JoinPageInner() {
   const supabase = getSupabaseClient();
 
   const initialPin = (searchParams?.get("pin") ?? "").slice(0, 6);
+  // Chantier mariage : un QR de présentoir porte sa table (?table=Table 3).
+  // On la mémorise pour que la galerie étiquette les dépôts de cet invité.
+  const tableLabel = (searchParams?.get("table") ?? "").trim().slice(0, 40);
 
   const [pin, setPin] = useState(initialPin);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +48,18 @@ function JoinPageInner() {
       return;
     }
 
+    // L'étiquette ne vaut que pour le coffre du QR scanné : si l'invité a
+    // ressaisi un autre PIN à la main, on ne l'applique pas.
+    if (tableLabel && trimmed === initialPin) {
+      try {
+        window.localStorage.setItem(
+          "gather_join_table",
+          JSON.stringify({ pin: trimmed, table: tableLabel, at: Date.now() })
+        );
+      } catch {
+        // stockage local indisponible : l'invité déposera sans étiquette
+      }
+    }
     router.push(`/events/${trimmed}`);
     setLoading(false);
   };

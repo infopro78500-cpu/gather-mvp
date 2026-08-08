@@ -21,6 +21,7 @@ import {
 } from "@/app/components/events/ContestLeaderboard";
 import { PhotoLightbox } from "@/app/components/events/PhotoLightbox";
 import PrintOrderFlow from "@/app/components/print/PrintOrderFlow";
+import { NoteModal, NotesInbox } from "@/app/components/wedding/PrivateNotes";
 import { useToast } from "@/app/components/ui/ToastProvider";
 import {
   getUploaderDeviceId,
@@ -121,6 +122,16 @@ const pin = params.pin;
   // au moment de commander (l'API est fermée par PRINT_ENABLED côté serveur).
   const printEnabled = process.env.NEXT_PUBLIC_PRINT_ENABLED === "1";
   const [printFlowOpen, setPrintFlowOpen] = useState(false);
+
+  // Chantier mariage (option Pro) : galeries par table + mots aux mariés.
+  // `myTable` = la table du QR scanné par CET invité ; `tableTags` = étiquette
+  // de chaque photo de l'album ; `tableFilter` = l'onglet de galerie actif.
+  const [myTable, setMyTable] = useState<string | null>(null);
+  const [tableTags, setTableTags] = useState<Record<string, string>>({});
+  const [tableFilter, setTableFilter] = useState<string | null>(null);
+  const [weddingPro, setWeddingPro] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [inboxOpen, setInboxOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -183,10 +194,31 @@ const pin = params.pin;
       }),
     [photos]
   );
-  const visiblePhotos = useMemo(
-    () => sortedPhotos.slice(0, visibleCount),
-    [sortedPhotos, visibleCount]
+  // L'album se parcourt table par table (chantier mariage) : le filtre
+  // s'applique AVANT la pagination « Afficher plus ».
+  const filteredPhotos = useMemo(
+    () =>
+      tableFilter
+        ? sortedPhotos.filter((p) => tableTags[p.path] === tableFilter)
+        : sortedPhotos,
+    [sortedPhotos, tableFilter, tableTags]
   );
+  const visiblePhotos = useMemo(
+    () => filteredPhotos.slice(0, visibleCount),
+    [filteredPhotos, visibleCount]
+  );
+  // Les onglets de table : chaque étiquette présente dans l'album, avec son
+  // compte — tri naturel (« Table 2 » avant « Table 10 »).
+  const tableChips = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of photos) {
+      const label = tableTags[p.path];
+      if (label) counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) =>
+      a[0].localeCompare(b[0], "fr", { numeric: true })
+    );
+  }, [photos, tableTags]);
   const deviceCount = useMemo(() => {
     const uniqueDeviceIds = new Set(
       photos
@@ -235,6 +267,50 @@ const pin = params.pin;
       setOrigin(window.location.origin);
     }
   }, []);
+
+  // La table mémorisée au /join (QR du présentoir) ne vaut que pour CE coffre.
+  useEffect(() => {
+    if (typeof window === "undefined" || !pin) return;
+    try {
+      const raw = window.localStorage.getItem("gather_join_table");
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { pin?: string; table?: string };
+      if (saved.pin === pin && saved.table) setMyTable(saved.table);
+    } catch {
+      // stockage illisible : l'invité dépose simplement sans étiquette
+    }
+  }, [pin]);
+
+  // État Pro + étiquettes de table de l'album — rafraîchi quand l'album bouge
+  // (les photos des autres tables arrivent en continu pendant la soirée).
+  useEffect(() => {
+    if (!event?.id) return;
+    let cancelled = false;
+    fetch(`/api/events/${event.id}/tables`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(
+        (body: { proEnabled?: boolean; tags?: Record<string, string> } | null) => {
+          if (cancelled || !body) return;
+          setWeddingPro(Boolean(body.proEnabled));
+          setTableTags(body.tags ?? {});
+        }
+      )
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id, photoCount]);
+
+  /** Étiquette une photo fraîchement déposée avec la table de l'invité. */
+  const tagUploadedPhoto = (path: string) => {
+    if (!event?.id || !myTable || !weddingPro) return;
+    setTableTags((prev) => ({ ...prev, [path]: myTable }));
+    void fetch(`/api/events/${event.id}/tables`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "tag", path, tableLabel: myTable }),
+    }).catch(() => {});
+  };
 
   const shareUrl = origin && event ? `${origin}/join?pin=${event.pin}` : null;
 
@@ -714,6 +790,7 @@ const pin = params.pin;
             path,
             uploaderDeviceId: currentDeviceId,
           });
+          tagUploadedPhoto(path);
         } else {
           // Le réseau a lâché pendant l'upload : on met en attente plutôt
           // que de perdre le fichier, il repartira automatiquement.
@@ -816,6 +893,7 @@ const pin = params.pin;
           path: outcome.result.path,
           uploaderDeviceId: item.deviceId,
         });
+        tagUploadedPhoto(outcome.result.path);
       }
     }
 
@@ -1197,6 +1275,29 @@ const pin = params.pin;
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  {weddingPro && myTable && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-amber-200 shadow-sm">
+                      📍 Vous partagez depuis {myTable}
+                    </span>
+                  )}
+                  {weddingPro && !isHost && (
+                    <button
+                      type="button"
+                      onClick={() => setNoteOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-[11px] font-medium text-slate-100 shadow-sm transition-colors hover:bg-slate-800"
+                    >
+                      💌 Un mot aux mariés
+                    </button>
+                  )}
+                  {weddingPro && isHost && (
+                    <button
+                      type="button"
+                      onClick={() => setInboxOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-amber-200 shadow-sm transition-colors hover:bg-amber-500/20"
+                    >
+                      💌 Les mots de vos invités
+                    </button>
+                  )}
                   <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-200 shadow-sm">
                     {photoCount} photo{photoCount > 1 ? "s" : ""}
                   </span>
@@ -1448,6 +1549,45 @@ const pin = params.pin;
                   </div>
 
                   <section>
+                    {/* Les galeries par table : l'album commun se parcourt
+                        table par table — chaque table va voir ce qu'ont fait
+                        les autres (chantier mariage, option Pro). */}
+                    {weddingPro && tableChips.length > 0 && (
+                      <div className="mb-1 mt-2 flex gap-2 overflow-x-auto pb-1">
+                        <button
+                          type="button"
+                          onClick={() => setTableFilter(null)}
+                          className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                            tableFilter === null
+                              ? "border-amber-500 bg-amber-500 text-slate-950"
+                              : "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+                          }`}
+                        >
+                          Toutes ({photoCount})
+                        </button>
+                        {tableChips.map(([label, count]) => (
+                          <button
+                            key={label}
+                            type="button"
+                            onClick={() =>
+                              setTableFilter((f) => (f === label ? null : label))
+                            }
+                            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                              tableFilter === label
+                                ? "border-amber-500 bg-amber-500 text-slate-950"
+                                : "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+                            }`}
+                          >
+                            {label} ({count})
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {weddingPro && tableFilter && filteredPhotos.length === 0 && (
+                      <p className="mb-3 mt-1 text-center text-xs text-slate-400">
+                        Aucune photo de {tableFilter} pour l&apos;instant.
+                      </p>
+                    )}
                     {photos.length === 0 ? (
                       <p className="text-sm text-slate-400 text-center mb-4">
                         Aucune photo pour l’instant. Ajoute la première ✨
@@ -1574,7 +1714,7 @@ const pin = params.pin;
                     )}
                   </section>
 
-                  {sortedPhotos.length > visibleCount && (
+                  {filteredPhotos.length > visibleCount && (
                     <div className="flex justify-center">
                       <button
                         type="button"
@@ -1602,6 +1742,20 @@ const pin = params.pin;
         )}
       </div>
 
+      {noteOpen && event && (
+        <NoteModal
+          eventId={event.id}
+          tableLabel={myTable}
+          onClose={() => setNoteOpen(false)}
+        />
+      )}
+      {inboxOpen && event && deviceId && (
+        <NotesInbox
+          eventId={event.id}
+          deviceId={deviceId}
+          onClose={() => setInboxOpen(false)}
+        />
+      )}
       {printEnabled && printFlowOpen && event && photosToPrint.length > 0 && (
         <PrintOrderFlow
           eventId={event.id}

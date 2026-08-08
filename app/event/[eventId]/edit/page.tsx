@@ -74,7 +74,7 @@ export default function EditEventPage() {
       const { data, error: fetchError } = await supabase
         .from("events")
         .select(
-          "id, name, pin, host_device_id, host_user_id, expires_at, lifetime_days, contest_enabled, contest_enabled_at, contest_ends_at"
+          "id, name, pin, host_device_id, host_user_id, expires_at, lifetime_days, contest_enabled, contest_enabled_at, contest_ends_at, pro_enabled_at, table_count"
         )
         .eq("id", eventId)
         .maybeSingle<EventData>();
@@ -304,6 +304,181 @@ export default function EditEventPage() {
           </>
         )}
       </section>
+
+      <WeddingProSection
+        event={event}
+        isHost={isHost}
+        deviceId={deviceId}
+        onChanged={(patch) => setEvent((e) => (e ? { ...e, ...patch } : e))}
+      />
     </div>
+  );
+}
+
+/**
+ * Chantier mariage — l'OPTION PRO de l'événement : galeries par table +
+ * mots privés aux mariés. Un QR différent par table (c'est ce qui rend le
+ * présentoir unique et nécessaire, cf. idee-galeries-par-table.md §2).
+ * Activation offerte pendant la bêta ; Stripe s'insérera ici.
+ */
+function WeddingProSection({
+  event,
+  isHost,
+  deviceId,
+  onChanged,
+}: {
+  event: EventData | null;
+  isHost: boolean;
+  deviceId: string | null;
+  onChanged: (patch: Partial<EventData>) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [countInput, setCountInput] = useState<string>("");
+  const [copied, setCopied] = useState<string | null>(null);
+  const [origin, setOrigin] = useState("");
+  useEffect(() => {
+    if (typeof window !== "undefined") setOrigin(window.location.origin);
+  }, []);
+  useEffect(() => {
+    setCountInput(event?.table_count ? String(event.table_count) : "");
+  }, [event?.table_count]);
+
+  if (!event) return null;
+  const pro = Boolean(event.pro_enabled_at);
+  const tableCount = event.table_count ?? 0;
+
+  const post = async (body: Record<string, unknown>) => {
+    setSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/events/${event.id}/tables`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...body, deviceId }),
+      });
+      const payload = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!res.ok) throw new Error("L'enregistrement a échoué — réessayez.");
+      return payload;
+    } catch (e) {
+      setMessage((e as Error).message);
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const tableLink = (i: number) =>
+    `${origin}/join?pin=${event.pin}&table=${encodeURIComponent(`Table ${i}`)}`;
+
+  return (
+    <section className="rounded-2xl border border-amber-500/30 bg-slate-900/60 p-6 shadow-lg shadow-slate-950/30">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="text-lg font-semibold text-white">Mariage — galeries par table</h2>
+        <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300">
+          Option Pro
+        </span>
+      </div>
+      <p className="mt-2 text-sm text-slate-300">
+        Un QR différent par table : chaque photo déposée porte sa table, l&apos;album
+        se parcourt table par table, et les invités peuvent envoyer un mot privé
+        aux mariés — visible de vous seuls.
+      </p>
+
+      {!isHost && (
+        <p className="mt-4 text-sm text-amber-400">
+          Seul l&apos;organisateur peut gérer cette option.
+        </p>
+      )}
+
+      {isHost && !pro && (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={async () => {
+              const r = await post({ action: "activate-pro" });
+              if (r) onChanged({ pro_enabled_at: new Date().toISOString() });
+            }}
+            className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? "Activation…" : "Activer — offert pendant la bêta"}
+          </button>
+          <span className="text-xs text-slate-400">
+            Le tarif de l&apos;option arrivera avec le paiement en ligne.
+          </span>
+        </div>
+      )}
+
+      {isHost && pro && (
+        <>
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <label className="flex flex-col gap-2 text-sm text-slate-200">
+              <span className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                Nombre de tables
+              </span>
+              <input
+                type="number"
+                min={0}
+                max={60}
+                value={countInput}
+                onChange={(e) => setCountInput(e.target.value)}
+                className="w-32 rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={async () => {
+                const n = Math.max(0, Math.min(60, Number(countInput) || 0));
+                const r = await post({ action: "set-count", tableCount: n });
+                if (r) {
+                  onChanged({ table_count: n });
+                  setMessage("Enregistré.");
+                }
+              }}
+              className="inline-flex items-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Enregistrer
+            </button>
+            {message && <span className="text-sm text-emerald-400">{message}</span>}
+          </div>
+
+          {tableCount > 0 && (
+            <div className="mt-4">
+              <p className="text-xs text-slate-400">
+                Le lien de chaque table — à encoder dans son QR (présentoirs à
+                venir via l&apos;impression) ou à partager tel quel :
+              </p>
+              <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                {Array.from({ length: tableCount }, (_, i) => i + 1).map((i) => (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950/40 px-3 py-2 text-xs text-slate-300"
+                  >
+                    <span className="truncate">Table {i}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard
+                          ?.writeText(tableLink(i))
+                          .then(() => {
+                            setCopied(`t${i}`);
+                            setTimeout(() => setCopied(null), 1500);
+                          })
+                          .catch(() => {});
+                      }}
+                      className="shrink-0 rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-800"
+                    >
+                      {copied === `t${i}` ? "Copié ✓" : "Copier le lien"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </section>
   );
 }
