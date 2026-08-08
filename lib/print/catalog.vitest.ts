@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   PRINT_PRODUCTS,
+  deliveredPieces,
   fitsUvBed,
   getVariant,
   orderMarginCents,
@@ -62,9 +63,8 @@ describe("catalogue impression", () => {
   });
 
   it("s'en tient aux cinq supports produisibles aujourd'hui", () => {
-    // Décision Nico du 07/08/2026 : pas de produit dépendant de la Gongzheng
-    // (encre blanche, plexi diffusant) tant qu'elle n'est pas livrée.
-    expect(PRINT_PRODUCTS.some((p) => p.signature)).toBe(false);
+    // Décision Nico du 07/08/2026 : pas de matière dépendant de la Gongzheng
+    // (plexi diffusant) tant qu'elle n'est pas livrée.
     const materials = new Set(PRINT_PRODUCTS.map((p) => p.material));
     expect([...materials].sort()).toEqual([
       "canvas",
@@ -73,6 +73,43 @@ describe("catalogue impression", () => {
       "papier-photo",
       "plexi",
     ]);
+  });
+
+  it("ne propose que des produits signature qui tiennent sur le plateau", () => {
+    // Les Mimaki MkII ont déjà le blanc : le blanc sélectif est vendable,
+    // mais uniquement dans ce que le plateau 610×420 accepte.
+    const signature = PRINT_PRODUCTS.filter((p) => p.signature);
+    expect(signature.length).toBeGreaterThan(0);
+    for (const product of signature) {
+      for (const format of product.formats) {
+        expect(fitsUvBed(format)).toBe(true);
+      }
+    }
+  });
+
+  it("exclut les produits signature de la remise volume", () => {
+    // Prix de valeur perçue : pas de comparable marché, pas de prix cassé.
+    const pieces = Array.from({ length: 10 }, () => ({
+      productId: "vitrail",
+      formatId: "40x60",
+    }));
+    const plein = getVariant("vitrail", "40x60")!.format.priceCents * 10;
+    expect(orderTotalCents(pieces)).toBe(plein);
+    // La plaque souvenir, elle, garde la remise (usage B2B en volume).
+    const plaques = Array.from({ length: 10 }, () => ({
+      productId: "plaque-souvenir",
+      formatId: "10x15",
+    }));
+    expect(orderTotalCents(plaques)).toBeLessThan(
+      getVariant("plaque-souvenir", "10x15")!.format.priceCents * 10
+    );
+  });
+
+  it("compte les pièces livrées par lot", () => {
+    expect(deliveredPieces(getVariant("marque-places", "lot-50")!.format)).toBe(50);
+    expect(deliveredPieces(getVariant("forex", "30x40")!.format)).toBe(1);
+    // 6×9 cm : 42 pièces par passe de plateau — le meilleur rendement machine.
+    expect(piecesPerPass(getVariant("marque-places", "lot-20")!.format)).toBe(42);
   });
 
   it("cale l'imposition sur le plateau Mimaki en service", () => {

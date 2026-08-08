@@ -35,12 +35,16 @@ export type Machine = "latex-700w" | "uv-flatbed";
 export interface PrintFormat {
   /** Clé stable ("30x40") — stockée en base, ne jamais renommer. */
   id: string;
+  /** Dimensions d'UNE pièce (pas du lot) — servent au contrôle de
+   *  résolution et à l'indicateur de cadrage. */
   widthCm: number;
   heightCm: number;
   priceCents: number;
   /** Coût de revient estimé (matière + encre + accroche + emballage), pour
    *  le suivi de marge — jamais affiché au client. */
   costCents: number;
+  /** Nombre de pièces livrées, pour les lots de petites pièces. Défaut 1. */
+  packQuantity?: number;
 }
 
 export interface PrintProduct {
@@ -154,14 +158,61 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
       { id: "70x100", widthCm: 70, heightCm: 100, priceCents: EUR(69.9), costCents: EUR(20.3) },
     ],
   },
+  // ---- Produits SIGNATURE au blanc sélectif ----------------------------
+  // Les Mimaki UJF MkII portent DÉJÀ l'encre blanche et le vernis : tout ce
+  // qui tient sur le plateau (≤ 40×60) est produisible dès maintenant, sans
+  // attendre la Gongzheng. Ces produits n'ont aucun comparable en labo photo
+  // grand public — d'où `signature: true` et l'exclusion de la remise volume
+  // (un prix cassé y détruit la valeur perçue, cf. gamme-produits §9).
+  {
+    id: "vitrail",
+    label: "Vitrail photo",
+    material: "plexi",
+    machine: "uv-flatbed",
+    description:
+      "Plexi transparent à blanc sélectif — sujets opaques, fond transparent, à poser devant une fenêtre",
+    signature: true,
+    formats: [
+      { id: "30x40", widthCm: 30, heightCm: 40, priceCents: EUR(69), costCents: EUR(9.6) },
+      { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(89), costCents: EUR(14.2) },
+    ],
+  },
+  {
+    id: "marque-places",
+    label: "Marque-places photo",
+    material: "plexi",
+    machine: "uv-flatbed",
+    description:
+      "Petites plaques plexi 6×9 à blanc sélectif — une photo par convive, livrées prêtes à poser",
+    signature: true,
+    timeCritical: true,
+    // 42 pièces par passe de plateau : le meilleur €/heure-machine de la
+    // gamme. Prix au lot, la dégressivité est déjà dans les paliers.
+    formats: [
+      { id: "lot-20", widthCm: 6, heightCm: 9, priceCents: EUR(79), costCents: EUR(9), packQuantity: 20 },
+      { id: "lot-50", widthCm: 6, heightCm: 9, priceCents: EUR(169), costCents: EUR(18), packQuantity: 50 },
+      { id: "lot-100", widthCm: 6, heightCm: 9, priceCents: EUR(299), costCents: EUR(32), packQuantity: 100 },
+    ],
+  },
+  {
+    id: "plaque-souvenir",
+    label: "Plaque souvenir",
+    material: "plexi",
+    machine: "uv-flatbed",
+    description:
+      "Plaque plexi à blanc sélectif — cadeau d'invité, trophée de club, souvenir de séminaire",
+    // Pas `signature` : en B2B (50 participants, une équipe entière) la
+    // remise volume est attendue et normale.
+    formats: [
+      { id: "10x15", widthCm: 10, heightCm: 15, priceCents: EUR(12.9), costCents: EUR(2) },
+      { id: "15x20", widthCm: 15, heightCm: 20, priceCents: EUR(17.9), costCents: EUR(2.4) },
+    ],
+  },
 ];
 
-// Les produits SIGNATURE (rétroéclairé Day & Night, vitrail à blanc sélectif,
-// bloc plexi épais, petites pièces transparentes) ne sont PAS au catalogue V1 :
-// ils dépendent de l'encre blanche et du plexi diffusant de la Gongzheng, qui
-// n'est pas encore livrée. Leur spécification et leurs prix sont prêts dans
-// docs/strategie/gamme-produits-impression.md §8 — le drapeau `signature` et
-// son exclusion de la remise volume sont déjà câblés ici pour les accueillir.
+// Restent en V2, faute de plexi diffusant et de grand plateau : le
+// rétroéclairé Day & Night et le bloc plexi épais (gamme-produits §8.1 et
+// §8.4), plus la décoration murale au m² (§5.3).
 
 /**
  * Remise volume V1 — notre avantage structurel : N pièces du même événement
@@ -243,6 +294,11 @@ export function orderTotalCents(
     total += Math.round((v.format.priceCents * (100 - rate)) / 100);
   }
   return total;
+}
+
+/** Nombre de pièces physiques livrées par une variante (lots compris). */
+export function deliveredPieces(format: PrintFormat): number {
+  return format.packQuantity ?? 1;
 }
 
 /** Marge brute estimée d'une commande, en centimes (suivi interne). */

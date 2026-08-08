@@ -124,7 +124,25 @@ Avant la Gongzheng, le rigide passe sur les **Mimaki UJF MkII (anciens modèles)
 
 **Au-delà de 40×60 : contrecollage** — tirage Latex sur vinyle adhésif laminé, marouflé sur le panneau. Pratique standard du métier. Surcoût matière faible (**+4,40 €/m²** : vinyle 2,29 + lamination 2,09), la main-d'œuvre est le vrai poste. **Les prix ci-dessous restent valables dans les deux méthodes** — à confirmer avec l'atelier (question §11.3).
 
-> **À noter pour plus tard** : les UJF MkII ont **déjà l'encre blanche et le vernis** (LH-100 / LUS-120 : CMJN + Blanc + Vernis). Les produits signature en **petit format** — marque-places, plaques transparentes à blanc sélectif, petites pièces imposées — sont donc techniquement possibles **dès maintenant**, sans attendre la Gongzheng. C'est justement le produit au meilleur €/heure-machine (§8.5). À garder sous le coude une fois la V1 lancée.
+### 4.4 Blanc sélectif — **au catalogue V1** (les MkII ont déjà l'encre blanche)
+
+Les UJF MkII portent **CMJN + Blanc + Vernis** (LH-100 / LUS-120). Tout ce qui tient sur le plateau est donc produisible **dès maintenant**. C'est la famille au **meilleur rendement machine de toute la gamme** — et le blanc sélectif est précisément ce qu'aucun labo photo grand public ne sait faire.
+
+| Produit | Format | Pièces/passe | Coût | Marché | **Prix** | Marge |
+|---|---|---|---|---|---|---|
+| **Vitrail photo** (sujets opaques, fond transparent) | 30×40 | 2 | 9,6 € | sans comparable | **69,00 €** | 86 % |
+| | 40×60 | 1 | 14,2 € | — | **89,00 €** | 84 % |
+| **Marque-places photo** 6×9 (une photo par convive) | lot de 20 | **42** | 9 € | absent | **79,00 €** | 89 % |
+| | lot de 50 | 42 | 18 € | — | **169,00 €** | 89 % |
+| | lot de 100 | 42 | 32 € | — | **299,00 €** | 89 % |
+| **Plaque souvenir** (cadeau invité, trophée club, séminaire) | 10×15 | 16 | 2,0 € | trophée plexi 20–80 € | **12,90 €** | 84 % |
+| | 15×20 | 8 | 2,4 € | — | **17,90 €** | 87 % |
+
+**Régime de prix** : vitrail et marque-places sont en **prix de valeur perçue** — pas de comparable marché, donc **exclus de la remise volume** (le lot encode déjà la dégressivité). La plaque souvenir garde la remise : en B2B, 50 participants ou une équipe entière, elle est attendue.
+
+**Pourquoi les marque-places sont le produit le plus rentable du catalogue** : 42 pièces par passe de plateau, 0,16 € de matière par pièce, et un panier de 79 à 299 € pour un produit que personne d'autre ne propose. C'est aussi un produit **jour J** — il porte donc la contrainte de délai (§10.1).
+
+*Restent en V2, faute de plexi diffusant et de grand plateau : le rétroéclairé Day & Night (§8.1) et le bloc plexi épais (§8.4).*
 
 Prix TTC. Coût = matière + encre + accroche légère + emballage, **base DiLite pour l'aluminium**. « Marché net » = le moins cher réellement payé.
 
@@ -247,9 +265,9 @@ Le marché photo-déco n'a **aucune** grille volume digne de ce nom. Nous produi
 |---|---|---|---|
 | Panneau de bienvenue Forex 70×100 **+ QR du coffre** | 21,90 € (papier Popcarte) → ~60 € (spécialistes) | **69,90 €** | **V1** |
 | Plan de table rigide 50×70 | 21,90 € (papier) | **34,90 €** | **V1** |
+| **Marque-places photo plexi** (lot de 20) | absent du marché | **79,00 €** | **V1** |
 | Photocall / backdrop 200×250 | 81–270 € | **99,00 €** | V2 |
 | Panneau de bienvenue rétroéclairé | sans comparable | **299,00 €** | V2 |
-| Marque-places photo plexi (par 20) | absent du marché | **79,00 €** | V2 |
 
 **Après — les mariés ET les invités (le panier scale avec le nombre d'invités)**
 
