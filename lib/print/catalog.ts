@@ -14,6 +14,12 @@
 // dépend de son encre blanche et de son plexi diffusant (rétroéclairé Day &
 // Night, vitrail à blanc sélectif, bloc épais, petites pièces transparentes)
 // est décrit dans le document de gamme §8 et attend la machine.
+//
+// PRODUCTION ACTUELLE — le rigide passe sur les Mimaki UJF MkII à plateau
+// fixe (610×420 max, le « double plateau » double la cadence, pas le format) :
+// impression DIRECTE jusqu'au 40×60, CONTRECOLLAGE (tirage Latex marouflé)
+// au-delà. Les prix tiennent dans les deux méthodes ; `fitsUvBed()` et
+// `piecesPerPass()` documentent la bascule et calent les seuils de lot.
 
 /** Matière chargée en machine — clé de regroupement : un lot = UNE matière. */
 export type MaterialId =
@@ -170,6 +176,34 @@ export function volumeDiscountPercent(pieceCount: number): number {
   if (pieceCount >= 5) return 20;
   if (pieceCount >= 2) return 10;
   return 0;
+}
+
+/**
+ * Plateau de la plus grande machine rigide EN SERVICE (Mimaki UJF-6042 MkII,
+ * 610 × 420 mm). Le « double plateau » de l'atelier charge en temps masqué :
+ * il double la cadence, pas la surface. À remplacer par 2500×1300 quand la
+ * Gongzheng est installée.
+ */
+export const UV_BED_MM = { width: 610, height: 420 } as const;
+
+/** Le format tient-il sur le plateau, dans un sens ou dans l'autre ?
+ *  Sinon la pièce passe par contrecollage (tirage Latex marouflé). */
+export function fitsUvBed(format: PrintFormat): boolean {
+  return piecesPerPass(format) > 0;
+}
+
+/**
+ * Nombre de pièces d'un format qui tiennent sur une passe de plateau
+ * (imposition simple, sans marge de coupe) — 0 si le format n'y entre pas.
+ * C'est le « 23 cartes = une planche » de Renka transposé à la photo : il
+ * cale les seuils de lot par matière (PRINT_BATCH_SIZE_<MATIERE>).
+ */
+export function piecesPerPass(format: PrintFormat): number {
+  const w = format.widthCm * 10;
+  const h = format.heightCm * 10;
+  const grid = (pieceW: number, pieceH: number) =>
+    Math.floor(UV_BED_MM.width / pieceW) * Math.floor(UV_BED_MM.height / pieceH);
+  return Math.max(grid(w, h), grid(h, w));
 }
 
 /** Option d'accroche : 4 entretoises inox coûtent ~15 € — jamais incluses. */

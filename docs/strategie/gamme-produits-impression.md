@@ -36,11 +36,11 @@
 
 ## 2. Ce que la machine permet
 
-| Machine | Capacité | Ce qu'elle débloque |
-|---|---|---|
-| **Gongzheng H2513GN PRO** | 2500×1300 mm, ép. ≤ 100 mm, Ricoh Gen6, **2×Blanc + CMJN + Vernis**, 52 m²/h en mode photo | Rigide sans plafond · **transparent** et **diffusant** · **blanc sélectif** · vernis sélectif · verre, bois, carrelage, objets épais · **imposition massive** |
-| **HP Latex 700W** | Laize 1,63 m, encre blanche | Poster jusqu'à 150×500 · toile · **papier peint** · adhésif mural · backlit |
-| Mimaki UJF-6042 MkII | 61×42 cm | Petites séries, objets |
+| Machine | Statut | Capacité | Ce qu'elle permet |
+|---|---|---|---|
+| **HP Latex 700W** | **en service** | Laize 1,63 m, encre blanche | Poster jusqu'à 150×500 · toile · papier peint · adhésif mural · backlit · **les tirages à contrecoller** |
+| **Mimaki UJF MkII** (3042 et/ou 6042, double plateau) | **en service** | 300×420 / 610×420 mm, ép. ≤ 153 mm, **CMJN + Blanc + Vernis** | Rigide direct **jusqu'à 40×60** · cadence doublée par le chargement en temps masqué · **blanc sélectif en petit format déjà possible** |
+| **Gongzheng H2513GN PRO** | **à venir** | 2500×1300 mm, ép. ≤ 100 mm, Ricoh Gen6, 2×Blanc + CMJN + Vernis, 52 m²/h | Rigide sans plafond · transparent et **diffusant** · vernis sélectif · verre, bois, carrelage · **imposition massive** |
 
 **Contrainte d'achat à connaître** : le catalogue signalétique est majoritairement en **3050 mm de long**, qui ne passe pas sur la table. Formats entrant entiers : 1220×2440, 1250×2500, 1220×2300, 1000×1400. Bonne nouvelle : **chez Antalis le €/m² est quasi identique quel que soit le format de plaque** (Forex Lite 3 mm = 9,94 à 10,05 €/m² sur quatre formats). Acheter petit ne coûte pas plus cher — l'arbitrage est logistique, pas économique.
 
@@ -111,7 +111,20 @@
 
 ## 4. Grille de prix — supports rigides *(V1, actif)*
 
-> **Question de production ouverte** : sans la Gongzheng, l'impression UV directe est plafonnée par la Mimaki UJF-6042 MkII à **61 × 42 cm**. Les formats au-delà de 40×60 se produisent donc aujourd'hui par **contrecollage** (tirage Latex sur vinyle adhésif laminé, marouflé sur le panneau) — pratique standard du marché. Le surcoût matière est faible (+4,4 €/m² : vinyle 2,29 + lamination 2,09), la main-d'œuvre est le vrai poste. **Les prix ci-dessous restent valables dans les deux méthodes** ; à confirmer avec l'atelier (question §11.3).
+### Contrainte de production actuelle — le plateau Mimaki
+
+Avant la Gongzheng, le rigide passe sur les **Mimaki UJF MkII (anciens modèles)**, à plateau **fixe** : le « double plateau » de l'atelier est un dispositif de chargement en temps masqué — on charge l'un pendant que l'autre imprime. Il **double la cadence, pas le format**.
+
+| Machine | Plateau | Formats en impression DIRECTE | Pièces par passe |
+|---|---|---|---|
+| **UJF-6042 MkII** | 610 × 420 mm | 20×30 · 30×40 · **40×60** (au ras) | **4** × 20×30 · **2** × 30×40 · **1** × 40×60 |
+| **UJF-3042 MkII** | 300 × 420 mm | 20×30 · 30×40 | **2** × 20×30 · **1** × 30×40 |
+
+**C'est la réponse au « 23 cartes = une planche » pour la photo**, et elle commande les seuils de lot : un lot de **8 pièces de 20×30** = 2 passes sur le 6042, 4 sur le 3042.
+
+**Au-delà de 40×60 : contrecollage** — tirage Latex sur vinyle adhésif laminé, marouflé sur le panneau. Pratique standard du métier. Surcoût matière faible (**+4,40 €/m²** : vinyle 2,29 + lamination 2,09), la main-d'œuvre est le vrai poste. **Les prix ci-dessous restent valables dans les deux méthodes** — à confirmer avec l'atelier (question §11.3).
+
+> **À noter pour plus tard** : les UJF MkII ont **déjà l'encre blanche et le vernis** (LH-100 / LUS-120 : CMJN + Blanc + Vernis). Les produits signature en **petit format** — marque-places, plaques transparentes à blanc sélectif, petites pièces imposées — sont donc techniquement possibles **dès maintenant**, sans attendre la Gongzheng. C'est justement le produit au meilleur €/heure-machine (§8.5). À garder sous le coude une fois la V1 lancée.
 
 Prix TTC. Coût = matière + encre + accroche légère + emballage, **base DiLite pour l'aluminium**. « Marché net » = le moins cher réellement payé.
 
@@ -359,10 +372,10 @@ Les 10 questions du document de validation restent valables, sauf la n°1 (répo
 
 1. **Ta grille de cession** (prix atelier → Usegather) sur chaque ligne des §4 et §5.1–5.2 — c'est la base du contrat d'approvisionnement.
 2. **Aluminium : quel grade ?** ACM générique (~22–27 €/m²), DiLite (40 €/m²) ou Dibond® de marque (64 €/m²) ? *Devis prioritaire — l'écart change toute la marge.*
-3. **Les formats > 40×60 en rigide** : contrecollage (tirage Latex maroufflé) ou autre méthode ? Quel surcoût de main-d'œuvre ? *Détermine si la grille tient jusqu'au 100×150.*
+3. **Les formats > 40×60 en rigide** : contrecollage (tirage Latex marouflé) confirmé ? Quel temps de main-d'œuvre par pièce ? *Détermine si la grille tient jusqu'au 100×150 avant la Gongzheng.*
 4. **Accroche** : quel système par défaut, et à quel prix d'achat en volume ? (l'entretoise à 3,74 € pièce est le poste qui écrase les petits formats)
 5. **Châssis toile** : achat prêt à monter (11,04 € le 40×60) ou baguette au mètre (3,76 €/ml dès 100 m) ? *C'est le levier de la marge la plus faible de la gamme.*
-6. **Combien de pièces de 30×40 tiennent sur une plaque** après découpe, par matière ? *(le « 23 cartes » de la photo — il détermine le seuil de lot)*
+6. **Confirmer les pièces par passe** : 4 × 20×30, 2 × 30×40, 1 × 40×60 sur le plateau 610×420 — et lequel des deux Mimaki tourne en priorité ? *(détermine les seuils de lot par matière)*
 7. **Encre latex** : relever les compteurs machine sur un mois de production réelle — la consommation en ml/m² n'est sourcée nulle part.
 8. **Emballage grand format** : comment expédier un 100×150 rigide, à quel coût ?
 

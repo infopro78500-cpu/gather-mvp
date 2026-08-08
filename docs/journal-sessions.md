@@ -14,7 +14,8 @@
 - **Code** : `lib/print/catalog.ts` réécrit (6 supports + 4 signature, coûts de revient suivis, dégressif jusqu'à −40 %, signature exclue de la remise, option accroche, franchise de port). Tests mis à jour.
 - **Correction factuelle** : marché mariage à **251 000/an** (INSEE 2025), pas 220 000 (chiffre 2019) — répercuté dans `decisions-validees.md` et `CLAUDE.md`.
 - **Périmètre resserré en fin de session** (Nico) : la Gongzheng n'arrivant pas tout de suite, le lancement se fait sur les **cinq supports déjà maîtrisés** (Dibond, PVC, plexi, papier photo, canvas). Produits signature et décoration murale au m² passent en V2, spécifiés et chiffrés, en attente machine. Catalogue réduit à 5 matières / 6 produits, drapeau `signature` conservé pour la suite, questions atelier scindées V1 / V2.
-- **Reste à faire** : voie express pour les produits à date impérative (bloquant pour le jour J), grille de cession de l'atelier, devis grade aluminium, méthode de production des rigides > 40×60 (contrecollage ?), seconde passe de benchmark (Pixum/CEWE/Photobox non relevés).
+- **Contrainte machine précisée** : rigide sur **Mimaki UJF MkII anciens modèles** (plateau fixe 300×420 / 610×420, double plateau = chargement en temps masqué → cadence doublée, format inchangé). Impression directe ≤ 40×60, contrecollage au-delà. **Imposition connue : 4 × 20×30, 2 × 30×40, 1 × 40×60 par passe** — codée en `UV_BED_MM` / `piecesPerPass()`, à repasser à 2500×1300 quand la Gongzheng arrive. Les UJF MkII ayant déjà blanc + vernis, les produits signature en petit format sont possibles sans attendre.
+- **Reste à faire** : voie express pour les produits à date impérative (bloquant pour le jour J), grille de cession de l'atelier, devis grade aluminium, confirmation du contrecollage > 40×60, seconde passe de benchmark (Pixum/CEWE/Photobox non relevés).
 
 ## Session 06/08/2026 — Refonte photo-first du dashboard atelier
 

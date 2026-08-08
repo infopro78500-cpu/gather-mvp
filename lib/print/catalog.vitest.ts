@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   PRINT_PRODUCTS,
+  fitsUvBed,
   getVariant,
   orderMarginCents,
   orderTotalCents,
+  piecesPerPass,
   resolutionBadge,
   volumeDiscountPercent,
 } from "./catalog";
@@ -71,6 +73,19 @@ describe("catalogue impression", () => {
       "papier-photo",
       "plexi",
     ]);
+  });
+
+  it("cale l'imposition sur le plateau Mimaki en service", () => {
+    const per = (productId: string, formatId: string) =>
+      piecesPerPass(getVariant(productId, formatId)!.format);
+    // Plateau 610×420 : 4 × 20×30, 2 × 30×40, 1 × 40×60 (au ras).
+    expect(per("forex", "20x30")).toBe(4);
+    expect(per("forex", "30x40")).toBe(2);
+    expect(per("forex", "40x60")).toBe(1);
+    // Au-delà, la pièce n'entre plus : contrecollage.
+    expect(per("forex", "50x70")).toBe(0);
+    expect(fitsUvBed(getVariant("forex", "40x60")!.format)).toBe(true);
+    expect(fitsUvBed(getVariant("forex", "100x150")!.format)).toBe(false);
   });
 
   it("calcule une marge de commande cohérente", () => {
