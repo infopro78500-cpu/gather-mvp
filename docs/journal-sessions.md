@@ -4,6 +4,16 @@
 
 ---
 
+## Session 08/08/2026 — Voie express validée en réel + le présentoir passe en NFC
+
+- **Migration `20260807120000` appliquée** (Nico) → preflight 16/16 au vert.
+- **Test de bout en bout de la voie express, sur la vraie infra** : commande de 3 pièces à échéance J+5 → **2 lots partis immédiatement à 2 et 1 pièces alors que le seuil est de 8**, `due_at` propagé aux lots, visuels générés à 1181×1772 px (300 dpi), QR pointant sur le vrai PIN, vignettes 2/2.
+- **Défaut trouvé et corrigé grâce à ce test** : un nom d'événement long sortait **coupé des deux côtés** du visuel imprimé. La police se réduit maintenant pour tenir, puis tronque avec des points de suspension. Test de non-régression par balayage des pixels de marge, **validé en neutralisant le correctif** (il échoue bien).
+- **Incident de ma part, réparé** : `npm pkg set` lancé depuis PowerShell a interprété le point de `qr.js` comme un séparateur et créé une entrée parasite `"qr": { "js": … }` ; le `npm install` suivant a réduit le lockfile de 667 à 1 paquet. Détecté sur le « 10 037 suppressions » du commit, restauré depuis git, régénéré sous bash. **Règle : les commandes npm portant des noms de paquets à points passent par bash, jamais PowerShell.**
+- **Le présentoir de table passe en NFC** (décision Nico) après exploration de la gamme Lika-NFC : puce + QR sur la même pièce, lots par table (5/10/15/20 à 49/89/119/149 €), consigne « Posez votre téléphone ou scannez ». Quatre règles reprises de Renka (inlay intégré d'usine, verrouillage lecture seule, zone d'antenne mesurée, architecture `tap.ts`) et un enseignement négatif à ne pas rejouer : leur gamme Point Fixe est vendue sans process de fabrication documenté. Spec : `strategie/presentoir-nfc.md`.
+- **Données de test purgées** (base à 0/0, faux coffre et événement de test supprimés), serveur arrêté.
+- **Reste à faire** : trouver le fournisseur d'inlay (bloquant pour le présentoir NFC) · revérifier le rendu du texte des visuels **une fois sur Vercel** (polices) · grille de cession de l'atelier · devis grade aluminium · Stripe devant la file.
+
 ## Session 07/08/2026 — Gamme produits impression V1
 
 **Contexte** : l'atelier s'équipe d'une **Gongzheng H2513GN PRO** (flatbed UV 2500×1300, ép. 100 mm, blanc + vernis) → la question n°1 de l'audit d'intégration est répondue, plus aucun plafond de format en rigide. Nico demande une gamme complète, chiffrée, par secteur.
