@@ -386,11 +386,13 @@ Elle est **destructrice de valeur sur les produits signature** : il n'existe auc
 
 ## 10. Ce qui doit changer dans le produit avant d'ouvrir la vente
 
-**1. La voie express et les pièces sans photo — bloquant, un seul chantier.** Deux limites du pipeline actuel se croisent sur le même parcours :
-- La file regroupe par matière avec `PRINT_BATCH_SIZE = 8` et `PRINT_MAX_WAIT_DAYS = 2`. Un présentoir ou un panneau de bienvenue commandé pour un mariage **samedi** ne peut pas attendre que sept autres clients commandent du plexi. **Il faut une voie express hors file pour tout produit `timeCritical`.**
-- La file suppose que chaque pièce naît d'une photo du coffre (`source_path` obligatoire). **La papeterie du jour J n'en a pas** : le visuel est composé par l'app (QR, prénoms, date). Il faut une seconde source de fichier de production.
+**1. ~~La voie express et les pièces sans photo~~ — ✅ FAIT le 07/08/2026.**
+- Une commande peut porter une **échéance** (`dueDate`). Les pièces datées sortent de la logique de seuil : un lot express part **dès la commande**, puis à chaque passage du cron, sans jamais attendre les 8 pièces. L'email atelier passe en mode urgent (objet « URGENT à livrer pour le… », encart rouge, jours restants) et le tableau de bord affiche un badge ⏱ J−n sur les pièces, les lots et le compteur du jour.
+- Le pipeline accepte désormais des pièces **sans photo du coffre** : pour la papeterie du jour J, l'app **compose le visuel** (QR de dépôt, titre de l'événement, consigne de scan, PIN de repli) et le rasterise à 300 dpi. Le QR est encodé par la même bibliothèque que celle affichée dans l'app — le QR imprimé est donc identique à celui de l'écran.
 
-Sans ces deux points, toute la famille « avant le jour J » — la plus stratégique, puisqu'elle porte le QR et alimente tout le reste — est invendable.
+Migration à appliquer : `supabase/migrations/20260807120000_add_print_express_and_generated.sql`. Le code tourne sans elle (dégradé, sans voie express) — `scripts/print/preflight.mjs` le signale.
+
+⚠️ **Un point à vérifier avant d'ouvrir la vente** : le texte des visuels générés est rendu par le moteur SVG de sharp, qui dépend des polices installées. Ça marche en local ; **il faut le revérifier une fois déployé sur Vercel** — c'est exactement le type de détail qui sort blanc en production (leçon des tirages ratés de Renka).
 
 **2. Le dégressif codé est trop faible.** `volumeDiscountPercent` s'arrête à −15 % dès 3 pièces ; la grille §6 va jusqu'à −40 %. C'est notre avantage principal : il doit être dans le code.
 
