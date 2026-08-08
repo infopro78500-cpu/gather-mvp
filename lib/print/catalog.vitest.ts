@@ -7,6 +7,8 @@ import {
   orderMarginCents,
   orderTotalCents,
   piecesPerPass,
+  preEventProducts,
+  requiresCoffrePhoto,
   resolutionBadge,
   volumeDiscountPercent,
 } from "./catalog";
@@ -103,6 +105,18 @@ describe("catalogue impression", () => {
     expect(orderTotalCents(plaques)).toBeLessThan(
       getVariant("plaque-souvenir", "10x15")!.format.priceCents * 10
     );
+  });
+
+  it("distingue la papeterie du jour J des produits nés d'une photo", () => {
+    // Commandables à la création du coffre, alors qu'il est encore vide.
+    const preEvent = preEventProducts().map((p) => p.id).sort();
+    expect(preEvent).toEqual(["marque-places", "panneau-bienvenue", "presentoir-qr"]);
+    // Tous à date impérative : ils doivent être livrés avant le jour J.
+    for (const product of preEventProducts()) {
+      expect(product.timeCritical).toBe(true);
+    }
+    // Une déco murale, elle, part forcément d'une photo du coffre.
+    expect(requiresCoffrePhoto(getVariant("plexi", "40x60")!.product)).toBe(true);
   });
 
   it("compte les pièces livrées par lot", () => {

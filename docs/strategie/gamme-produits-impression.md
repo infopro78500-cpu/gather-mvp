@@ -124,7 +124,23 @@ Avant la Gongzheng, le rigide passe sur les **Mimaki UJF MkII (anciens modèles)
 
 **Au-delà de 40×60 : contrecollage** — tirage Latex sur vinyle adhésif laminé, marouflé sur le panneau. Pratique standard du métier. Surcoût matière faible (**+4,40 €/m²** : vinyle 2,29 + lamination 2,09), la main-d'œuvre est le vrai poste. **Les prix ci-dessous restent valables dans les deux méthodes** — à confirmer avec l'atelier (question §11.3).
 
-### 4.4 Blanc sélectif — **au catalogue V1** (les MkII ont déjà l'encre blanche)
+### 4.4 La papeterie du jour J — **vendue à la création du coffre**
+
+Une famille de produits que le reste de la gamme ne couvrait pas : **commandés avant l'événement, quand le coffre est encore vide**. Le visuel n'est donc pas une photo d'invité mais un **visuel composé par l'app** (QR du coffre, prénoms, date).
+
+| Produit | Format | Pièces/passe | Coût | Marché | **Prix** | Marge |
+|---|---|---|---|---|---|---|
+| **Présentoir de table** (chevalet plexi 10×15, QR du coffre) | lot de 5 | 16 | 6 € | absent | **29,00 €** | 79 % |
+| | lot de 10 | 16 | 10 € | — | **49,00 €** | 80 % |
+| | lot de 20 | 16 | 18 € | — | **79,00 €** | 77 % |
+| **Panneau de bienvenue** Forex + QR | 50×70 · 70×100 | 1 · contrecollé | 13,7 · 20,3 € | 21,90 → ~60 € | **49,90 · 69,90 €** | 71 % |
+| **Marque-places** plexi 6×9, **avec ou sans photo** | lots de 20/50/100 | **42** | 9 · 18 · 32 € | absent | **79 · 169 · 299 €** | 89 % |
+
+**Le présentoir est le produit le plus stratégique de la gamme — et ce n'est pas pour sa marge.** Il porte le QR du coffre sur chaque table. C'est donc à la fois un produit vendu **et le canal qui fait scanner les invités** : plus de présentoirs → plus de scans → plus de photos dans le coffre → plus d'impressions vendues après l'événement. C'est le seul produit du catalogue qui **augmente mécaniquement les ventes de tous les autres**. À traiter comme tel dans le tunnel de création de coffre : proposé à chaque organisateur, pas enterré dans une boutique.
+
+**Conséquence technique** : la file d'impression suppose aujourd'hui que chaque pièce naît d'une photo du coffre (`source_path` obligatoire dans `print_queue`). La papeterie du jour J n'en a pas — le visuel est généré. Chantier à ouvrir avec la voie express (§10.1), les deux touchent le même parcours.
+
+### 4.5 Blanc sélectif — **au catalogue V1** (les MkII ont déjà l'encre blanche)
 
 Les UJF MkII portent **CMJN + Blanc + Vernis** (LH-100 / LUS-120). Tout ce qui tient sur le plateau est donc produisible **dès maintenant**. C'est la famille au **meilleur rendement machine de toute la gamme** — et le blanc sélectif est précisément ce qu'aucun labo photo grand public ne sait faire.
 
@@ -132,15 +148,14 @@ Les UJF MkII portent **CMJN + Blanc + Vernis** (LH-100 / LUS-120). Tout ce qui t
 |---|---|---|---|---|---|---|
 | **Vitrail photo** (sujets opaques, fond transparent) | 30×40 | 2 | 9,6 € | sans comparable | **69,00 €** | 86 % |
 | | 40×60 | 1 | 14,2 € | — | **89,00 €** | 84 % |
-| **Marque-places photo** 6×9 (une photo par convive) | lot de 20 | **42** | 9 € | absent | **79,00 €** | 89 % |
-| | lot de 50 | 42 | 18 € | — | **169,00 €** | 89 % |
-| | lot de 100 | 42 | 32 € | — | **299,00 €** | 89 % |
 | **Plaque souvenir** (cadeau invité, trophée club, séminaire) | 10×15 | 16 | 2,0 € | trophée plexi 20–80 € | **12,90 €** | 84 % |
 | | 15×20 | 8 | 2,4 € | — | **17,90 €** | 87 % |
 
+*(Les marque-places, également en blanc sélectif, sont décrits en §4.4 : ils appartiennent à la papeterie du jour J.)*
+
 **Régime de prix** : vitrail et marque-places sont en **prix de valeur perçue** — pas de comparable marché, donc **exclus de la remise volume** (le lot encode déjà la dégressivité). La plaque souvenir garde la remise : en B2B, 50 participants ou une équipe entière, elle est attendue.
 
-**Pourquoi les marque-places sont le produit le plus rentable du catalogue** : 42 pièces par passe de plateau, 0,16 € de matière par pièce, et un panier de 79 à 299 € pour un produit que personne d'autre ne propose. C'est aussi un produit **jour J** — il porte donc la contrainte de délai (§10.1).
+**Pourquoi les marque-places sont le produit le plus rentable du catalogue** : 42 pièces par passe de plateau, 0,16 € de matière par pièce, et un panier de 79 à 299 € pour un produit que personne d'autre ne propose.
 
 *Restent en V2, faute de plexi diffusant et de grand plateau : le rétroéclairé Day & Night (§8.1) et le bloc plexi épais (§8.4).*
 
@@ -263,9 +278,10 @@ Le marché photo-déco n'a **aucune** grille volume digne de ce nom. Nous produi
 
 | Produit | Marché | **Notre prix** | Statut |
 |---|---|---|---|
+| **Présentoir de table + QR du coffre** (lot de 10) | absent du marché | **49,00 €** | **V1** |
 | Panneau de bienvenue Forex 70×100 **+ QR du coffre** | 21,90 € (papier Popcarte) → ~60 € (spécialistes) | **69,90 €** | **V1** |
 | Plan de table rigide 50×70 | 21,90 € (papier) | **34,90 €** | **V1** |
-| **Marque-places photo plexi** (lot de 20) | absent du marché | **79,00 €** | **V1** |
+| **Marque-places plexi**, avec ou sans photo (lot de 20) | absent du marché | **79,00 €** | **V1** |
 | Photocall / backdrop 200×250 | 81–270 € | **99,00 €** | V2 |
 | Panneau de bienvenue rétroéclairé | sans comparable | **299,00 €** | V2 |
 
@@ -370,7 +386,11 @@ Elle est **destructrice de valeur sur les produits signature** : il n'existe auc
 
 ## 10. Ce qui doit changer dans le produit avant d'ouvrir la vente
 
-**1. La voie express — bloquant.** La file regroupe par matière avec `PRINT_BATCH_SIZE = 8` et `PRINT_MAX_WAIT_DAYS = 2`. Un panneau de bienvenue commandé pour un mariage **samedi** ne peut pas attendre que sept autres clients commandent du plexi. **Il faut une voie express hors file pour tout produit à date impérative** — sinon le meilleur point d'entrée du secteur mariage est structurellement intenable.
+**1. La voie express et les pièces sans photo — bloquant, un seul chantier.** Deux limites du pipeline actuel se croisent sur le même parcours :
+- La file regroupe par matière avec `PRINT_BATCH_SIZE = 8` et `PRINT_MAX_WAIT_DAYS = 2`. Un présentoir ou un panneau de bienvenue commandé pour un mariage **samedi** ne peut pas attendre que sept autres clients commandent du plexi. **Il faut une voie express hors file pour tout produit `timeCritical`.**
+- La file suppose que chaque pièce naît d'une photo du coffre (`source_path` obligatoire). **La papeterie du jour J n'en a pas** : le visuel est composé par l'app (QR, prénoms, date). Il faut une seconde source de fichier de production.
+
+Sans ces deux points, toute la famille « avant le jour J » — la plus stratégique, puisqu'elle porte le QR et alimente tout le reste — est invendable.
 
 **2. Le dégressif codé est trop faible.** `volumeDiscountPercent` s'arrête à −15 % dès 3 pièces ; la grille §6 va jusqu'à −40 %. C'est notre avantage principal : il doit être dans le code.
 

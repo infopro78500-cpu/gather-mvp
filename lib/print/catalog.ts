@@ -60,6 +60,15 @@ export interface PrintProduct {
   /** Produit à date impérative (jour J) : doit sortir de la file normale
    *  par la voie express, sans attendre le seuil de lot. */
   timeCritical?: boolean;
+  /**
+   * D'où vient le visuel imprimé :
+   *  - "photo"     : une photo du coffre (défaut) — commande APRÈS l'événement
+   *  - "generated" : un visuel composé par l'app (QR du coffre, prénoms,
+   *                  date) — commandable À LA CRÉATION du coffre, avant le
+   *                  jour J, quand le coffre est encore vide
+   *  - "both"      : au choix du client, avec ou sans photo
+   */
+  source?: "photo" | "generated" | "both";
   formats: PrintFormat[];
 }
 
@@ -153,6 +162,7 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
     machine: "uv-flatbed",
     description: "Forex 3 mm, jour J — porte le QR du coffre",
     timeCritical: true,
+    source: "generated",
     formats: [
       { id: "50x70", widthCm: 50, heightCm: 70, priceCents: EUR(49.9), costCents: EUR(13.7) },
       { id: "70x100", widthCm: 70, heightCm: 100, priceCents: EUR(69.9), costCents: EUR(20.3) },
@@ -177,15 +187,36 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
       { id: "40x60", widthCm: 40, heightCm: 60, priceCents: EUR(89), costCents: EUR(14.2) },
     ],
   },
+  // ---- La papeterie du jour J : commandée À LA CRÉATION du coffre --------
+  // Ces produits ne partent pas d'une photo du coffre (il est encore vide) :
+  // l'app compose le visuel. Le présentoir porte le QR du coffre — il est
+  // donc à la fois un produit vendu ET le canal qui fait scanner les
+  // invités : plus de scans → plus de photos → plus d'impressions après.
   {
-    id: "marque-places",
-    label: "Marque-places photo",
+    id: "presentoir-qr",
+    label: "Présentoir de table",
     material: "plexi",
     machine: "uv-flatbed",
     description:
-      "Petites plaques plexi 6×9 à blanc sélectif — une photo par convive, livrées prêtes à poser",
+      "Chevalet plexi 10×15 portant le QR du coffre — un par table, pour que les invités rejoignent le coffre en un scan",
+    timeCritical: true,
+    source: "generated",
+    formats: [
+      { id: "lot-5", widthCm: 10, heightCm: 15, priceCents: EUR(29), costCents: EUR(6), packQuantity: 5 },
+      { id: "lot-10", widthCm: 10, heightCm: 15, priceCents: EUR(49), costCents: EUR(10), packQuantity: 10 },
+      { id: "lot-20", widthCm: 10, heightCm: 15, priceCents: EUR(79), costCents: EUR(18), packQuantity: 20 },
+    ],
+  },
+  {
+    id: "marque-places",
+    label: "Marque-places",
+    material: "plexi",
+    machine: "uv-flatbed",
+    description:
+      "Petites plaques plexi 6×9 à blanc sélectif — un par convive, avec ou sans photo, à poser sur les tables",
     signature: true,
     timeCritical: true,
+    source: "both",
     // 42 pièces par passe de plateau : le meilleur €/heure-machine de la
     // gamme. Prix au lot, la dégressivité est déjà dans les paliers.
     formats: [
@@ -299,6 +330,20 @@ export function orderTotalCents(
 /** Nombre de pièces physiques livrées par une variante (lots compris). */
 export function deliveredPieces(format: PrintFormat): number {
   return format.packQuantity ?? 1;
+}
+
+/**
+ * Le produit exige-t-il une photo du coffre ? Faux pour la papeterie du jour
+ * J, commandable à la création du coffre alors qu'il est encore vide — le
+ * visuel est composé par l'app (QR, prénoms, date).
+ */
+export function requiresCoffrePhoto(product: PrintProduct): boolean {
+  return (product.source ?? "photo") === "photo";
+}
+
+/** Produits commandables AVANT l'événement (papeterie du jour J). */
+export function preEventProducts(): PrintProduct[] {
+  return PRINT_PRODUCTS.filter((p) => !requiresCoffrePhoto(p));
 }
 
 /** Marge brute estimée d'une commande, en centimes (suivi interne). */
