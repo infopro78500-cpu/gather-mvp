@@ -69,6 +69,13 @@ export interface PrintProduct {
    *  - "both"      : au choix du client, avec ou sans photo
    */
   source?: "photo" | "generated" | "both";
+  /**
+   * Le produit embarque une puce NFC. Implique une chaîne de production
+   * supplémentaire : support à inlay intégré d'usine (jamais de pastille
+   * collée), encodage unitaire, contrôle par tap, puis verrouillage en
+   * lecture seule. Détail : docs/strategie/presentoir-nfc.md
+   */
+  nfc?: boolean;
   formats: PrintFormat[];
 }
 
@@ -193,18 +200,26 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
   // donc à la fois un produit vendu ET le canal qui fait scanner les
   // invités : plus de scans → plus de photos → plus d'impressions après.
   {
-    id: "presentoir-qr",
-    label: "Présentoir de table",
+    id: "presentoir",
+    label: "Présentoir de table NFC",
     material: "plexi",
     machine: "uv-flatbed",
     description:
-      "Chevalet plexi 10×15 portant le QR du coffre — un par table, pour que les invités rejoignent le coffre en un scan",
+      "Chevalet 10×15 avec puce NFC et QR — l'invité pose son téléphone ou scanne ; un présentoir par table, chacun encodé sur sa table",
     timeCritical: true,
-    source: "generated",
+    // Le visuel est composé par l'app (QR + table + consigne), avec une photo
+    // fournie par les mariés en option — le coffre est encore vide.
+    source: "both",
+    // Puce NFC : support à inlay INTÉGRÉ D'USINE, jamais de pastille collée
+    // par l'atelier (leçon Renka — c'est le seul geste qui produit du rebut).
+    // Encodage unitaire par table, puis VERROUILLAGE en lecture seule après
+    // contrôle : un présentoir traîne toute une soirée à portée de 80 personnes.
+    nfc: true,
     formats: [
-      { id: "lot-5", widthCm: 10, heightCm: 15, priceCents: EUR(29), costCents: EUR(6), packQuantity: 5 },
-      { id: "lot-10", widthCm: 10, heightCm: 15, priceCents: EUR(49), costCents: EUR(10), packQuantity: 10 },
-      { id: "lot-20", widthCm: 10, heightCm: 15, priceCents: EUR(79), costCents: EUR(18), packQuantity: 20 },
+      { id: "lot-5", widthCm: 10, heightCm: 15, priceCents: EUR(49), costCents: EUR(11), packQuantity: 5 },
+      { id: "lot-10", widthCm: 10, heightCm: 15, priceCents: EUR(89), costCents: EUR(20), packQuantity: 10 },
+      { id: "lot-15", widthCm: 10, heightCm: 15, priceCents: EUR(119), costCents: EUR(28), packQuantity: 15 },
+      { id: "lot-20", widthCm: 10, heightCm: 15, priceCents: EUR(149), costCents: EUR(36), packQuantity: 20 },
     ],
   },
   {

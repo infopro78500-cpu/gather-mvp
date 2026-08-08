@@ -14,12 +14,12 @@ const outDir = process.env.PRINT_ARTWORK_OUT ?? fs.mkdtempSync(path.join(os.tmpd
 
 describe("visuels générés de la papeterie du jour J", () => {
   it("rend un présentoir 10×15 à 300 dpi", async () => {
-    const format = getVariant("presentoir-qr", "lot-10")!.format;
+    const format = getVariant("presentoir", "lot-10")!.format;
     const png = await renderGeneratedArtwork(format, {
       joinUrl: "https://usegather.app/join?pin=123456",
       title: "Camille & Théo",
       subtitle: "Table 3",
-      callToAction: defaultCallToAction("presentoir-qr"),
+      callToAction: defaultCallToAction("presentoir"),
       pin: "123456",
     });
     fs.writeFileSync(path.join(outDir, "presentoir-10x15.png"), png);
@@ -50,12 +50,12 @@ describe("visuels générés de la papeterie du jour J", () => {
   it("garde un titre trop long dans les marges de la pièce", async () => {
     // Un nom d'événement long sortait coupé des deux côtés : la police doit
     // se réduire, puis le texte se tronquer, jamais déborder.
-    const format = getVariant("presentoir-qr", "lot-10")!.format;
+    const format = getVariant("presentoir", "lot-10")!.format;
     const png = await renderGeneratedArtwork(format, {
       joinUrl: "https://usegather.app/join?pin=222222",
       title: "Mariage de Camille Delacroix-Fontaine et Théodore Vandenberghe",
       subtitle: "Table 12 — les copains de la fac de médecine de Montpellier",
-      callToAction: defaultCallToAction("presentoir-qr"),
+      callToAction: defaultCallToAction("presentoir"),
       pin: "222222",
     });
     fs.writeFileSync(path.join(outDir, "presentoir-titre-long.png"), png);
@@ -77,7 +77,7 @@ describe("visuels générés de la papeterie du jour J", () => {
   });
 
   it("produit une image non vide et contrastée (le QR est bien dessiné)", async () => {
-    const format = getVariant("presentoir-qr", "lot-5")!.format;
+    const format = getVariant("presentoir", "lot-5")!.format;
     const png = await renderGeneratedArtwork(format, {
       joinUrl: "https://usegather.app/join?pin=111111",
       title: "Test",

@@ -187,11 +187,19 @@ export async function renderGeneratedArtwork(
     .toBuffer();
 }
 
-/** Consigne par défaut selon le produit. */
+/**
+ * Consigne par défaut selon le produit.
+ *
+ * Règle héritée de Renka : **on n'écrit jamais « NFC » sur le produit**.
+ * L'acronyme ne parle à personne — surtout pas à un invité de 60 ans — alors
+ * que le geste, lui, se comprend seul. On décrit donc l'action, pas la
+ * technologie. Le présentoir portant une puce ET un QR, la consigne couvre
+ * les deux gestes sans jamais nommer la technique.
+ */
 export function defaultCallToAction(productId: string): string {
   switch (productId) {
-    case "presentoir-qr":
-      return "Scannez pour partager vos photos";
+    case "presentoir":
+      return "Posez votre téléphone ou scannez";
     case "panneau-bienvenue":
       return "Scannez — partagez vos photos du jour";
     default:

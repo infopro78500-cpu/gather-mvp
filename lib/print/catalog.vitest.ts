@@ -110,7 +110,7 @@ describe("catalogue impression", () => {
   it("distingue la papeterie du jour J des produits nés d'une photo", () => {
     // Commandables à la création du coffre, alors qu'il est encore vide.
     const preEvent = preEventProducts().map((p) => p.id).sort();
-    expect(preEvent).toEqual(["marque-places", "panneau-bienvenue", "presentoir-qr"]);
+    expect(preEvent).toEqual(["marque-places", "panneau-bienvenue", "presentoir"]);
     // Tous à date impérative : ils doivent être livrés avant le jour J.
     for (const product of preEventProducts()) {
       expect(product.timeCritical).toBe(true);
