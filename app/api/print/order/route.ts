@@ -218,6 +218,25 @@ export async function POST(req: NextRequest) {
             orderRef,
             i
           );
+      // Contrôle qualité serveur : la mesure sharp fait foi. Le contrôle
+      // client plus haut repose sur des dimensions transmises — si la mesure
+      // navigateur a échoué (URL expirée, réseau), elles sont absentes et une
+      // pièce inimprimable arriverait ici sans avoir jamais été vérifiée.
+      if (
+        sourcePath &&
+        frozen.pxWidth &&
+        frozen.pxHeight &&
+        resolutionBadge(frozen.pxWidth, frozen.pxHeight, variant.format) === "insufficient"
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "RESOLUTION_TOO_LOW",
+            message: `Une photo est trop peu définie pour ${variant.product.label} ${variant.format.widthCm}×${variant.format.heightCm} cm — choisissez un format plus petit ou retirez-la.`,
+          },
+          { status: 422 }
+        );
+      }
       queued.push({
         event_id: eventId,
         order_ref: orderRef,

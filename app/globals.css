@@ -18,6 +18,17 @@ html, body {
   overflow-x: hidden;
 }
 
+/* Tunnel d'impression : entrées de modale et d'étapes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+}
+@keyframes sheetUp {
+  from { opacity: 0; transform: translateY(24px); }
+}
+@keyframes stepIn {
+  from { opacity: 0; transform: translateX(12px); }
+}
+
 .sapin-festif-icon {
   transition: transform 150ms ease-out, filter 150ms ease-out;
 }
