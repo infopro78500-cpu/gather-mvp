@@ -170,21 +170,45 @@ L'atelier a une **table de découpe Summa** : le gabarit se fabrique en interne,
 2. **Valider sur un tirage réel, puis figer.** Leur règle d'or n°5 : *« ne pas toucher `lib/impose.ts` sans nouveau tirage de contrôle »*. Le gabarit se mesure au raster sur une vraie sortie, pas sur le plan théorique.
 3. **Du jeu dans chaque case, et du fond perdu à l'impression.** Renka imprime 3 mm de débord et laisse 0,75 mm de jeu autour de la coupe : la pièce bouge un peu dans sa case, et sans débord on verrait un liseré blanc sur un bord. Même principe ici.
 4. **Le PVC plutôt que le bois.** Le bois travaille avec l'humidité, et un gabarit qui bouge de quelques dixièmes décale toute la planche. Le Forex est déjà en stock, dimensionnellement stable, et se découpe proprement sur la Summa.
-5. **La profondeur compte.** Le chevalet doit affleurer, sinon la tête d'impression passe trop haut ou accroche. À caler sur l'épaisseur réelle de l'acrylique à réception.
+5. **La profondeur compte.** Le chevalet doit affleurer, sinon la tête d'impression passe trop haut ou accroche. À caler sur l'épaisseur réelle de l'acrylique à réception — le fraisage de la F1612 permet une poche à la bonne profondeur, pas seulement une découpe traversante.
+
+*La répétabilité annoncée de la F1612 (**±0,05 mm**) est très au-delà de ce qu'un gabarit demande : la précision ne sera pas le facteur limitant, le calage du zéro machine le sera.*
 
 **Deux gabarits, ou un seul ?** Les deux tailles n'ont pas le même encombrement à plat (7,0 × 15,5 et 7,6 × 17,75) et pas le même rendement (18 et 16 pièces). Un gabarit par taille est plus simple et plus sûr qu'un gabarit mixte — et de toute façon **une planche = une matière, donc une taille** : on ne mélange pas.
 
-## 11. Le vrai apport de la Summa : elle débloque toute la gamme rigide
+## 11. La Summa F1612 avec fraisage — ce qu'elle débloque vraiment
 
-Le gabarit n'est que l'usage le plus immédiat. Une table de découpe à plat répond à une question restée ouverte dans l'audit de gamme (`gamme-produits-impression.md` §11.3) : **qui découpe les formats finis dans les plaques ?**
+**Machine confirmée : Summa F1612, zone de travail 160 × 120 cm, répétabilité ±0,05 mm, avec kit de fraisage** (module routeur haute fréquence), plus outils **V-Cut** et rainage.
 
-Conséquences pour le catalogue :
+Le gabarit n'est que l'usage le plus immédiat. Cette machine répond à une question restée ouverte dans tout l'audit de gamme (`gamme-produits-impression.md` §11.3) : **qui découpe les formats finis dans les plaques ?**
 
-- **Les formats rigides ne dépendent plus d'un sous-traitant.** On achète la plaque entière (le €/m² Antalis est quasi identique quel que soit le format), on imprime, on découpe au format fini. Le poste « découpe » sort des inconnues.
-- **La découpe de forme devient possible.** C'est un produit que le marché facture cher : SubliPix facture **+100 € HT minimum** une découpe non rectangulaire. Un présentoir en forme de cœur, une plaque contournée, un panneau arrondi — c'est du différenciant à coût quasi nul chez nous.
-- **Le rainage** (fold/crease) est disponible sur ces tables : de quoi fabriquer nous-mêmes des chevalets, des supports pliés, des marque-places sur pied — sans dépendre du fournisseur asiatique et de ses 8-12 jours de production.
+### Toute la gamme rigide actuelle passe
 
-Ce dernier point mérite d'être creusé : si la Summa sait rainer l'acrylique fin ou le Forex, **une partie de la papeterie du jour J peut se produire entièrement en interne**, sans stock ni délai d'import. Le chevalet NFC resterait acheté (pour la puce), mais les marque-places et les petits supports non-NFC pourraient être faits maison.
+| Format catalogue | Encombrement | Sur la table 160 × 120 |
+|---|---|---|
+| jusqu'à 80×120 | 120 × 80 cm | ✅ largement |
+| **100×150** (le plus grand du catalogue) | 150 × 100 cm | ✅ **passe**, dans le sens de la longueur |
+| 120×180 (hypothèse V2) | 180 × 120 cm | ❌ dépasse |
+
+**Le catalogue V1 est entièrement couvert.** Le plafond de découpe est ~160 × 120 cm.
+
+⚠️ **Point à anticiper pour la V2** : la Gongzheng imprimera jusqu'à **250 × 130 cm**, mais la Summa ne découpe que 160 × 120. À l'arrivée de la grande machine, **c'est la découpe qui deviendra le goulot**, pas l'impression. À garder en tête avant de promettre des formats géants.
+
+### Trois conséquences pour le catalogue
+
+- **Plus de sous-traitant sur le rigide.** On achète la plaque entière (chez Antalis le €/m² est quasi identique quel que soit le format), on imprime, on découpe au format fini. Le poste « découpe » sort des inconnues, et avec lui la dernière dépendance externe de la gamme.
+- **Le fraisage coupe ce qu'une lame ne peut pas** : Dibond 3 mm, acrylique, PVC, bois, MDF. C'est ce qui rend l'ensemble crédible — une lame traînante ne passe pas l'alu composite.
+- **La découpe de forme devient un différenciant à coût quasi nul.** SubliPix facture **+100 € HT minimum** une découpe non rectangulaire. Chez nous, c'est un fichier. Panneau contourné, plaque en forme de cœur, présentoir découpé à la silhouette des mariés.
+
+### Le V-Cut : fabriquer nos propres supports pliés
+
+L'outil **V-Cut** entaille en V un matériau rigide pour qu'il se plie proprement — c'est exactement la technique des chevalets et boîtiers en Forex ou Dibond.
+
+Autrement dit : **on peut fabriquer nous-mêmes des présentoirs, marque-places sur pied et supports pliés**, sans stock ni délai d'import. Le chevalet NFC reste acheté — c'est la puce intégrée qu'on ne sait pas faire — mais tout le reste de la papeterie du jour J devient produisible à la demande.
+
+*(Précision : le V-Cut et le rainage marchent sur le Forex, le Dibond et le carton. L'acrylique, lui, ne se plie pas — il se découpe et s'assemble.)*
+
+C'est ce qui transforme la contrainte d'appro : aujourd'hui les 8-12 jours d'import pèsent sur **toute** la famille amont ; demain ils ne pèsent plus que sur le seul produit à puce.
 
 ## 12. Le piège à éviter, tiré de Renka
 
