@@ -593,19 +593,40 @@ export default function PrintOrderFlow({ eventId, photos: input, onClose }: Prop
                       </div>
                     ) : (
                       // Les petits objets (plaque souvenir) n'ont rien à faire
-                      // sur un mur : on les montre posés, aux proportions et à
-                      // une taille qui suivent le format choisi.
-                      <div className="flex flex-col items-center gap-2 rounded-xl border border-slate-800 bg-gradient-to-b from-slate-800/60 to-slate-900 py-6">
-                        <span style={{ width: fmtO.w * 7 }}>
-                          <MaterialMockup
-                            productId={product.id}
-                            url={first.url}
-                            landscape={effLandscape}
-                            ratio={fmtO.w / fmtO.h}
-                          />
+                      // sur un mur : on les montre posés sur un meuble en
+                      // chêne, dans la même pièce claire que la scène murale,
+                      // aux proportions et à une taille qui suivent le format.
+                      <div className="relative overflow-hidden rounded-xl border border-[#B7A88E]/40 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.7)]">
+                        <div
+                          className="absolute inset-0"
+                          style={{
+                            background:
+                              "radial-gradient(ellipse 70% 55% at 50% 35%, rgba(255,252,243,0.9), transparent 72%), linear-gradient(180deg, #F2EBDF 0%, #E8DDCB 60%, #DDD0BC 100%)",
+                          }}
+                        />
+                        {/* dessus du meuble : le reflet de la plaque tombe dessus */}
+                        <div
+                          className="absolute inset-x-0 bottom-0 h-10"
+                          style={{
+                            background: "linear-gradient(180deg, #C9A478 0%, #B08C5E 100%)",
+                            boxShadow: "inset 0 2px 3px rgba(255,255,255,0.35)",
+                          }}
+                        />
+                        <div className="relative flex flex-col items-center pb-2 pt-6">
+                          <span style={{ width: fmtO.w * 7 }}>
+                            <MaterialMockup
+                              productId={product.id}
+                              url={first.url}
+                              landscape={effLandscape}
+                              ratio={fmtO.w / fmtO.h}
+                            />
+                          </span>
+                        </div>
+                        <span className="absolute left-2 top-2 rounded-md bg-stone-900/80 px-2 py-1 text-xs font-bold tabular-nums text-amber-300 shadow-sm">
+                          {fmtO.w} × {fmtO.h} cm
                         </span>
-                        <span className="text-xs font-semibold tabular-nums text-slate-300">
-                          {fmtO.w} × {fmtO.h} cm — à poser sur un meuble
+                        <span className="absolute bottom-1 right-2 rounded bg-[#F7F1E6]/85 px-1.5 py-0.5 text-[10px] font-medium text-[#5B4936]">
+                          à poser sur un meuble
                         </span>
                       </div>
                     ))}
