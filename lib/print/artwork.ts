@@ -44,6 +44,34 @@ function escapeXml(value: string): string {
 }
 
 /**
+ * Réduit la taille de police pour qu'une ligne tienne dans la largeur
+ * disponible, et tronque en dernier recours. Sans ça, un nom d'événement un
+ * peu long (« Mariage de Camille et Théo ») sort coupé des deux côtés sur le
+ * produit imprimé — le genre de défaut qu'on ne voit qu'une fois la pièce
+ * physique entre les mains.
+ *
+ * La largeur est estimée à partir du nombre de caractères (pas de métriques
+ * de police disponibles côté serveur) : ~0,55 em par caractère en normal,
+ * ~0,58 en gras. L'estimation est volontairement pessimiste.
+ */
+function fitLine(
+  text: string,
+  baseSize: number,
+  maxWidth: number,
+  bold: boolean
+): { content: string; size: number } {
+  const ratio = bold ? 0.58 : 0.55;
+  const minSize = baseSize * 0.55; // en dessous, ça devient illisible
+  let size = Math.min(baseSize, maxWidth / (text.length * ratio));
+  if (size >= minSize) return { content: text, size: Math.round(size) };
+
+  // Toujours trop long à la taille plancher : on tronque proprement.
+  size = minSize;
+  const maxChars = Math.max(4, Math.floor(maxWidth / (size * ratio)) - 1);
+  return { content: text.slice(0, maxChars).trimEnd() + "…", size: Math.round(size) };
+}
+
+/**
  * Le QR seul, en SVG — aucune police requise, que des rectangles, donc
  * insensible aux polices disponibles dans l'environnement d'exécution.
  * Les modules sont fusionnés par lignes horizontales pour limiter le nombre
@@ -87,9 +115,9 @@ function qrSvg(value: string, sizePx: number, x: number, y: number): string {
  * ⚠️ Le texte est rendu par le moteur SVG de sharp, qui dépend des polices
  * présentes dans l'environnement d'exécution. C'est exactement le genre de
  * détail qui marche en local et sort blanc en production (cf. les tirages
- * ratés de Renka) : `npm run check:print-artwork` génère un échantillon à
- * contrôler À L'ŒIL, et il faut le refaire une fois sur Vercel avant
- * d'ouvrir la vente.
+ * ratés de Renka). Pour produire des échantillons à contrôler À L'ŒIL :
+ *   PRINT_ARTWORK_OUT=<dossier> npx vitest run lib/print/artwork.vitest.ts
+ * À refaire une fois déployé sur Vercel, avant d'ouvrir la vente.
  */
 export async function renderGeneratedArtwork(
   format: PrintFormat,
@@ -130,15 +158,19 @@ export async function renderGeneratedArtwork(
 
   const qr = qrSvg(input.joinUrl, qrSize, qrX, qrY);
 
+  // Largeur utile : le texte ne doit jamais toucher le bord de la pièce.
+  const maxTextWidth = widthPx * 0.86;
+
   const text = (
     content: string | null | undefined,
     y: number,
     size: number,
     weight: string
-  ) =>
-    content
-      ? `<text x="${widthPx / 2}" y="${y}" font-family="Helvetica, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="${INK}" text-anchor="middle">${escapeXml(content)}</text>`
-      : "";
+  ) => {
+    if (!content) return "";
+    const fitted = fitLine(content, size, maxTextWidth, weight === "700" || weight === "600");
+    return `<text x="${widthPx / 2}" y="${y}" font-family="Helvetica, Arial, sans-serif" font-size="${fitted.size}" font-weight="${weight}" fill="${INK}" text-anchor="middle">${escapeXml(fitted.content)}</text>`;
+  };
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${widthPx}" height="${heightPx}" viewBox="0 0 ${widthPx} ${heightPx}">
   <rect width="${widthPx}" height="${heightPx}" fill="${PAPER}"/>

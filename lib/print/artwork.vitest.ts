@@ -47,6 +47,35 @@ describe("visuels générés de la papeterie du jour J", () => {
     expect(meta.height).toBe(11811);
   });
 
+  it("garde un titre trop long dans les marges de la pièce", async () => {
+    // Un nom d'événement long sortait coupé des deux côtés : la police doit
+    // se réduire, puis le texte se tronquer, jamais déborder.
+    const format = getVariant("presentoir-qr", "lot-10")!.format;
+    const png = await renderGeneratedArtwork(format, {
+      joinUrl: "https://usegather.app/join?pin=222222",
+      title: "Mariage de Camille Delacroix-Fontaine et Théodore Vandenberghe",
+      subtitle: "Table 12 — les copains de la fac de médecine de Montpellier",
+      callToAction: defaultCallToAction("presentoir-qr"),
+      pin: "222222",
+    });
+    fs.writeFileSync(path.join(outDir, "presentoir-titre-long.png"), png);
+
+    // Les marges latérales doivent rester vierges : si le texte débordait,
+    // on trouverait de l'encre à ras du bord. On balaie les pixels plutôt
+    // que de se fier à des statistiques agrégées.
+    const meta = await sharp(png).metadata();
+    const bandWidth = Math.floor(meta.width! * 0.04);
+    for (const left of [0, meta.width! - bandWidth]) {
+      const data = await sharp(png)
+        .extract({ left, top: 0, width: bandWidth, height: meta.height! })
+        .greyscale()
+        .raw()
+        .toBuffer();
+      const inked = [...data].filter((v) => v < 200).length;
+      expect(inked).toBe(0);
+    }
+  });
+
   it("produit une image non vide et contrastée (le QR est bien dessiné)", async () => {
     const format = getVariant("presentoir-qr", "lot-5")!.format;
     const png = await renderGeneratedArtwork(format, {
