@@ -18,7 +18,7 @@ Format : **NOW** (cycle en cours) / **NEXT** (prochain) / **LATER** (plus tard) 
 
 ## 🟡 NEXT
 
-- [ ] **[Impression — Nico]** **Présentoir NFC** : trouver un fournisseur de support à **inlay NTAG intégré d'usine** (sans lui, rien ne part), puis première série testée — encodage par table, verrouillage lecture seule, mesure de la zone d'antenne (`strategie/presentoir-nfc.md`)
+- [ ] **[Impression — Nico]** **Présentoir NFC** — fournisseur trouvé (chevalet tag inclus, 7×10 et 7,5×12). Reste : **prix d'achat par pièce + quantité minimale**, modèle de puce et position d'antenne, outil et temps d'encodage, gabarit de maintien sous la Mimaki, puis **première série testée** (`strategie/presentoir-nfc.md`)
 - [ ] **[Produit]** **Galeries par table** — un présentoir + un QR par table ; partage par défaut vers l'album commun avec étiquette de table, messagerie privée aux mariés en second geste (arbitrage tranché le 07/08). Rend le présentoir indispensable et dimensionné par le nombre de tables. Prérequis = chantier voie express + fichiers générés · à tester sur un vrai mariage avant industrialisation (`strategie/idee-galeries-par-table.md`)
 
 - [ ] **[Structure]** Trancher l'immatriculation (LU vs FR) → créer la société + pacte d'associés avec vesting + **cession de la marque INPI à la société**

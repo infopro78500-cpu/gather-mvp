@@ -50,8 +50,8 @@ if (expressMode) {
       notes: "COMMANDE DE SIMULATION — ne pas produire",
       dueDate,
       pieces: [
-        { productId: "presentoir", formatId: "lot-10", label: "Table 1" },
-        { productId: "presentoir", formatId: "lot-10", label: "Table 2" },
+        { productId: "presentoir", formatId: "moyen-lot-10", label: "Table 1" },
+        { productId: "presentoir", formatId: "moyen-lot-10", label: "Table 2" },
         { productId: "panneau-bienvenue", formatId: "70x100", label: "12 septembre 2026" },
       ],
     }),

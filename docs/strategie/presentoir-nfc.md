@@ -15,17 +15,30 @@ Le présentoir n'est donc pas un produit dérivé. C'est **le multiplicateur du 
 
 ---
 
-## 2. La décision la plus importante : ne jamais poser de puce
+## 2. La puce est intégrée d'usine — ✅ **RÉSOLU le 08/08/2026**
 
-C'est **la meilleure décision de tout le projet Renka**, et elle est transposable telle quelle (`lika-app/docs/process-fabrication.md`) :
+**Nico a le fournisseur : celui du Point Fixe de Renka, qui livre le chevalet avec le tag déjà à l'intérieur.**
 
-> « RENKA n'encapsule pas la puce NFC. Le fournisseur livre des cartes vierges déjà finies : matériau, puce + antenne déjà encapsulées, carte déjà découpée au format final. **Rien à assembler côté RENKA.** »
+C'est le cas idéal, et c'est exactement le modèle qui marche chez Renka pour leurs cartes (`lika-app/docs/process-fabrication.md`) :
 
-Autrement dit : l'atelier **imprime un décor sur un support déjà équipé**. Pas de sticker à coller, pas de découpe, pas de sandwich maison.
+> « RENKA n'encapsule pas la puce NFC. Le fournisseur livre des cartes vierges déjà finies : matériau, puce + antenne déjà encapsulées. **Rien à assembler côté RENKA.** »
 
-**À faire pareil.** Le geste « coller une pastille NFC au dos » est le seul de toute la chaîne qui produit du rebut, du décollement et des réclamations. Il faut sourcer un **présentoir/chevalet avec inlay NTAG intégré d'usine** — ou à défaut un socle avec le tag noyé. Ne concevons jamais un process où l'opérateur pose la puce.
+Conséquence : l'atelier **imprime un décor sur un support déjà équipé**. Pas de pastille à coller, donc **aucun rebut de pose**, aucun décollement, aucune réclamation sur ce point. Le geste le plus risqué de la chaîne n'existe pas.
 
-C'est le premier point à poser au frère et au fournisseur.
+Restent à la charge de l'atelier : l'impression, **l'encodage unitaire par table**, le contrôle par tap, et le verrouillage.
+
+> *Note d'honnêteté sur la version précédente de cette page : j'y écrivais qu'il ne fallait « jamais poser de puce ». La règle vaut chez Renka pour leurs cartes, où l'alternative intégrée est un produit standard — mais Renka lui-même utilise un tag rapporté sur son petit carré 10×10 du Pack Mobilité (~0,92 €). La règle n'est donc pas absolue ; elle l'est ici parce que le support intégré existe et qu'on l'a.*
+
+### Formats disponibles
+
+Le catalogue fournisseur propose deux tailles, reprises telles quelles (cotes Renka, `lika-app/src/lib/offer.ts`) :
+
+| Taille | Cotes (l × h) | Pièces par passe (plateau 610×420) | QR imprimé |
+|---|---|---|---|
+| **Moyen** | 7 × 10 cm | **36** | ~4,3 cm |
+| **Grand** | 7,5 × 12 cm | **25** | ~4,7 cm |
+
+Un QR de 4,3 cm se scanne largement (2 cm suffisent en pratique). Les deux tailles sont au catalogue ; le moyen est le format naturel sur une table dressée, le grand pour les tables d'honneur ou les mariages où le présentoir doit se voir de loin.
 
 ---
 
@@ -103,27 +116,38 @@ Pour un mariage, c'est excellent. **Un QR se photographie et se transfère par W
 
 Renka a validé une grille Point Fixe : **29 €** le présentoir 7×10 posé, **39 €** le 7,5×12, avec un escalier de +5 € par cran de visibilité. Mais **ils vendent une unité par commerçant, nous en vendons dix à quinze par mariage** — le prix unitaire ne se transpose pas, il faut raisonner en **prix par table dégressif**.
 
+**Moyen — 7 × 10 cm**
+
 | Lot | Prix | Par table | Coût estimé | Marge |
 |---|---|---|---|---|
-| 5 tables | **49,00 €** | 9,80 € | ~11 € | 78 % |
-| 10 tables | **89,00 €** | 8,90 € | ~20 € | 78 % |
-| 15 tables | **119,00 €** | 7,93 € | ~28 € | 76 % |
-| 20 tables | **149,00 €** | 7,45 € | ~36 € | 76 % |
+| 5 tables | **45,00 €** | 9,00 € | ~15 € | 67 % |
+| 10 tables | **79,00 €** | 7,90 € | ~28 € | 65 % |
+| 15 tables | **109,00 €** | 7,27 € | ~40 € | 63 % |
+| 20 tables | **135,00 €** | 6,75 € | ~52 € | 61 % |
 
-Coût estimé : support plexi avec inlay intégré (~1 € pièce, calé sur le tag du Pack Mobilité Renka à 0,92 €), impression, encodage, emballage. **À confirmer par devis fournisseur** — c'est le chiffre le plus incertain de cette page.
+**Grand — 7,5 × 12 cm**
 
-Comparaison : dix présentoirs Renka coûteraient 290 €. À 89 €, on est très en dessous — justifié par le volume et par le fait qu'on ne vend pas un support de prospection commerciale mais un accessoire d'événement.
+| Lot | Prix | Par table | Coût estimé | Marge |
+|---|---|---|---|---|
+| 5 tables | **55,00 €** | 11,00 € | ~18 € | 67 % |
+| 10 tables | **99,00 €** | 9,90 € | ~34 € | 66 % |
+| 15 tables | **135,00 €** | 9,00 € | ~49 € | 64 % |
+| 20 tables | **169,00 €** | 8,45 € | ~64 € | 62 % |
+
+Coût estimé : chevalet à tag intégré (~2 à 2,50 € pièce), impression, encodage unitaire, emballage. **Le prix d'achat du chevalet est le chiffre le plus incertain de cette page** — il vient directement du fournisseur, c'est la première donnée à obtenir.
+
+Comparaison : Renka vend son présentoir moyen **29 € l'unité** ; dix coûteraient 290 €. À 79 €, on est très en dessous — justifié par le volume et par le fait qu'on ne vend pas un support de prospection commerciale mais un accessoire d'événement, acheté par lot.
 
 ---
 
 ## 9. Ce qu'il faut décider avant de produire
 
-1. **Le fournisseur** : existe-t-il un présentoir/chevalet avec **inlay NTAG intégré d'usine** ? À quel prix, à partir de quelle quantité, dans quel format ? *(sans ça, tout le reste tombe)*
-2. **Le format** : 10×15 comme la version QR, ou plus petit type Renka (7×10) ? Posé ou avec socle ?
-3. **La matière** : plexi, bois, PVC ? Le métal est possible mais impose le blanc de soutien.
-4. **L'outil d'encodage** : encodeur USB + script, ou application mobile à la main ? Combien de temps par pièce ?
-5. **Le verrouillage** : confirmé en lecture seule après CQ ?
-6. **La zone d'antenne** : mesurée sur un échantillon réel avant de figer les gabarits photo.
+1. ~~**Le fournisseur**~~ → ✅ **RÉSOLU** : celui du Point Fixe de Renka, chevalet livré tag inclus. Reste à obtenir **le prix d'achat par pièce et la quantité minimale** — c'est la donnée qui verrouille la grille §8.
+2. ~~**Le format**~~ → ✅ deux tailles au catalogue : **7 × 10** et **7,5 × 12**, reprises du fournisseur.
+3. **Le modèle exact de puce** (NTAG213 ou 215 ?) et **la position de l'antenne** dans le chevalet — à mesurer sur un échantillon avant de figer les gabarits photo.
+4. **L'outil d'encodage** : encodeur USB + script, ou application mobile à la main ? **Combien de temps par pièce** — c'est ce qui détermine si un mariage de 15 tables reste rentable.
+5. **Le verrouillage** en lecture seule après contrôle : confirmé, et avec quel outil ?
+6. **L'impression sur ce support** : le chevalet passe-t-il sous la Mimaki tel quel, ou faut-il un gabarit de maintien ? (chez Renka, les cartes sont tenues dans un gabarit 23 cases — il faudra l'équivalent)
 
 ---
 

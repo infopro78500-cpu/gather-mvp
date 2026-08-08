@@ -205,21 +205,28 @@ export const PRINT_PRODUCTS: readonly PrintProduct[] = [
     material: "plexi",
     machine: "uv-flatbed",
     description:
-      "Chevalet 10×15 avec puce NFC et QR — l'invité pose son téléphone ou scanne ; un présentoir par table, chacun encodé sur sa table",
+      "Chevalet à puce NFC intégrée, avec QR — l'invité pose son téléphone ou scanne ; un présentoir par table, chacun encodé sur sa table",
     timeCritical: true,
     // Le visuel est composé par l'app (QR + table + consigne), avec une photo
     // fournie par les mariés en option — le coffre est encore vide.
     source: "both",
-    // Puce NFC : support à inlay INTÉGRÉ D'USINE, jamais de pastille collée
-    // par l'atelier (leçon Renka — c'est le seul geste qui produit du rebut).
-    // Encodage unitaire par table, puis VERROUILLAGE en lecture seule après
-    // contrôle : un présentoir traîne toute une soirée à portée de 80 personnes.
+    // Puce NFC INTÉGRÉE D'USINE : le fournisseur (le même que le Point Fixe
+    // de Renka) livre le chevalet tag inclus. Aucune pastille à coller par
+    // l'atelier — donc aucun rebut de pose. Restent à l'atelier : impression,
+    // encodage unitaire par table, contrôle par tap, puis VERROUILLAGE en
+    // lecture seule (un présentoir traîne toute une soirée à portée de tous).
     nfc: true,
+    // Deux tailles au catalogue fournisseur, reprises telles quelles.
+    // Rendement plateau 610×420 : 36 pièces par passe en moyen, 25 en grand.
     formats: [
-      { id: "lot-5", widthCm: 10, heightCm: 15, priceCents: EUR(49), costCents: EUR(11), packQuantity: 5 },
-      { id: "lot-10", widthCm: 10, heightCm: 15, priceCents: EUR(89), costCents: EUR(20), packQuantity: 10 },
-      { id: "lot-15", widthCm: 10, heightCm: 15, priceCents: EUR(119), costCents: EUR(28), packQuantity: 15 },
-      { id: "lot-20", widthCm: 10, heightCm: 15, priceCents: EUR(149), costCents: EUR(36), packQuantity: 20 },
+      { id: "moyen-lot-5", widthCm: 7, heightCm: 10, priceCents: EUR(45), costCents: EUR(15), packQuantity: 5 },
+      { id: "moyen-lot-10", widthCm: 7, heightCm: 10, priceCents: EUR(79), costCents: EUR(28), packQuantity: 10 },
+      { id: "moyen-lot-15", widthCm: 7, heightCm: 10, priceCents: EUR(109), costCents: EUR(40), packQuantity: 15 },
+      { id: "moyen-lot-20", widthCm: 7, heightCm: 10, priceCents: EUR(135), costCents: EUR(52), packQuantity: 20 },
+      { id: "grand-lot-5", widthCm: 7.5, heightCm: 12, priceCents: EUR(55), costCents: EUR(18), packQuantity: 5 },
+      { id: "grand-lot-10", widthCm: 7.5, heightCm: 12, priceCents: EUR(99), costCents: EUR(34), packQuantity: 10 },
+      { id: "grand-lot-15", widthCm: 7.5, heightCm: 12, priceCents: EUR(135), costCents: EUR(49), packQuantity: 15 },
+      { id: "grand-lot-20", widthCm: 7.5, heightCm: 12, priceCents: EUR(169), costCents: EUR(64), packQuantity: 20 },
     ],
   },
   {

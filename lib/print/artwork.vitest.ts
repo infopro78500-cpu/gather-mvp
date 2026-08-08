@@ -13,8 +13,8 @@ import { getVariant } from "./catalog";
 const outDir = process.env.PRINT_ARTWORK_OUT ?? fs.mkdtempSync(path.join(os.tmpdir(), "artwork-"));
 
 describe("visuels générés de la papeterie du jour J", () => {
-  it("rend un présentoir 10×15 à 300 dpi", async () => {
-    const format = getVariant("presentoir", "lot-10")!.format;
+  it("rend un présentoir 7×10 à 300 dpi", async () => {
+    const format = getVariant("presentoir", "moyen-lot-10")!.format;
     const png = await renderGeneratedArtwork(format, {
       joinUrl: "https://usegather.app/join?pin=123456",
       title: "Camille & Théo",
@@ -22,12 +22,12 @@ describe("visuels générés de la papeterie du jour J", () => {
       callToAction: defaultCallToAction("presentoir"),
       pin: "123456",
     });
-    fs.writeFileSync(path.join(outDir, "presentoir-10x15.png"), png);
+    fs.writeFileSync(path.join(outDir, "presentoir-7x10.png"), png);
 
     const meta = await sharp(png).metadata();
-    // 10 × 15 cm à 300 dpi.
-    expect(meta.width).toBe(1181);
-    expect(meta.height).toBe(1772);
+    // 7 × 10 cm à 300 dpi.
+    expect(meta.width).toBe(827);
+    expect(meta.height).toBe(1181);
     expect(meta.format).toBe("png");
   });
 
@@ -50,7 +50,7 @@ describe("visuels générés de la papeterie du jour J", () => {
   it("garde un titre trop long dans les marges de la pièce", async () => {
     // Un nom d'événement long sortait coupé des deux côtés : la police doit
     // se réduire, puis le texte se tronquer, jamais déborder.
-    const format = getVariant("presentoir", "lot-10")!.format;
+    const format = getVariant("presentoir", "moyen-lot-10")!.format;
     const png = await renderGeneratedArtwork(format, {
       joinUrl: "https://usegather.app/join?pin=222222",
       title: "Mariage de Camille Delacroix-Fontaine et Théodore Vandenberghe",
@@ -77,7 +77,7 @@ describe("visuels générés de la papeterie du jour J", () => {
   });
 
   it("produit une image non vide et contrastée (le QR est bien dessiné)", async () => {
-    const format = getVariant("presentoir", "lot-5")!.format;
+    const format = getVariant("presentoir", "moyen-lot-5")!.format;
     const png = await renderGeneratedArtwork(format, {
       joinUrl: "https://usegather.app/join?pin=111111",
       title: "Test",
