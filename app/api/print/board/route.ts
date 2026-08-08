@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
-import { materialLabel } from "@/lib/print/email";
+import { materialLabel, sendCustomerShippedEmail } from "@/lib/print/email";
 import { getVariant, resolutionBadge } from "@/lib/print/catalog";
 import { MATERIAL_LABELS } from "@/lib/print/catalog";
 import {
@@ -273,7 +273,35 @@ export async function POST(request: NextRequest) {
         if (!body.ids?.length)
           return NextResponse.json({ error: "ids manquants." }, { status: 400 });
         await markOrderShipped(body.ids);
-        return NextResponse.json({ ok: true });
+        // La promesse du tunnel (« vous recevrez un email dès l'expédition »)
+        // se tient ICI — best-effort : un email raté ne doit pas faire croire
+        // à l'atelier que l'expédition n'est pas enregistrée.
+        const supabase = getSupabaseAdminClient();
+        let emailed = 0;
+        if (supabase) {
+          const { data } = await supabase
+            .from("print_queue")
+            .select("order_ref, customer_name, customer_email")
+            .in("id", body.ids.slice(0, 200));
+          const seen = new Map<string, { name: string; email: string }>();
+          for (const r of (data ?? []) as {
+            order_ref: string;
+            customer_name: string;
+            customer_email: string;
+          }[]) {
+            if (!seen.has(r.order_ref))
+              seen.set(r.order_ref, { name: r.customer_name, email: r.customer_email });
+          }
+          for (const [ref, c] of seen) {
+            try {
+              await sendCustomerShippedEmail({ to: c.email, name: c.name, orderRef: ref });
+              emailed += 1;
+            } catch (e) {
+              console.warn(`[print] email d'expédition ${ref} non parti`, e);
+            }
+          }
+        }
+        return NextResponse.json({ ok: true, emailed });
       }
       default:
         return NextResponse.json({ error: "Action inconnue." }, { status: 400 });

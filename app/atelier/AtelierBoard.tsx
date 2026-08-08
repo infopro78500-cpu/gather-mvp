@@ -68,6 +68,30 @@ interface BoardOrder {
   inQueue: number;
   status: "en_file" | "en_lot" | "imprimee" | "expediee";
   oldest: string;
+  items?: { product: string; format: string; count: number }[];
+  address?: Record<string, unknown> | null;
+}
+
+/** « 2 × Panneau Forex 30×40 cm · 1 × Poster 50×70 cm » — le contenu du colis. */
+function orderItemsLabel(items?: BoardOrder["items"]): string {
+  if (!items?.length) return "";
+  return items
+    .map((it) => {
+      const v = getVariant(it.product, it.format);
+      const label = v
+        ? `${v.product.label} ${v.format.widthCm}×${v.format.heightCm} cm`
+        : `${it.product} ${it.format}`;
+      return `${it.count} × ${label}`;
+    })
+    .join(" · ");
+}
+
+/** Adresse en une ligne (l'étiquette du colis). */
+function orderAddressLabel(address?: BoardOrder["address"]): string {
+  if (!address) return "";
+  return [address.line1, address.postalCode, address.city]
+    .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+    .join(", ");
 }
 
 interface BoardData {
@@ -419,6 +443,7 @@ export default function AtelierBoard({ cle }: { cle: string }) {
   const [openDone, setOpenDone] = useState<Record<string, boolean>>({});
   const [orderTab, setOrderTab] = useState<"ship" | "progress" | "shipped">("ship");
   const [bulkSel, setBulkSel] = useState<Set<string>>(new Set());
+  const [copiedAddr, setCopiedAddr] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [daysWindow, setDaysWindow] = useState(7);
   const [historyLimit, setHistoryLimit] = useState(10);
@@ -1161,51 +1186,85 @@ export default function AtelierBoard({ cle }: { cle: string }) {
                         {day}
                       </h3>
                       <ul className="divide-y divide-[var(--at-soft)]">
-                        {orders.map((order) => (
-                          <li
-                            key={order.order_ref}
-                            className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm"
-                          >
-                            <label className="flex min-w-0 items-center gap-2.5">
-                              <input
-                                type="checkbox"
-                                checked={bulkSel.has(order.order_ref)}
-                                onChange={(e) =>
-                                  setBulkSel((s) => {
-                                    const next = new Set(s);
-                                    if (e.target.checked) next.add(order.order_ref);
-                                    else next.delete(order.order_ref);
-                                    return next;
-                                  })
-                                }
-                                className="h-4 w-4 shrink-0"
-                              />
-                              <span className="truncate">
-                                <span className="font-medium">{order.order_ref}</span> ·{" "}
-                                {order.customer_name}{" "}
-                                <span className="text-[var(--at-text-2)]">
-                                  ({order.customer_email}) · {order.total} pièce
-                                  {order.total > 1 ? "s" : ""}
-                                </span>
-                              </span>
-                            </label>
-                            <button
-                              disabled={busy}
-                              onClick={() =>
-                                twoClick(`ship-${order.order_ref}`, () =>
-                                  void action(
-                                    { action: "ship", ids: order.ids },
-                                    `Commande ${order.order_ref} marquée expédiée.`
-                                  )
-                                )
-                              }
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-[#0F9D8A] px-3 py-2 text-sm font-medium text-white hover:bg-[#0c8172] disabled:opacity-40"
-                            >
-                              <IconBox />
-                              {confirmKey === `ship-${order.order_ref}` ? "Confirmer ?" : "Marquer expédiée"}
-                            </button>
-                          </li>
-                        ))}
+                        {orders.map((order) => {
+                          const addr = orderAddressLabel(order.address);
+                          const contenu = orderItemsLabel(order.items);
+                          return (
+                            <li key={order.order_ref} className="py-2.5 text-sm">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <label className="flex min-w-0 items-center gap-2.5">
+                                  <input
+                                    type="checkbox"
+                                    checked={bulkSel.has(order.order_ref)}
+                                    onChange={(e) =>
+                                      setBulkSel((s) => {
+                                        const next = new Set(s);
+                                        if (e.target.checked) next.add(order.order_ref);
+                                        else next.delete(order.order_ref);
+                                        return next;
+                                      })
+                                    }
+                                    className="h-4 w-4 shrink-0"
+                                  />
+                                  <span className="truncate">
+                                    <span className="font-medium">{order.order_ref}</span> ·{" "}
+                                    {order.customer_name}{" "}
+                                    <span className="text-[var(--at-text-2)]">
+                                      ({order.customer_email}) · {order.total} pièce
+                                      {order.total > 1 ? "s" : ""}
+                                    </span>
+                                  </span>
+                                </label>
+                                <button
+                                  disabled={busy}
+                                  onClick={() =>
+                                    twoClick(`ship-${order.order_ref}`, () =>
+                                      void action(
+                                        { action: "ship", ids: order.ids },
+                                        `Commande ${order.order_ref} marquée expédiée.`
+                                      )
+                                    )
+                                  }
+                                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#0F9D8A] px-3 py-2 text-sm font-medium text-white hover:bg-[#0c8172] disabled:opacity-40"
+                                >
+                                  <IconBox />
+                                  {confirmKey === `ship-${order.order_ref}` ? "Confirmer ?" : "Marquer expédiée"}
+                                </button>
+                              </div>
+                              {/* Le colis : quoi emballer, où l'envoyer — les deux
+                                  informations sans lesquelles ce bouton ne sert à rien. */}
+                              {(contenu || addr) && (
+                                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 pl-6 text-[13px] text-[var(--at-text-2)]">
+                                  {contenu && <span>📦 {contenu}</span>}
+                                  {addr ? (
+                                    <span className="inline-flex items-center gap-1.5">
+                                      📍 {addr}
+                                      <button
+                                        onClick={() => {
+                                          const label = `${order.customer_name}\n${addr.replace(", ", "\n")}`;
+                                          navigator.clipboard
+                                            ?.writeText(label)
+                                            .then(() => {
+                                              setCopiedAddr(order.order_ref);
+                                              setTimeout(() => setCopiedAddr(null), 2000);
+                                            })
+                                            .catch(() => {});
+                                        }}
+                                        className="rounded border border-[var(--at-soft)] px-1.5 py-0.5 text-[11px] hover:bg-[var(--at-hover)]"
+                                      >
+                                        {copiedAddr === order.order_ref ? "Copiée ✓" : "Copier"}
+                                      </button>
+                                    </span>
+                                  ) : (
+                                    <span className="font-medium text-[#B4232A]">
+                                      ⚠️ Adresse manquante — contacter le client avant d&apos;expédier
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   ))}

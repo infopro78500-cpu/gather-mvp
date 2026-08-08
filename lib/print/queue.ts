@@ -369,7 +369,7 @@ export async function maybeBuildBatch(opts?: {
     try {
       const links: (string | null)[] = [];
       for (const row of rows) links.push(await signPrintFile(supabase, row.file_path));
-      await sendBatchEmail(batchId, rows, links, dueAt);
+      await sendBatchEmail(batchId, rows, links, dueAt, SIGNED_LINK_DAYS);
       await supabase
         .from("print_batches")
         .update({ emailed_at: new Date().toISOString() })
@@ -683,6 +683,12 @@ export interface OrderSummary {
   inQueue: number;
   status: "en_file" | "en_lot" | "imprimee" | "expediee";
   oldest: string;
+  /** Contenu du colis, agrégé par produit/format — sans lui l'atelier ne sait
+   *  pas quoi emballer depuis l'écran d'expédition. */
+  items: { product: string; format: string; count: number }[];
+  /** Adresse de livraison (première pièce de la commande) — c'est L'ÉTIQUETTE
+   *  du colis : elle doit être visible là où on clique « expédiée ». */
+  address: Record<string, unknown> | null;
 }
 
 /**
@@ -730,7 +736,16 @@ export async function listRecentOrders(days = 14): Promise<OrderSummary[]> {
     const allShipped = g.every((r) => r.shipped_at);
     const allPrinted =
       inQueue === 0 && g.every((r) => r.batch_id && printed.get(r.batch_id));
+    const itemMap = new Map<string, { product: string; format: string; count: number }>();
+    for (const r of g) {
+      const key = `${r.product}|${r.format}`;
+      const it = itemMap.get(key);
+      if (it) it.count += 1;
+      else itemMap.set(key, { product: r.product, format: r.format, count: 1 });
+    }
     orders.push({
+      items: [...itemMap.values()],
+      address: (g[0].shipping_address as Record<string, unknown> | null) ?? null,
       order_ref: ref,
       customer_name: g[0].customer_name,
       customer_email: g[0].customer_email,
@@ -828,14 +843,22 @@ export async function queueStatus(): Promise<{
 }> {
   const supabase = getClient();
   if (!supabase) return { pending: 0, oldestPendingAt: null };
-  const { data, error } = await supabase
+  // Comptage côté base (head) : ne jamais rapatrier toute la file pour la
+  // compter — en pic de saison c'est des milliers de lignes par appel.
+  const { count, error } = await supabase
+    .from("print_queue")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
+  if (error) throw new Error(`queue status : ${error.message}`);
+  const { data: first, error: firstErr } = await supabase
     .from("print_queue")
     .select("created_at")
     .eq("status", "pending")
-    .order("created_at", { ascending: true });
-  if (error) throw new Error(`queue status : ${error.message}`);
+    .order("created_at", { ascending: true })
+    .limit(1);
+  if (firstErr) throw new Error(`queue status : ${firstErr.message}`);
   return {
-    pending: data?.length ?? 0,
-    oldestPendingAt: data?.[0]?.created_at ?? null,
+    pending: count ?? 0,
+    oldestPendingAt: first?.[0]?.created_at ?? null,
   };
 }

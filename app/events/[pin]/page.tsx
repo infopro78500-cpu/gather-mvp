@@ -116,6 +116,10 @@ const pin = params.pin;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // L'impression n'est proposée que lorsque la vente est ouverte : sans ce
+  // garde, le bouton mènerait à une erreur « impression pas encore ouverte »
+  // au moment de commander (l'API est fermée par PRINT_ENABLED côté serveur).
+  const printEnabled = process.env.NEXT_PUBLIC_PRINT_ENABLED === "1";
   const [printFlowOpen, setPrintFlowOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -1175,7 +1179,7 @@ const pin = params.pin;
                         supposait de dénicher « Actions avancées » puis « Mode
                         sélection » — trois étapes pour l'action qui monétise
                         le coffre. */}
-                    {hasPhotos && !selectionMode && (
+                    {printEnabled && hasPhotos && !selectionMode && (
                       <button
                         type="button"
                         onClick={() => {
@@ -1382,15 +1386,17 @@ const pin = params.pin;
                                 {selectedPhotos.length} photo(s) sélectionnée(s)
                               </p>
                               <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setPrintFlowOpen(true)}
-                                  disabled={selectedPhotos.length === 0}
-                                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-slate-950 shadow-sm transition-colors hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                  <span aria-hidden>🖨️</span>
-                                  Imprimer
-                                </button>
+                                {printEnabled && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPrintFlowOpen(true)}
+                                    disabled={selectedPhotos.length === 0}
+                                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-slate-950 shadow-sm transition-colors hover:bg-amber-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                                  >
+                                    <span aria-hidden>🖨️</span>
+                                    Imprimer
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={handleDeleteSelected}
@@ -1596,7 +1602,7 @@ const pin = params.pin;
         )}
       </div>
 
-      {printFlowOpen && event && photosToPrint.length > 0 && (
+      {printEnabled && printFlowOpen && event && photosToPrint.length > 0 && (
         <PrintOrderFlow
           eventId={event.id}
           photos={photosToPrint.map((photo) => ({

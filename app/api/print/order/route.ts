@@ -7,7 +7,9 @@ import {
   resolutionBadge,
 } from "@/lib/print/catalog";
 import { defaultCallToAction, renderGeneratedArtwork } from "@/lib/print/artwork";
+import { pieceLabel, sendCustomerOrderEmail } from "@/lib/print/email";
 import {
+  PRINT_BUCKET,
   enqueuePieces,
   freezeSourceFile,
   maybeBuildBatch,
@@ -41,7 +43,10 @@ function makeOrderRef(): string {
   const yy = String(d.getFullYear()).slice(2);
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
-  const rand = Math.random().toString(36).slice(2, 6);
+  // 8 caractères aléatoires (et non 4) : la référence est LA clé de
+  // regroupement des commandes — une collision fusionnerait deux clients
+  // dans le même colis à l'écran atelier.
+  const rand = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
   return `UG-${yy}${mm}${dd}-${rand}`;
 }
 
@@ -113,10 +118,40 @@ export async function POST(req: NextRequest) {
   let dueAt: string | null = null;
   if (dueDateRaw) {
     const parsed = new Date(dueDateRaw);
-    if (Number.isNaN(parsed.getTime())) {
+    // Bornes de bon sens : une échéance passée déclencherait un lot « URGENT
+    // à livrer pour hier », une échéance à dix ans est une saisie erronée.
+    const min = Date.now() - 24 * 60 * 60_000;
+    const max = Date.now() + 730 * 24 * 60 * 60_000;
+    if (
+      Number.isNaN(parsed.getTime()) ||
+      parsed.getTime() < min ||
+      parsed.getTime() > max
+    ) {
       return NextResponse.json({ success: false, error: "INVALID_DUE_DATE" }, { status: 422 });
     }
     dueAt = parsed.toISOString();
+  }
+
+  // Garde anti-abus : la route est publique (les invités commandent sans
+  // compte) et chaque pièce déclenche une copie de fichier. Un même coffre
+  // n'a aucune raison légitime de dépasser 200 pièces en 24 h.
+  {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
+    const { count } = await supabase
+      .from("print_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", eventId)
+      .gt("created_at", cutoff);
+    if ((count ?? 0) + piecesInput.length > 200) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "TOO_MANY_PIECES",
+          message: "Trop de commandes sur ce coffre aujourd'hui — réessayez plus tard.",
+        },
+        { status: 429 }
+      );
+    }
   }
 
   // Validation de chaque pièce : variante au catalogue, et selon le produit
@@ -199,6 +234,20 @@ export async function POST(req: NextRequest) {
   // expire en 24 h / 7 jours, pas la commande) — ou visuel composé par l'app
   // pour la papeterie du jour J, qui n'a pas de photo source.
   const queued: QueuedPiece[] = [];
+  // Chemins déjà copiés dans print-files : à nettoyer si la commande échoue
+  // en route — sinon chaque échec laisse des fichiers orphelins que la purge
+  // (indexée sur les lignes print_queue) ne verra jamais.
+  const frozenPaths: string[] = [];
+  const dropFrozen = async () => {
+    if (!frozenPaths.length) return;
+    await supabase.storage
+      .from(PRINT_BUCKET)
+      .remove(frozenPaths)
+      .then(
+        () => {},
+        () => {} // best-effort : un orphelin vaut mieux qu'une 500 en cascade
+      );
+  };
   try {
     for (const [i, piece] of piecesInput.entries()) {
       const variant = getVariant(String(piece.productId), String(piece.formatId));
@@ -218,6 +267,8 @@ export async function POST(req: NextRequest) {
             orderRef,
             i
           );
+      frozenPaths.push(frozen.filePath);
+      if (frozen.thumbPath) frozenPaths.push(frozen.thumbPath);
       // Contrôle qualité serveur : la mesure sharp fait foi. Le contrôle
       // client plus haut repose sur des dimensions transmises — si la mesure
       // navigateur a échoué (URL expirée, réseau), elles sont absentes et une
@@ -228,6 +279,7 @@ export async function POST(req: NextRequest) {
         frozen.pxHeight &&
         resolutionBadge(frozen.pxWidth, frozen.pxHeight, variant.format) === "insufficient"
       ) {
+        await dropFrozen();
         return NextResponse.json(
           {
             success: false,
@@ -263,6 +315,7 @@ export async function POST(req: NextRequest) {
     await enqueuePieces(queued);
   } catch (e) {
     console.error("[print] mise en file échouée", e);
+    await dropFrozen();
     return NextResponse.json(
       { success: false, error: "ENQUEUE_FAILED", message: (e as Error).message },
       { status: 500 }
@@ -272,6 +325,31 @@ export async function POST(req: NextRequest) {
   // Construction des lots APRÈS la réponse (pattern Renka after()) — le
   // client ne voit jamais l'attente ; le cron rattrape le reste.
   after(async () => {
+    // Confirmation client best-effort : le seul reçu du client sinon est un
+    // écran déjà fermé. Ne bloque ni la commande ni la construction des lots.
+    try {
+      const counts = new Map<string, { label: string; count: number }>();
+      for (const q of queued) {
+        const key = `${q.product}|${q.format}`;
+        const it = counts.get(key);
+        if (it) it.count += 1;
+        else counts.set(key, { label: pieceLabel(q.product, q.format), count: 1 });
+      }
+      await sendCustomerOrderEmail({
+        to: customerEmail,
+        name: customerName,
+        orderRef,
+        items: [...counts.values()],
+        totalCents,
+        address: shippingAddress as {
+          line1?: unknown;
+          postalCode?: unknown;
+          city?: unknown;
+        } | null,
+      });
+    } catch (e) {
+      console.warn("[print] email de confirmation client non parti", e);
+    }
     try {
       // Voie express d'abord : une pièce datée ne doit jamais attendre le
       // seuil de lot. Elle part dès la commande.
