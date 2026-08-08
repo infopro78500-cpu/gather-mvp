@@ -18,7 +18,7 @@ Format : **NOW** (cycle en cours) / **NEXT** (prochain) / **LATER** (plus tard) 
 
 ## 🟡 NEXT
 
-- [ ] **[Produit — équipe]** Trancher les **galeries par table** (un présentoir + un QR par table, mots privés aux mariés) — l'idée rend le présentoir indispensable et dimensionné par le nombre de tables (`strategie/idee-galeries-par-table.md`). Prérequis technique = le chantier voie express + fichiers générés
+- [ ] **[Produit]** **Galeries par table** — un présentoir + un QR par table ; partage par défaut vers l'album commun avec étiquette de table, messagerie privée aux mariés en second geste (arbitrage tranché le 07/08). Rend le présentoir indispensable et dimensionné par le nombre de tables. Prérequis = chantier voie express + fichiers générés · à tester sur un vrai mariage avant industrialisation (`strategie/idee-galeries-par-table.md`)
 
 - [ ] **[Structure]** Trancher l'immatriculation (LU vs FR) → créer la société + pacte d'associés avec vesting + **cession de la marque INPI à la société**
 - [ ] **[Tech]** Supabase offre payante (prérequis relance — leçon incident juillet)

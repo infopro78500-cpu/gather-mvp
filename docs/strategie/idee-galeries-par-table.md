@@ -46,15 +46,22 @@ Variante grand format, dans notre gamme actuelle : une **fresque des tables** (F
 
 ## 4. Les arbitrages à trancher
 
-### 4.1 Privé ou partagé ? — la décision structurante
+### 4.1 Privé ou partagé ? — ✅ **TRANCHÉ le 07/08/2026 (Nico)**
 
-L'idée telle qu'énoncée rend la galerie de table **privée aux mariés**. Attention à l'effet de bord : si les photos des invités partent dans des galeries privées, **l'album commun s'appauvrit** — or c'est lui le cœur du produit (« tout le monde repart avec tout »).
+**Deux gestes distincts sur le même QR, et le partage reste la voie par défaut.**
 
-**Recommandation : deux gestes distincts sur le même QR.**
-- *« Partager avec tout le monde »* → le coffre commun, comme aujourd'hui, avec en plus l'étiquette de la table.
-- *« Laisser un mot aux mariés »* → la galerie de table, privée.
+| Geste | Destination | Nature |
+|---|---|---|
+| **Partager** *(défaut)* | le coffre commun, **avec l'étiquette de la table** | le flux normal — l'album reste riche, et se parcourt table par table |
+| **Envoyer un mot aux mariés** | une **boîte privée**, visible des seuls mariés | un **message** : un petit mot + une ou deux photos jointes |
 
-L'album commun garde sa richesse, les mariés gagnent une couche intime, et l'invité comprend en une seconde ce qu'il fait. C'est aussi plus honnête : personne ne dépose « en privé » sans le savoir.
+Deux conséquences de formulation qui comptent :
+
+**Le privé n'est pas une « galerie parallèle », c'est une messagerie.** L'unité n'est pas la photo mais **le message** : un texte, avec zéro à quelques photos jointes. C'est ce qui le rend intime plutôt que redondant avec l'album — et c'est exactement la matière du livre d'or imprimé (§3).
+
+**L'album commun gagne une dimension « table ».** Les photos partagées portent l'étiquette de leur table : l'album se filtre et se parcourt table par table. C'est utile aux mariés, mais c'est surtout amusant pour les invités eux-mêmes — chacun va voir ce qu'ont fait les autres tables. Ça nourrit la dynamique de table du §1.
+
+**Point à cadrer à l'implémentation** : plutôt qu'une limite dure à deux photos, prévoir un **plafond souple** (3 à 5 pièces jointes par message). Assez pour raconter quelque chose, assez peu pour que le canal privé reste une lettre et ne devienne pas un second dépôt — et pour que le livre d'or imprimé reste tenable en pages.
 
 ### 4.2 Le texte est un type de contenu nouveau
 
@@ -85,11 +92,13 @@ Un espace privé où l'on écrit librement lors d'une soirée arrosée appelle u
 
 L'idée mérite d'être retenue, pour une raison qui n'est pas la fonctionnalité elle-même : **elle transforme le meilleur canal d'acquisition du produit en consommable obligatoire, dimensionné par le nombre de tables**. C'est rare qu'une idée produit et une idée commerciale coïncident aussi bien.
 
-Séquence proposée :
-1. **Trancher l'arbitrage §4.1** (deux gestes distincts plutôt que tout privé) — c'est la décision qui conditionne le reste.
+Séquence :
+1. ~~Trancher l'arbitrage §4.1~~ → **fait le 07/08/2026** : partage par défaut avec étiquette de table, messagerie privée en second geste.
 2. **Ne pas l'intégrer à la V1 en cours.** Le chantier bloquant du moment (voie express + fichiers générés) est le prérequis technique de cette idée : les présentoirs par table sont exactement le cas « N pièces, N visuels différents, avant le jour J ». Faire le chantier d'abord, l'idée devient facile ensuite.
 3. **La tester sur un vrai mariage** avant de l'industrialiser : douze présentoirs, des mots, et on regarde si les invités écrivent vraiment. C'est la seule façon de savoir si la promesse tient.
 
+Restent ouverts : le **type de contenu texte** (§4.2), la **garantie serveur de confidentialité** (§4.3) et la **modération** (§4.4) — trois points d'implémentation, pas de stratégie.
+
 ---
 
-*À trancher avec l'équipe. Une fois décidée, cette note devient une entrée de `journal-decisions.md` et une ligne Notion (Type = Décision).*
+*Arbitrage §4.1 acté au `journal-decisions.md` (07/08/2026) et au cockpit Notion.*
