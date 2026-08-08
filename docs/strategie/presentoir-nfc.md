@@ -81,16 +81,15 @@ Renka ne mentionne **nulle part** le verrouillage en lecture seule. Sur une cart
 
 ---
 
-## 5. La photo et l'antenne — la contrainte à mesurer avant de dessiner
+## 5. La photo et l'antenne — **non, ce n'est pas une contrainte**
 
-Le produit porte **une belle photo**. Or Renka maintient une zone d'exclusion d'antenne (`card-geometry.ts`) avec un garde-fou qui refuse le rendu si un motif la traverse — parce qu'**un film métallisé ou holographique posé sur l'antenne tue la puce** (« l'écrantage tue la carte », répété trois fois dans leur projet).
+On imprime plein cadre par-dessus l'antenne, **sans aucun effet sur la puce**. L'encre UV quadri, le blanc de soutien et le vernis sont des pigments dans une résine : ils ne sont pas conducteurs, ils n'écrantent pas le champ radio.
 
-Deux règles pour nous :
+Renka maintient bien une zone d'exclusion d'antenne (`card-geometry.ts`), mais elle ne concerne que **les films métallisés et holographiques** de leur option « Signature » premium — de la vraie feuille métal, qui elle écrante et tue la carte. Ça ne s'applique pas à une photo imprimée.
 
-1. **Mesurer la zone d'antenne sur un exemplaire réel dès le premier échantillon.** Renka ne l'a jamais fait : leur constante est un placeholder, et ça **bloque une option produit à 15-20 € depuis des semaines**. Ne répétons pas ça.
-2. **Aucune finition métallisée, dorée ou holographique au-dessus de l'antenne.** Une impression quadri normale ne gêne pas ; un vernis métallisé, si.
+**Donc rien à mesurer, rien à éviter, aucun gabarit à contraindre.** La seule situation où la question reviendrait, c'est si on ajoutait un jour une finition **dorure à chaud, feuille métallisée ou holographique** sur un présentoir haut de gamme — à ce moment-là seulement il faudra localiser l'antenne.
 
-À noter : le métal **ne pose pas de problème NFC** quand la puce est pré-encapsulée avec une antenne calibrée pour ce support — le problème du métal chez Renka est purement un problème d'encre (il faut un blanc de soutien). Cette nuance compte si on veut un présentoir haut de gamme.
+*(Note : cette page a d'abord présenté la mesure de l'antenne comme une action bloquante à la réception des échantillons. C'était une transposition abusive de la contrainte Renka — corrigé le 08/08/2026.)*
 
 ---
 
@@ -153,8 +152,8 @@ Comparaison : Renka vend son présentoir moyen **29 € l'unité** ; dix coûter
 1. ~~**Le fournisseur**~~ → ✅ commande passée le 08/08/2026, 50 chevalets (25 de chaque taille) à **1,20 $ pièce**.
 2. ~~**Le format**~~ → ✅ **7,0 × 10,5** et **7,6 × 12,75** de face, pied de 5 cm en plus à plat.
 3. ~~**Le modèle de puce**~~ → ✅ **NTAG215**.
-4. **La position de l'antenne** dans le chevalet — à mesurer sur un exemplaire dès réception, **avant** de figer les gabarits photo. C'est le seul point de la liste qui peut faire rater des pièces.
-5. **L'outil d'encodage** : encodeur USB + script, ou application mobile à la main ? **Combien de temps par pièce** — le chevalet ne pèse qu'un tiers du coût de revient, l'encodage est le vrai levier de marge.
+4. ~~**La position de l'antenne**~~ → ✅ sans objet : on imprime en quadri, ça n'écrante rien (§5).
+5. **L'outil d'encodage** : encodeur USB + script, ou application mobile à la main ? **Combien de temps par pièce** — le chevalet ne pèse qu'un tiers du coût de revient, l'encodage est le vrai levier de marge. *C'est désormais le seul vrai inconnu.*
 6. **Le verrouillage** en lecture seule après contrôle : avec quel outil, et intégré à quelle étape ?
 7. **Le gabarit de maintien** : le chevalet passe-t-il sous la Mimaki tel quel, ou faut-il un gabarit ? Chez Renka les cartes sont tenues dans un gabarit 23 cases dont la géométrie est figée et validée sur tirage réel — il faudra l'équivalent, calé sur **18 pièces par passe en moyen, 16 en grand**.
 8. **Le réassort** : 8 à 12 jours ouvrés de production plus le transport. À intégrer au stock de sécurité, sur un produit dont la date de livraison ne se négocie pas.
