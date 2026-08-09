@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 import ImageUploader from "@/app/components/ImageUploader";
+import TableStandOrder from "@/app/components/wedding/TableStandOrder";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { EventData } from "@/types/event";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
@@ -336,6 +337,8 @@ function WeddingProSection({
   const [message, setMessage] = useState<string | null>(null);
   const [countInput, setCountInput] = useState<string>("");
   const [copied, setCopied] = useState<string | null>(null);
+  const [standOrderOpen, setStandOrderOpen] = useState(false);
+  const printEnabled = process.env.NEXT_PUBLIC_PRINT_ENABLED === "1";
   const [origin, setOrigin] = useState("");
   useEffect(() => {
     if (typeof window !== "undefined") setOrigin(window.location.origin);
@@ -444,6 +447,30 @@ function WeddingProSection({
             {message && <span className="text-sm text-emerald-400">{message}</span>}
           </div>
 
+          {tableCount > 0 && printEnabled && deviceId && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setStandOrderOpen(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-400"
+              >
+                🪧 Commander les présentoirs ({tableCount} tables)
+              </button>
+              <p className="mt-1.5 text-xs text-slate-400">
+                Votre photo, un visuel différent par table, la puce sans contact
+                et le QR déjà encodés — fabriqués par notre atelier.
+              </p>
+            </div>
+          )}
+          {standOrderOpen && deviceId && (
+            <TableStandOrder
+              eventId={event.id}
+              deviceId={deviceId}
+              pin={event.pin}
+              defaultTableCount={tableCount}
+              onClose={() => setStandOrderOpen(false)}
+            />
+          )}
           {tableCount > 0 && (
             <div className="mt-4">
               <p className="text-xs text-slate-400">

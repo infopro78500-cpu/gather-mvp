@@ -370,6 +370,24 @@ export function deliveredPieces(format: PrintFormat): number {
 }
 
 /**
+ * Le lot de présentoirs qui couvre N tables : le plus petit palier dont le
+ * packQuantity suffit (12 tables → lot de 15). Null si N dépasse le plus
+ * grand lot (20) — au-delà, la commande se fait en deux fois, on ne bricole
+ * pas un prix hors grille.
+ */
+export function tableStandLot(
+  size: "moyen" | "grand",
+  tableCount: number
+): PrintFormat | null {
+  const product = PRINT_PRODUCTS.find((p) => p.id === "presentoir");
+  if (!product || !Number.isFinite(tableCount) || tableCount < 1) return null;
+  const tiers = product.formats
+    .filter((f) => f.id.startsWith(`${size}-`))
+    .sort((a, b) => (a.packQuantity ?? 0) - (b.packQuantity ?? 0));
+  return tiers.find((f) => (f.packQuantity ?? 0) >= tableCount) ?? null;
+}
+
+/**
  * Le produit exige-t-il une photo du coffre ? Faux pour la papeterie du jour
  * J, commandable à la création du coffre alors qu'il est encore vide — le
  * visuel est composé par l'app (QR, prénoms, date).
