@@ -75,7 +75,7 @@ export default function EditEventPage() {
       const { data, error: fetchError } = await supabase
         .from("events")
         .select(
-          "id, name, pin, host_device_id, host_user_id, expires_at, lifetime_days, contest_enabled, contest_enabled_at, contest_ends_at, pro_enabled_at, table_count"
+          "id, name, pin, expires_at, lifetime_days, contest_enabled, contest_enabled_at, contest_ends_at, pro_enabled_at, table_count"
         )
         .eq("id", eventId)
         .maybeSingle<EventData>();
@@ -104,7 +104,26 @@ export default function EditEventPage() {
 
   const title = event?.name ?? "Événement";
   const expirationInfo = getExpirationInfo(event?.expires_at ?? null);
-  const isHost = Boolean(event && deviceId && event.host_device_id === deviceId);
+  // Statut d'organisateur décidé au serveur : le jeton ne transite plus par
+  // le navigateur, et n'est plus jamais affiché (audit 09/08).
+  const [isHost, setIsHost] = useState(false);
+  useEffect(() => {
+    if (!event?.id || !deviceId) return;
+    let cancelled = false;
+    fetch(`/api/events/${event.id}/host`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deviceId }),
+    })
+      .then((r) => (r.ok ? r.json() : { isHost: false }))
+      .then((b: { isHost?: boolean }) => {
+        if (!cancelled) setIsHost(Boolean(b.isHost));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id, deviceId]);
 
   const handleContestSave = async () => {
     if (!event) return;
@@ -227,16 +246,12 @@ export default function EditEventPage() {
                   )}
                 </dd>
               </div>
-              {event.host_device_id && (
+              {isHost && (
                 <div className="flex flex-col gap-1 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Hôte</dt>
-                  <dd className="text-base font-semibold text-white">{event.host_device_id}</dd>
-                </div>
-              )}
-              {event.host_user_id && (
-                <div className="flex flex-col gap-1 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Utilisateur</dt>
-                  <dd className="text-base font-semibold text-white">{event.host_user_id}</dd>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Rôle</dt>
+                  <dd className="text-base font-semibold text-emerald-300">
+                    Vous êtes l&apos;organisateur
+                  </dd>
                 </div>
               )}
             </dl>

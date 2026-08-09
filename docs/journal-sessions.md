@@ -4,6 +4,13 @@
 
 ---
 
+## Session 09/08/2026 — Audit projet : fermeture de la fuite du jeton d'organisateur
+
+- **Faille trouvée et corrigée** : la clé anonyme Supabase pouvait lire `host_device_id` (le jeton qui prouve qu'on est l'organisateur) de n'importe quel coffre, et énumérer tous les coffres. Ce jeton étant rejouable vers les routes serveur, le lire suffisait à usurper l'organisateur — **lire les mots privés aux mariés**, supprimer des photos, activer Pro, commander des présentoirs. Les écritures, elles, étaient déjà bloquées par RLS (vérifié : PATCH anon = 0 ligne).
+- **Correctif** : route `POST /api/events/[id]/host` (comparaison serveur, renvoie juste `{isHost}`) ; les deux pages qui lisaient le jeton (`events/[pin]`, `edit`) basculées dessus ; `select("*")` → colonnes publiques explicites ; **le jeton n'est plus affiché en clair** sur la page de gestion (il y était, sous « Hôte ») ; migration `20260809120000` (privilèges colonne) **à appliquer par Nico après déploiement**.
+- **Vérifié en réel** : la route distingue le vrai hôte de tout autre appareil, galerie et page de gestion fonctionnent dans les deux rôles, jeton absent du DOM. Détail : `docs/audit-projet.md`, décision au journal des décisions.
+- **Résidus documentés** (non bloquants) : énumération des PINs (rate-limiting à l'ouverture publique), jeton d'appareil non révocable (vraie auth organisateur = chantier de fond), Supabase EXCEEDING USAGE (upgrade infra).
+
 ## Session 09/08/2026 — Le visuel du présentoir de table, validé par Nico
 
 - **Compositeur du présentoir construit** (`renderTableStandArtwork`) : la photo (mariés ou tablée) + « Table N » + QR encodant le lien de CETTE table (`…&table=…`, le même que portera la puce NFC) + consigne + PIN de secours, à 300 dpi aux formats fournisseur.

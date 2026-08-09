@@ -13,6 +13,11 @@ Format d'une entrée :
 
 ---
 
+## 2026-08-09 — Le jeton d'organisateur ne quitte plus le serveur
+**Décision** : `host_device_id` (et `host_user_id`, `contest_enabled_by`) ne sont plus jamais lus par le client ni exposés par l'API REST anonyme. La question « suis-je l'organisateur ? » se tranche au serveur (`POST /api/events/[id]/host`) ; une migration au niveau colonne rend ces jetons illisibles pour `anon`.
+**Pourquoi** : audit du 09/08 — la clé anonyme pouvait lire le jeton de n'importe quel coffre et le rejouer vers les routes serveur pour usurper l'organisateur, donc **lire les mots privés aux mariés** (dont la confidentialité venait d'être promise « garantie serveur » le 08/08), supprimer des photos, activer Pro. Les écritures étaient déjà bloquées par RLS ; c'est la lecture du jeton qui ouvrait la porte. On ne change pas le mécanisme (jeton d'appareil, suffisant pour un MVP bêta) — on cesse de l'exposer.
+**Impact** : route `/api/events/[id]/host` ; selects client explicites (plus de `select("*")` sur `events`) ; le jeton n'est plus affiché sur la page de gestion ; migration `20260809120000` (privilèges colonne) à appliquer par Nico APRÈS déploiement du code. Détail : `docs/audit-projet.md`. Reste au backlog : rate-limiting anti-énumération et vraie auth organisateur (compte + session) pour l'ouverture publique.
+
 ## 2026-08-08 — Le chantier mariage (galeries par table + mots privés) devient l'Option Pro
 **Décision** (Nico, 08/08) : les galeries par table et la messagerie privée aux mariés sont construites **et verrouillées derrière une Option Pro par événement** (`events.pro_enabled_at`). Pendant la bêta, l'activation est offerte (bouton sur la page de gestion, daté) ; le tarif arrivera avec Stripe, qui s'insérera exactement à l'endroit du bouton d'activation.
 **Pourquoi** : la monétisation cible est freemium + impression. Le partage de photos de base reste gratuit (c'est l'acquisition) ; ce chantier est précisément ce qui justifie un palier payant — il transforme le présentoir en consommable par table (un QR unique par table, non photocopiable) et crée la matière du livre d'or imprimé. Activer gratuitement mais **dater** l'activation permet de tester sur de vrais mariages (recommandation §6 du doc d'idée) sans brader la valeur : le jour où le prix tombe, les événements bêta sont identifiables.

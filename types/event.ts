@@ -2,8 +2,10 @@ export type EventData = {
   id: string;
   name: string;
   pin: string;
-  host_device_id?: string | null; // 👈 nouveau champ
-  host_user_id?: string | null;
+  // ⚠️ host_device_id / host_user_id sont des JETONS d'organisateur : ils ne
+  // sont plus jamais lus côté client (audit 09/08). La comparaison d'identité
+  // passe par POST /api/events/[id]/host. Ne pas les remettre dans un select
+  // client — la migration column-revoke les rend d'ailleurs illisibles.
   expires_at?: string | null;
   lifetime_days?: number | null;
   contest_enabled?: boolean;

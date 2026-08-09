@@ -256,11 +256,25 @@ const pin = params.pin;
     setVoterId(id);
   }, []);
 
+  // « Suis-je l'organisateur ? » se décide au SERVEUR : le jeton
+  // host_device_id ne transite plus par le navigateur (audit 09/08).
   useEffect(() => {
-    if (event && deviceId) {
-      setIsHost(event.host_device_id === deviceId);
-    }
-  }, [event, deviceId]);
+    if (!event?.id || !deviceId) return;
+    let cancelled = false;
+    fetch(`/api/events/${event.id}/host`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deviceId }),
+    })
+      .then((r) => (r.ok ? r.json() : { isHost: false }))
+      .then((b: { isHost?: boolean }) => {
+        if (!cancelled) setIsHost(Boolean(b.isHost));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id, deviceId]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -326,7 +340,12 @@ const pin = params.pin;
     const fetchEvent = async () => {
       const { data, error: eventError } = await supabase
         .from("events")
-        .select("*")
+        // Colonnes publiques uniquement : plus jamais host_device_id /
+        // host_user_id côté client (audit 09/08 — la migration column-revoke
+        // les rend même illisibles via l'API REST anon).
+        .select(
+          "id, name, pin, is_closed, expires_at, lifetime_days, contest_enabled, contest_enabled_at, contest_ends_at, pro_enabled_at, table_count"
+        )
         .eq("pin", pin)
         .maybeSingle<EventData>();
 
