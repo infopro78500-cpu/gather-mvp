@@ -188,6 +188,79 @@ export async function renderGeneratedArtwork(
 }
 
 /**
+ * Visuel du PRÉSENTOIR DE TABLE (chantier mariage) : une belle photo plein
+ * cadre — les mariés, ou les convives de la table — avec le numéro de table
+ * et le QR sur un cartouche blanc en pied. La puce NFC embarquée porte le
+ * même lien ; le QR est la seconde porte, jamais l'inverse (décision 08/08).
+ */
+export async function renderTableStandArtwork(
+  format: PrintFormat,
+  input: {
+    /** La photo de fond (JPEG/PNG). */
+    photo: Buffer;
+    /** « Table 3 » — l'identité de la pièce. */
+    tableLabel: string;
+    /** URL encodée dans le QR : le lien DE CETTE TABLE (&table=…). */
+    joinUrl: string;
+    pin?: string | null;
+    callToAction?: string | null;
+  }
+): Promise<Buffer> {
+  const widthPx = Math.round((format.widthCm / 2.54) * PRINT_DPI);
+  const heightPx = Math.round((format.heightCm / 2.54) * PRINT_DPI);
+
+  const background = await sharp(input.photo, { failOn: "none" })
+    .rotate()
+    .resize(widthPx, heightPx, { fit: "cover" })
+    .toBuffer();
+
+  // Cartouche blanc en pied : ~46 % de la hauteur, marges 5 %.
+  const margin = Math.round(widthPx * 0.05);
+  const cardY = Math.round(heightPx * 0.5);
+  const cardH = heightPx - cardY - margin;
+  const cardW = widthPx - margin * 2;
+  const radius = Math.round(widthPx * 0.04);
+
+  const tableSize = Math.round(widthPx * 0.11);
+  const ctaSize = Math.round(widthPx * 0.042);
+  const pinSize = Math.round(widthPx * 0.036);
+  // Le pied du cartouche doit respirer : le QR est dimensionné pour que la
+  // consigne et le PIN tiennent avec une marge, jamais collés au bord bas.
+  const reservedText =
+    tableSize * 1.4 + ctaSize * 2.5 + (input.pin ? pinSize * 1.9 : 0) + cardH * 0.1;
+  const qrSize = Math.round(Math.min(cardW * 0.52, cardH - reservedText));
+  const qrX = Math.round((widthPx - qrSize) / 2);
+
+  let cursor = cardY + Math.round(cardH * 0.06);
+  const table = fitLine(input.tableLabel, tableSize, cardW * 0.88, true);
+  cursor += table.size;
+  const tableY = cursor;
+  cursor += Math.round(table.size * 0.35);
+  const qrY = cursor;
+  cursor += qrSize + Math.round(ctaSize * 1.1);
+  const ctaY = cursor;
+  const pinY = ctaY + Math.round(ctaSize * 1.35);
+
+  const cta = input.callToAction
+    ? fitLine(input.callToAction, ctaSize, cardW * 0.9, false)
+    : null;
+
+  const overlay = `<svg xmlns="http://www.w3.org/2000/svg" width="${widthPx}" height="${heightPx}" viewBox="0 0 ${widthPx} ${heightPx}">
+  <rect x="${margin}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${radius}" fill="${PAPER}" fill-opacity="0.96"/>
+  <text x="${widthPx / 2}" y="${tableY}" font-family="Helvetica, Arial, sans-serif" font-size="${table.size}" font-weight="700" fill="${INK}" text-anchor="middle">${escapeXml(table.content)}</text>
+  ${qrSvg(input.joinUrl, qrSize, qrX, qrY)}
+  ${cta ? `<text x="${widthPx / 2}" y="${ctaY}" font-family="Helvetica, Arial, sans-serif" font-size="${cta.size}" font-weight="600" fill="${INK}" text-anchor="middle">${escapeXml(cta.content)}</text>` : ""}
+  ${input.pin ? `<text x="${widthPx / 2}" y="${pinY}" font-family="Helvetica, Arial, sans-serif" font-size="${pinSize}" fill="${INK}" text-anchor="middle">ou code ${escapeXml(input.pin)}</text>` : ""}
+</svg>`;
+
+  return sharp(background)
+    .composite([{ input: Buffer.from(overlay), top: 0, left: 0 }])
+    .png()
+    .withMetadata({ density: PRINT_DPI })
+    .toBuffer();
+}
+
+/**
  * Consigne par défaut selon le produit.
  *
  * Règle héritée de Renka : **on n'écrit jamais « NFC » sur le produit**.
