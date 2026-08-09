@@ -137,7 +137,8 @@ Conservation longue durée · quotas étendus · téléchargement HD · albums P
 - L'écart n'est pas « produit à construire » mais « produit à **encaisser et prouver** ».
 
 **PROCHAINE ÉTAPE (le chemin critique)**
-- Brancher Stripe · Supabase payant · formaliser Printerkut · **1 mariage pilote → prouver l'attach-rate impression**
+- Brancher Stripe · Supabase payant · fixer 2 prix (port + Pro) · **1 mariage pilote → prouver l'attach-rate impression**
+- *(La production est déjà là : l'atelier du frère, accès illimité et sans contrainte aux machines.)*
 
 > Traction honnête = pas de vanity metrics. Beta 2025 : 50+ événements, 700+ photos (données ensuite perdues). Aujourd'hui : 0 actif, assumé.
 
@@ -219,7 +220,7 @@ QR → Early Access
 ---
 
 ## Reste à compléter
-- [x] Printerkut = partenaire de production (société du frère) ; **à formaliser** (contrat/capital) avant de pitcher
+- [x] Printerkut = atelier du **frère de Nico**, **accès illimité et sans contrainte aux machines** (zéro CapEx) — un avantage structurel, la production est sécurisée
 - [x] Jérem Bissem (Finance & Juridique)
 - [x] Traction beta : 50+ événements, 700+ photos (anniversaires/mariages/fêtes) — **chiffres à figer** (partie perdue lors de l'incident Supabase ? afficher le nombre défendable)
 - [ ] **Stratégie de financement + acquisition** — chantier dédié à travailler ensemble

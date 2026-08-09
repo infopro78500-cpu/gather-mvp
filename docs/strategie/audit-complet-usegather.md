@@ -33,9 +33,11 @@ Supabase), phase de relance. La faille de sécurité majeure (jeton hôte lisibl
 a été **fermée cette semaine**.
 
 **Les 3 choses qui comptent maintenant** : (1) **brancher Stripe** — sans lui,
-aucun des trois moteurs n'existe ; (2) **formaliser Printerkut** — le moat *et*
-le premier risque investisseur ; (3) **prouver l'attach-rate impression sur un
-vrai mariage** — le chiffre qui valide tout l'édifice.
+aucun des trois moteurs n'existe ; (2) **prouver l'attach-rate impression sur un
+vrai mariage** — le chiffre qui valide tout l'édifice ; (3) **passer Supabase en
+payant** — prérequis infra. Notre production, elle, est déjà sécurisée :
+l'atelier Printerkut est celui du frère de Nico, avec **accès illimité et sans
+contrainte aux machines** — un avantage structurel, pas une dépendance.
 
 ---
 
@@ -208,7 +210,8 @@ l'événement — et qui, seule, en fait des objets. » Les trois moteurs au pit
 ## 9. SWOT consolidé
 
 **Forces** — produit central en prod + **chaîne d'impression et mariage codés et
-testés** (rare à ce stade) ; **moat production en propre** (produits physiques
+testés** (rare à ce stade) ; **moat production en propre — l'atelier du frère,
+accès illimité et sans contrainte aux machines, zéro CapEx** (produits physiques
 inimitables) ; **trois moteurs cohérents** (acquisition + marge + récurrent) ;
 **espace ouvert hors mariage** ; **ADN UE/RGPD = critère d'achat** ; équipe
 complète franco-lux ; marque enregistrée.
@@ -221,9 +224,10 @@ sécurité MVP (jeton non révocable) ; infra fragile (Supabase dépassé).
 écoles peu disputés ; **livre d'or imprimé déjà rempli** (produit unique) ; B2B2C
 voyage à CAC quasi nul ; aides non-dilutives LU.
 
-**Menaces** — concurrents gratuits nombreux (mariage) ; **Printerkut = partie
-liée informelle** (moat + risque investisseur) ; **opération physique lourde**
-(livraison/SAV/qualité) ; coût egress ; dépendance Supabase ; RGPD écoles.
+**Menaces** — concurrents gratuits nombreux (mariage) ; **opération physique
+lourde** (livraison/SAV/qualité jour J) ; coût egress ; dépendance Supabase ;
+RGPD écoles. *(Printerkut n'est pas un risque : atelier du frère, accès illimité
+et sans contrainte aux machines — un atout, listé en forces.)*
 
 ---
 
@@ -232,7 +236,6 @@ liée informelle** (moat + risque investisseur) ; **opération physique lourde**
 | Risque | Gravité | Atténuation |
 |---|---|---|
 | **Aucun revenu tant que Stripe absent** | Bloquant | Brancher Stripe devant impression + premium + B2B |
-| **Printerkut = partie liée informelle** | Élevé | **Formaliser** (contrat exclusif / entrée capital) avant de pitcher |
 | **0 traction / attach-rate impression non prouvé** | Élevé | Un vrai mariage pilote, mesurer panier + attach-rate |
 | **Supabase free dépassé** | Élevé | Upgrade payant **immédiat** + backups |
 | **Sécurité MVP** (écoles/care) | Moyen | Comptes hôtes + accès par événement + DPA avant segment écoles |
@@ -247,8 +250,7 @@ liée informelle** (moat + risque investisseur) ; **opération physique lourde**
 1. **Brancher Stripe** devant l'impression **et** le premium **et** (à terme) le
    B2B — sans lui, les trois moteurs n'existent pas.
 2. **Upgrade Supabase payant** — prérequis infra, non négociable.
-3. **Formaliser Printerkut** — dérisque le moat *et* le risque investisseur n°1.
-4. **Fixer les 2 prix ouverts** : port de livraison (< 79 €) et **prix de
+3. **Fixer les 2 prix ouverts** : port de livraison (< 79 €) et **prix de
    l'option Pro mariage** (à trancher avec Stripe).
 
 ### NEXT (prouve le modèle)
@@ -270,12 +272,14 @@ liée informelle** (moat + risque investisseur) ; **opération physique lourde**
 ## 12. Le chemin critique vers le premier euro
 
 ```
-Stripe branché  ─┐
-Supabase payant ─┤→ Ouverture vente impression ─→ Mariage pilote ─→ attach-rate prouvé
-Printerkut       │                                                        │
-formalisé       ─┘                                                        ↓
-Prix port + Pro tranchés ─────────────────────────────────→ Pitch investisseurs armé
+Stripe branché        ─┐
+Supabase payant       ─┤→ Ouverture vente impression ─→ Mariage pilote ─→ attach-rate prouvé
+Prix port + Pro tranchés ┘                                                     │
+                                                                              ↓
+                                                        Pitch investisseurs armé
 ```
+*(La production n'est pas sur le chemin critique : l'atelier du frère est déjà
+disponible, accès illimité et sans contrainte.)*
 
 Tout le reste (B2B, voyage, écoles, appli native, IA) vient **après** ce premier
 euro prouvé. La priorité n'est pas de construire plus — c'est **d'encaisser et

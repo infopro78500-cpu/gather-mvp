@@ -4,6 +4,11 @@
 
 ---
 
+## Session 09/08/2026 — Cockpit Notion synchronisé + reframe Printerkut
+
+- **Cockpit Notion mis à jour** (double écriture) : décisions actées (présentoir NFC, Option Pro mariage, sécurité jeton hôte), jalons faits (atelier branché, mariage codé, audits+deck), et **tâches manquantes de l'audit créées** (Stripe, rendu visuels Vercel, outillage NFC atelier, comptes hôtes, app native/mur live, pilote B2B club, SEO+jetable, B2B2C voyage). Existantes actualisées (sécurité, pilote mariage, deck). Message équipe rédigé (version longue mail + version WhatsApp) — envoi laissé à Nico.
+- **Reframe Printerkut** (correction Nico) : l'atelier appartient au frère, **accès illimité et sans contrainte aux machines** → ce n'est PAS une « partie liée informelle / risque à formaliser avant de pitcher » mais un **avantage structurel**. Retiré des faiblesses/risques/recos et du chemin critique dans `audit-complet-usegather.md`, `audit-marche-positionnement.md`, `deck-v2.md`, la page visuelle et Notion ; reformulé en force. La tâche Notion « Formaliser le contrat Printerkut » devient un point de structuration léger à l'immatriculation (Jérem, Plus tard).
+
 ## Session 09/08/2026 — Audit marché & positionnement
 
 - **Audit concurrentiel + positionnement** (`strategie/audit-marche-positionnement.md`) sur recherche fraîche : le partage QR mariage est un **océan rouge** (GuestPix 49-149 $, Fotify 69 €, BumFot/WedShoots/Kululu gratuits, + la vague « jetable numérique » POV/Scene/Pix Wedding). **Constat clé : aucun concurrent n'imprime réellement les photos des invités** — leurs « prints » sont des modèles de signalétique Canva. Notre moat (atelier Printerkut en propre, pipeline construit) tient ; « sans compte + multi-OS + QR » sont en revanche devenus des **prérequis**, plus des différenciateurs (à corriger dans le deck).

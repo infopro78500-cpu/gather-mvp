@@ -121,7 +121,8 @@ investir, pas à négliger.**
 
 ### 3.2 Moteur de revenu 1 — l'impression (Printerkut)
 
-Le **moat** : production en propre → marge, zéro CapEx, et des **produits
+Le **moat** : production en propre — **l'atelier du frère de Nico, accès illimité
+et sans contrainte aux machines**, zéro CapEx → marge captée et des **produits
 physiques inimitables** (présentoirs NFC par table, livre d'or déjà rempli,
 tirages, déco murale plexi/canvas/PVC). Pipeline **construit et testé de bout en
 bout**. Gamme prix benchmarkée, ajustable (pas de local/machines/main-d'œuvre à
@@ -158,9 +159,7 @@ Sous-développé dans les audits précédents, central dans la vision :
    Supabase), phase de relance ; aucun attach-rate impression prouvé.
 2. **Ni impression ni premium ni B2B encaissés** — **Stripe absent** : les deux
    moteurs de revenu ET les extensions premium sont à zéro aujourd'hui.
-3. **Printerkut = partie liée, informelle** (société du frère) — moat **et**
-   drapeau rouge investisseur : **à formaliser avant de pitcher.**
-4. **UX de partage pas best-in-class** — pas d'appli native/mur live, absents de
+3. **UX de partage pas best-in-class** — pas d'appli native/mur live, absents de
    la vague « jetable » ; découverte/SEO nulle (concurrents FR rankent).
 5. **Sécurité MVP** (device-id, juste durcie) — or les segments écoles/care
    **exigent** une garantie ferme (accès par événement, DPA) : le segment le plus
@@ -178,16 +177,15 @@ Sous-développé dans les audits précédents, central dans la vision :
    encaissement, aucun des trois moteurs n'existe.
 
 **Les revenus :**
-3. **Formaliser Printerkut** (contrat exclusif / capital) avant tout pitch.
-4. **Prouver l'attach-rate impression sur UN vrai mariage** (panier moyen) — le
+3. **Prouver l'attach-rate impression sur UN vrai mariage** (panier moyen) — le
    chiffre qui valide l'empilement.
-5. **Ouvrir un pilote B2B tôt** (un club via le canal chaud de l'atelier) — le
+4. **Ouvrir un pilote B2B tôt** (un club via le canal chaud de l'atelier) — le
    récurrent est le deuxième moteur de revenu, pas un « plus tard » vague.
-6. **Tester le B2B2C voyage** avec une agence/UCPA — CAC quasi nul, et ça
+5. **Tester le B2B2C voyage** avec une agence/UCPA — CAC quasi nul, et ça
    démontre l'horizontalité aux investisseurs.
 
 **Transverse :**
-7. Corriger le deck : **~6 Md$/7-8 %** (pas 25), **251 000** mariages (pas 220),
+6. Corriger le deck : **~6 Md$/7-8 %** (pas 25), **251 000** mariages (pas 220),
    **Usegather** (pas Gather), et présenter **l'escalier de segments + les trois
    moteurs**, pas seulement le mariage.
 
