@@ -1,14 +1,14 @@
-# GATHER — Deck v2 (trame Gamma)
+# USEGATHER — Deck v2 (trame Gamma)
 
-> Version reconstruite le 8 juillet 2026, calée sur la **réalité du code** + beachhead **mariage / France-first** + atout **PrintKut**.
+> Version reconstruite le 8 juillet 2026, **révisée le 09/08/2026** sur l'audit consolidé (`strategie/audit-complet-usegather.md`) : rebranding **Usegather**, escalier de segments + trois moteurs, concurrence honnête, état « codé mais pas encaissable ».
 > `[à compléter]` = info que seul toi peux remplir. Slides passées de 26 → ~15 + annexes.
 
-**À figer partout :** nom de marque = **Printerkut** (ne pas écrire « PrintKut »).
+**À figer partout :** marque publique = **Usegather** (jamais « Gather » seul) · partenaire de production = **Printerkut** (jamais « PrintKut »).
 
 ---
 
 ## 1. COUVERTURE
-**GATHER — La photo qui rassemble**
+**USEGATHER — La photo qui rassemble**
 Collaboration · Hors-ligne · Impression · *IA (à venir)*
 
 ---
@@ -31,7 +31,7 @@ Collaboration · Hors-ligne · Impression · *IA (à venir)*
 - **Le tirage papier renaît** — Le tangible redevient désirable dans un monde tout-numérique
 - **Le mariage se « photographise » à outrance** — ~220 000/an en France, des centaines de photos par invité, zéro solution qui rassemble **et** imprime
 
-> 🎯 **Genèse (accroche orale du pitch)** : idée née en **novembre 2025 au retour d'un voyage au Laos** — des centaines de photos éparpillées entre tous les voyageurs, aucun moyen simple de les rassembler. Gather est né d'une frustration vécue.
+> 🎯 **Genèse (accroche orale du pitch)** : idée née en **novembre 2025 au retour d'un voyage au Laos** — des centaines de photos éparpillées entre tous les voyageurs, aucun moyen simple de les rassembler. Usegather est né d'une frustration vécue.
 
 ---
 
@@ -49,49 +49,58 @@ Collaboration · Hors-ligne · Impression · *IA (à venir)*
 
 ---
 
-## 5. MARCHÉ — TAM / SAM / SOM 🆕
-*Un marché à double moteur : partage + impression.*
+## 5. MARCHÉ — un escalier de segments 🆕
+*Le partage fait entrer les gens ; l'impression et le B2B font le revenu.*
 
-- **TAM** — Partage/stockage photo + impression photo mondial (~25 Md$, +5 %/an) `[à sourcer]`
-- **SAM** — Partage + impression d'événement en Europe (mariages, voyages, festivals, écoles)
-- **SOM — Beachhead mariage France** — cible atteignable à 3 ans
+- **TAM** — Marché du partage photo mondial : **~6 Md$ (2026), +7-8 %/an** (source : The Business Research Company, 2026). Driver cité : événements & rassemblements.
+- **SAM** — Partage + impression d'événement en Europe.
+- **SOM — Beachhead mariage France** — cible atteignable à 3 ans.
+
+**L'escalier de segments** (un même outil, plusieurs marchés) :
+1. **Mariage / B2C** (départ) — viral, fort panier impression
+2. **Clubs & associations** — récurrent, canal chaud (assos de l'atelier)
+3. **Voyages / groupes organisés** — **B2B2C**, l'organisateur = canal (origine : le Laos)
+4. **Écoles** — RGPD = critère d'achat · puis **Corporate · Festivals**
 
 **Le calcul (à valider) :**
 ```
-~220 000 mariages/an en France (INSEE) [à sourcer]
-  × 3 % capturés à 3 ans      → ~6 600 événements
-  × revenu moyen/événement    → abo hôte + panier impression
+251 000 mariages/an en France (INSEE 2025)
+  × 3 % capturés à 3 ans      → ~7 500 événements
+  × revenu moyen/événement    → extensions premium + panier impression
 ```
 **⚡ Effet démultiplicateur** : chaque mariage = 80-150 invités → chacun commande SES tirages → le print scale avec les invités, pas seulement l'hôte.
 
 ---
 
-## 6. CONCURRENCE (ex-« Océan Bleu ») 🆕
-*Le positionnement que personne n'occupe.*
+## 6. CONCURRENCE — honnête 🆕
+*Commoditisé sur le mariage ; ouvert partout ailleurs.*
 
-| | Sans compte | Offline | Multi-OS | Impression intégrée | EU / RGPD |
-|---|:--:|:--:|:--:|:--:|:--:|
-| Google Photos | ❌ | ❌ | ✅ | ❌ | ❌ |
-| WhatsApp / messageries | ✅ | ❌ | ✅ | ❌ | ⚠️ |
-| AirDrop | ✅ | ✅ | ❌ | ❌ | — |
-| Apps mariage (Guest, Joyn, WedShoots…) | ❌ | ❌ | ✅ | ⚠️ | ⚠️ |
-| **GATHER** | ✅ | ✅ | ✅ | ✅ **(Printerkut)** | ✅ |
+Le partage QR mariage est un **océan rouge** : GuestPix (49-149 $), Fotify (69 €), BumFot/WedShoots (gratuits), PhotoSharing.fr (FR), + la vague « appareil jetable numérique » (POV, Scene). « Sans compte + QR + multi-OS » n'est plus un différenciateur, c'est un **prérequis**.
 
-> Gather n'est pas « sans concurrent » — il est le **seul à cocher les 5 cases**. La case qu'aucun concurrent ne peut copier : **l'impression à la source** — un partenaire de production dédié, marge captée par Gather.
+| | Sans compte | Offline | **Impression des photos** | EU / RGPD |
+|---|:--:|:--:|:--:|:--:|
+| Google Photos / clouds US | ❌ | ❌ | ❌ | ❌ |
+| Messageries (WhatsApp…) | ✅ | ❌ | ❌ | ⚠️ |
+| Apps mariage (GuestPix, Fotify, BumFot…) | ✅ | ⚠️ | ❌ *(signalétique Canva, pas les tirages)* | ⚠️ |
+| **USEGATHER** | ✅ | ✅ | ✅ **(atelier Printerkut)** | ✅ |
+
+> **Le fait décisif** : **aucun concurrent n'imprime réellement les photos des invités** — personne n'a d'atelier en propre. Et ils sont **quasi tous mono-segment mariage B2C** : sur voyage / clubs / écoles, le combo *organisateur-comme-canal + sans-compte + RGPD* est un vrai différenciateur, pas un prérequis. **Notre moat = la production en propre ; notre espace ouvert = tout ce qui n'est pas le mariage.**
 
 ---
 
-## 7. BUSINESS MODEL + PRINTERKUT = MOAT
+## 7. BUSINESS MODEL — un flywheel, deux moteurs de revenu
 *Là où les autres brûlent du cash, on gagne de l'argent.*
 
-- **Freemium B2C** — Coffre gratuit → conversion premium
-- **Impression Printerkut** — Marketplace de tirages via un **partenaire de production dédié** (capacité déjà en place)
-- **B2B (expansion)** — Abonnements écoles, clubs, corporate
+- **🔁 Flywheel — B2C gratuit + extensions premium** — fait *entrer* les gens (viral : 1 événement = plusieurs utilisateurs). Acquisition & rétention, **pas le nerf du revenu**.
+- **💰 Revenu 1 — Impression Printerkut** — cœur de la marge, via un **partenaire de production dédié** (le moat).
+- **💰 Revenu 2 — B2B / B2B2C récurrent** — clubs → écoles → corporate, + organisateurs voyage (agences/UCPA : un deal = des centaines de participants).
+
+> « Le B2C viral fait entrer les gens ; l'argent vient de **l'impression et du B2B**. » Ni l'outil seul, ni l'impression seule, ni le B2B seul — **la défense vient de l'empilement des trois**.
 
 **L'atout Printerkut :**
 - **Partenaire de production dédié** — Atelier d'impression établi, capacité déjà en place
 - **Zéro CapEx** — Aucun investissement machines à financer
-- **Marge captée** — Gather encaisse et paie la production au coût
+- **Marge captée** — Usegather encaisse et paie la production au coût
 - **Livraison offerte** (premium) · **Prix dégressifs**
 
 ### Offre GRATUITE
@@ -104,26 +113,33 @@ Conservation longue durée · quotas étendus · téléchargement HD · albums P
 
 ---
 
-## 8. VERTICALES — beachhead + expansion
-- **🎯 Mariages / événements (départ)** — panier impression élevé, viralité invités, colle à Printerkut
-- **Puis expansion** — Voyages · Écoles · Clubs · Festivals · Corporate
+## 8. VERTICALES — l'escalier de segments
+- **🎯 Mariage / B2C (départ)** — panier impression élevé, viralité invités, colle à Printerkut
+- **Clubs & associations** — récurrent, faible friction, **canal chaud** (clients assos de l'atelier)
+- **Voyages / groupes organisés (B2B2C)** — l'organisateur (agence, tour-opérateur, UCPA) = canal : **un partenariat = des centaines de participants**, CAC quasi nul, marque blanche
+- **Écoles** — la **sécurité/RGPD y est un critère d'achat**, pas un bonus · puis **Corporate · Festivals**
 
-> Une verticale approfondie convainc plus que six survolées.
+> Une verticale approfondie convainc plus que six survolées — mais le **même outil** les sert toutes. Le mariage est la porte d'entrée, pas le plafond.
 
 ---
 
-## 9. OÙ EN EST-ON — beta validé en conditions réelles
-**CE QUI EST DÉJÀ FAIT**
-- **MVP fonctionnel en production** — Cycle complet créer → partager → télécharger
-- **Testé en vrai** — 50+ événements créés, 700+ photos **en beta (fin 2025)** : anniversaires, mariages, fêtes de fin d'année `[chiffres à figer]`
-- **Boucle d'itération** — Produit amélioré début 2026 sur les retours des beta testeurs
-- **Équipe complète** + **partenaire d'impression Printerkut opérationnel**
+## 9. OÙ EN EST-ON — beaucoup construit, à encaisser
+**CE QUI EST DÉJÀ FAIT (codé, en dépôt)**
+- **Produit central en production** — coffre PIN/QR, dépôt sans compte, offline + sync, galerie, export ZIP, **mode concours**, éphémère + purge
+- **Chaîne d'impression complète, codée et testée** — catalogue, file atelier de qualité industrielle, dashboard atelier, tunnel client (aperçu à l'échelle réelle), contrôle résolution
+- **Chapitre mariage** — **galeries par table**, **mots privés aux mariés** (confidentialité serveur), **présentoirs NFC par table** (visuel photo + QR, commande N tables)
+- **Sécurité durcie** — bucket privé, URLs signées ; faille du jeton d'organisateur **fermée le 09/08**
+- **Équipe complète** + **atelier Printerkut opérationnel**
 
-**PROCHAINE ÉTAPE**
-- Ouverture publique (early access) + premiers événements pilotes mariage
+**LA VÉRITÉ SANS FARD**
+- **Rien n'est encore encaissable : Stripe n'est pas branché → revenu = 0.**
+- **0 utilisateur actif** (données beta perdues, incident Supabase) — phase de relance.
+- L'écart n'est pas « produit à construire » mais « produit à **encaisser et prouver** ».
 
-> Traction honnête = beta réel, pas de vanity metrics. Les « 20k utilisateurs / partenariats signés » de l'ancien deck étaient faux → remplacés par les vrais chiffres beta.
-> 💡 Stratégie d'acquisition + financement = chantier dédié (à travailler ensemble).
+**PROCHAINE ÉTAPE (le chemin critique)**
+- Brancher Stripe · Supabase payant · formaliser Printerkut · **1 mariage pilote → prouver l'attach-rate impression**
+
+> Traction honnête = pas de vanity metrics. Beta 2025 : 50+ événements, 700+ photos (données ensuite perdues). Aujourd'hui : 0 actif, assumé.
 
 ---
 
@@ -167,13 +183,13 @@ Usage des fonds :
 ---
 
 ## 13. VISION DE SORTIE
-**Gather devient le WhatsApp de la photo d'événement.**
+**Usegather devient le WhatsApp de la photo d'événement.**
 Objectif ambitieux `[cadrer : France → Europe d'abord]`
 
 ---
 
 ## 14. CONTACT / EARLY ACCESS
-Rejoignez l'aventure Gather
+Rejoignez l'aventure Usegather
 `[Nico — email réel]` · `[www.gather.app existe-t-il ?]` · `[LinkedIn]`
 QR → Early Access
 
