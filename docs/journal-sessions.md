@@ -4,6 +4,10 @@
 
 ---
 
+## Session 09/08/2026 — Audit marché & positionnement
+
+- **Audit concurrentiel + positionnement** (`strategie/audit-marche-positionnement.md`) sur recherche fraîche : le partage QR mariage est un **océan rouge** (GuestPix 49-149 $, Fotify 69 €, BumFot/WedShoots/Kululu gratuits, + la vague « jetable numérique » POV/Scene/Pix Wedding). **Constat clé : aucun concurrent n'imprime réellement les photos des invités** — leurs « prints » sont des modèles de signalétique Canva. Notre moat (atelier Printerkut en propre, pipeline construit) tient ; « sans compte + multi-OS + QR » sont en revanche devenus des **prérequis**, plus des différenciateurs (à corriger dans le deck). Recommandations : réécrire le pitch « de la mémoire à l'objet », partage gratuit + revenu impression/Pro/présentoirs, formaliser Printerkut, prouver l'attach rate sur un vrai mariage, corriger les chiffres marché du deck (~6 Md$/7-8 % et non 25 Md$). Analyse à valider par l'équipe, pas une décision.
+
 ## Session 09/08/2026 — Présentoirs : photo par table + migration sécurité appliquée
 
 - **Migration `20260809120000` appliquée par Nico** → vérifié en read-only : la clé anon prend un **401** sur `host_device_id`, `host_user_id`, `contest_enabled_by` et sur `select(*)`, tandis que les colonnes publiques répondent 200. La faille d'usurpation d'organisateur est **complètement fermée**.
