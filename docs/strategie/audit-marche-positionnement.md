@@ -6,25 +6,36 @@
 > (`decisions-validees.md`) et le deck honnête (`deck-v2.md`). **Ton = celui du
 > deck v2 : aucun claim gonflé.** Ce document est une analyse, pas une décision ;
 > les arbitrages qu'il appelle reviennent à Nico (produit/marque) et à l'équipe.
+>
+> **Rév. 2 (09/08)** : rééquilibrage — l'audit v1 sur-pondérait l'impression
+> (chantier du moment) et sous-évaluait le produit lui-même. La bonne lecture
+> est à **deux moteurs** : la plateforme de partage (freemium) **et**
+> l'impression. Aucun des deux seul n'est l'entreprise.
 
 ---
 
 ## 0. La vérité en un paragraphe
 
-Le partage photo par QR au mariage est devenu un **océan rouge** : une douzaine
-d'acteurs, beaucoup **gratuits ou à ~50 € l'événement**, qui font tous « scanne
-le QR, sans appli, sans compte ». Les trois cases qu'on mettait en avant —
-*sans compte, multi-OS, QR* — ne sont plus des différenciateurs en 2026, ce
-sont des **prérequis**. Notre vrai moat n'est pas de laisser partager des
-photos : **c'est de posséder la production**. Aucun concurrent n'imprime
-réellement les photos des invités ; nous, oui, via un atelier dédié
-(Printerkut), et le pipeline est **construit et testé**, pas promis. La bonne
-histoire n'est donc pas « une énième appli photo QR », c'est **« l'entreprise
-qui transforme un mariage en objets qu'elle fabrique elle-même, à la marge »**.
-Corollaire stratégique : le partage doit être **gratuit et généreux**
-(acquisition), et le revenu vient de l'impression + l'option Pro + les
-présentoirs. C'est exactement la thèse de `decisions-validees.md §4` — et elle
-est maintenant **codée**, plus seulement écrite.
+Usegather, ce n'est pas « une appli d'impression » ni « une énième appli photo
+QR » — c'est **une plateforme de partage photo d'événement (freemium) qui
+possède aussi sa production physique**. Deux moteurs qui se renforcent :
+
+- **Moteur 1 — l'outil + le freemium (la plateforme)** : le produit qui crée la
+  base d'usage. Horizontal (tous les événements, pas que le mariage), digital,
+  **récurrent** (le premium — conservation, HD, quotas — est monétisable, les
+  concurrents le facturent 50-150 €), à coût marginal quasi nul, scalable. C'est
+  l'**actif** : les hôtes, les invités, la rétention, l'expansion par verticale.
+- **Moteur 2 — l'impression (Printerkut)** : la monétisation différenciée à
+  forte marge, mariage-first, physique. Le **moat** : aucun concurrent ne
+  possède d'atelier ; leurs « prints » sont des modèles de signalétique. Ce que
+  personne ne peut copier économiquement.
+
+**Ensemble** = une plateforme qui possède **et** la relation client **et** la
+monétisation physique. L'outil seul = une appli de partage commoditisée avec un
+petit premium (comme les concurrents). L'impression seule = un imprimeur sans
+tunnel d'acquisition. **La défense vient de la combinaison des deux.** C'est
+exactement la thèse de `decisions-validees.md §4` — et elle est maintenant
+**codée**, plus seulement écrite.
 
 ---
 
@@ -33,138 +44,180 @@ est maintenant **codée**, plus seulement écrite.
 - **Marché du partage photo mondial** : ~6,1 Md$ en 2026, croissance ~7-8 %/an
   (et non les « ~25 Md$ » du deck, qui mélangeait partage + impression — **à
   corriger dans le deck**). Source : The Business Research Company, 2026.
-- **Moteur pertinent pour nous** : « l'expansion des événements, festivals et
+- **Moteur pertinent** : « l'expansion des événements, festivals et
   rassemblements » est explicitement citée comme driver — albums collaboratifs,
-  murs en direct, dépôts en pic. C'est notre créneau.
-- **Beachhead mariage France** : **251 000 unions/an** (INSEE 2025, en hausse
-  depuis 2023) — chiffre déjà acté, correct, à garder.
+  murs en direct, dépôts en pic. Notre créneau, et il est **horizontal**.
+- **Beachhead mariage France** : **251 000 unions/an** (INSEE 2025) — chiffre
+  acté, correct. Mais l'outil, lui, sert **tous** les événements (voyages,
+  écoles, clubs, séminaires, festivals) : le mariage est la porte d'entrée
+  monétisation, pas la limite du produit.
 - **Tendance 2026 à connaître** : l'esthétique **« appareil photo jetable
-  numérique »** (POV, Lense, Scene, Pix Wedding) explose sur TikTok/Reels. Les
-  couples ont « largement abandonné les vrais jetables ». C'est le **canal de
-  découverte** du moment — et un angle marketing qui nous manque aujourd'hui.
+  numérique »** (POV, Lense, Scene, Pix Wedding) explose sur TikTok/Reels — le
+  **canal de découverte** du moment, qui nous manque aujourd'hui.
 
 ---
 
 ## 2. Le paysage concurrentiel (données réelles, août 2026)
 
-### 2.1 Le partage QR — le cœur encombré
+| Acteur | Origine | Prix | Sans appli/compte | Premium récurrent | Impression **des photos** |
+|---|---|---|:--:|:--:|:--:|
+| **GuestPix** | US | 49→149 $ one-time | ✅ | ⚠️ (one-time, pas d'abo) | ❌ (modèles Canva **signalétique**) |
+| **Fotify** | US/FR | Gratuit → **69 €** | ✅ | ⚠️ | ❌ (mur live, RSVP, invitations) |
+| **WedShoots** | US | Gratuit | ❌ (appli) | ❌ | ❌ |
+| **Kululu** | US | Gratuit | ✅ | ❌ | ❌ (« imprimez vous-même ») |
+| **POV / Pix Wedding / Scene** | US | Gratuit → faible | ✅ | ⚠️ | ❌ (esthétique jetable, mur live) |
+| **PhotoSharing.fr** | **FR** | freemium | ✅ | ⚠️ | ❌ (diaporama live) |
+| **BumFot** | **FR** | **Gratuit** | ✅ | ❌ | ❌ (album collaboratif) |
+| **Usegather** | **FR/EU** | freemium + **impression** | ✅ | ✅ (conservation/HD/quotas) | ✅ **atelier dédié** |
 
-| Acteur | Origine | Prix | Sans appli/compte | Impression **des photos** |
-|---|---|---|---|:--:|
-| **GuestPix** | US | 49→149 $ one-time | ✅ | ❌ (180+ modèles Canva pour la **signalétique**, pas les tirages) |
-| **Fotify** | US/FR | Gratuit → **69 €** | ✅ | ❌ (mur live, RSVP, invitations) |
-| **WedShoots** | US | Gratuit | ❌ (appli à télécharger) | ❌ |
-| **Kululu** | US | Gratuit | ✅ | ❌ (téléchargement puis « imprimez vous-même ») |
-| **POV / Pix Wedding / Scene** | US | Gratuit → faible | ✅ | ❌ (esthétique jetable, mur live) |
-| **WeddingPhotoSwap / Guestlense** | US | Faible | ✅ | ❌ |
-| **Ceremony App** | US | n.c. | ✅ | ⚠️ revendique « order prints on-demand » — **à vérifier**, très probablement un bouton vers un service tiers, pas un atelier |
-| **PhotoSharing.fr** | **FR** | n.c. (freemium) | ✅ | ❌ (diaporama live QR) |
-| **BumFot** | **FR** | **Gratuit** | ✅ | ❌ (album collaboratif) |
-| **Usegather** | **FR/EU** | freemium + **impression** | ✅ | ✅ **atelier dédié (Printerkut)** |
-
-**Le fait majeur** : sur toute cette liste, **personne n'imprime réellement les
-photos des invités**. Ce que les concurrents appellent « prints », ce sont des
-**modèles de signalétique** (cartons de table, panneau d'accueil à imprimer
-soi-même). Le seul à revendiquer des tirages à la demande (Ceremony) le fait
-vraisemblablement en marque blanche d'un tiers — à confirmer, mais aucun n'a
-d'**atelier de production en propre**. C'est notre angle, et il tient.
-
-### 2.2 Ce que la concurrence fait **mieux que nous** aujourd'hui
-
-- **Prix d'entrée et gratuité** : beaucoup sont gratuits (BumFot, WedShoots,
-  Kululu) ou à ~50 € une fois. On ne pourra **pas** faire payer le partage seul.
-- **Découverte / SEO** : PhotoSharing.fr et BumFot **rankent** sur les
-  requêtes mariage FR ; nous avons zéro présence.
-- **Viralité** : la vague « jetable numérique » leur donne une visibilité
-  TikTok/Reels qu'on n'a pas.
-- **Applis natives + murs live** : plusieurs ont une appli polie et un mur en
-  temps réel (Fotify, POV) ; nous sommes en web (assumé) et sans mur live.
+**Deux faits majeurs.** (1) Sur le **partage**, tout le monde fait « scanne le
+QR, sans appli, sans compte » — c'est un **prérequis**, plus un différenciateur.
+(2) Sur l'**impression**, personne n'imprime réellement les photos des invités
+(leurs « prints » = signalétique Canva ; seul Ceremony revendique des tirages,
+probablement en marque blanche tierce — à vérifier). **Aucun n'a d'atelier en
+propre.**
 
 ---
 
-## 3. Notre positionnement — recalibré honnêtement
+## 3. Les deux moteurs du produit
 
-Le deck v2 disait : « le seul à cocher les 5 cases : sans compte + offline +
-multi-OS + impression + EU/RGPD ». **À réviser** — en 2026 :
+### 3.1 Moteur 1 — l'outil de partage + le freemium (la plateforme)
 
-| Case | Statut réel 2026 | Verdict |
+**Ce que c'est, et pourquoi c'est l'actif.** Un coffre gratuit, dépôt invité
+sans compte, offline + sync, galerie, téléchargement ZIP, **mode concours**
+(votes/likes/classement), éphémère par défaut + préservation opt-in. C'est le
+produit qui **crée la base d'usage et la rétention** — sans lui, il n'y a aucun
+tunnel vers l'impression, et aucune expansion possible.
+
+**Sa monétisation propre (indépendante de l'impression).** Le palier **premium
+récurrent** — conservation longue durée, téléchargement HD, quotas étendus,
+multi-événements, albums. C'est du revenu **digital, à forte marge, scalable, à
+faible opération**, et il est **réellement monétisable** : GuestPix (49-149 $) et
+Fotify (69 €) font déjà payer exactement ça. *(Correction de l'audit v1 qui
+disait le partage « impossible à monétiser » — c'est le partage **basique** qui
+est commoditisé, pas le premium.)*
+
+**Sa position concurrentielle.** À parité sur l'UX de partage de base ; **en
+avance** sur l'offline (file IndexedDB), l'éphémère-par-défaut (privacy), et
+l'hébergement UE/RGPD ; **en retard** sur l'appli native et le **mur live**
+(Fotify, POV), et sur la présence dans la vague « jetable numérique ». L'outil
+est bon, pas encore clairement best-in-class sur l'expérience de partage — **un
+endroit où investir, pas à négliger.**
+
+**Son horizontalité — la vraie histoire de croissance.** L'outil est le **même**
+pour un voyage, une école, un club, un séminaire, un festival. L'impression est
+mariage-lourde ; **la plateforme est universelle**. La croissance au-delà du
+beachhead vit ici.
+
+### 3.2 Moteur 2 — l'impression (Printerkut)
+
+Le **moat**. Production en propre → marge captée, zéro CapEx, et surtout des
+**produits physiques que personne ne peut égaler** : présentoirs NFC par table
+(consommable dimensionné par le nombre de tables, non-photocopiable), **livre
+d'or déjà rempli** (les mots privés que personne d'autre ne collecte), tirages.
+Et le pipeline est **construit et testé de bout en bout** (qualité industrielle
+transposée de Renka), face à des concurrents « landing page + Stripe ».
+
+### 3.3 Pourquoi les deux ensemble = la défense
+
+L'outil **sans** l'impression = une appli commoditisée avec un premium modeste
+(le lot des concurrents). L'impression **sans** l'outil = un imprimeur sans
+tunnel. **Ensemble**, on possède la relation client (récurrente, horizontale,
+digitale) **et** la monétisation physique (différenciée, à marge) — et l'une
+alimente l'autre : chaque invité qui dépose est un futur hôte **et** un futur
+acheteur de tirages. C'est ça, la position que personne n'occupe.
+
+---
+
+## 4. Positionnement — recalibré honnêtement
+
+Le deck v2 disait « le seul à cocher 5 cases ». **À réviser** :
+
+| Case | Statut 2026 | Verdict |
 |---|---|---|
-| Sans compte | Standard (tous le font) | ❌ plus un différenciateur |
-| Multi-OS / sans appli | Standard | ❌ plus un différenciateur |
-| **Offline-first** (file IndexedDB) | **Rare** | ✅ vrai edge technique, mais valeur d'usage marginale (les salles ont du réseau) |
+| Sans compte / multi-OS / QR | Standard | ❌ prérequis, plus un différenciateur |
+| Offline-first | Rare | ✅ edge technique (valeur d'usage marginale) |
+| **Premium récurrent** (conservation/HD/quotas) | Fait par certains | ➖ à parité — **exécuter mieux**, pas revendiquer comme unique |
+| **EU / RGPD / hébergement UE** | Rare chez les US | ✅ vrai angle B2B/planners |
 | **Impression en propre** | **Unique** | ✅✅ **LE moat** |
-| **EU / RGPD / hébergement UE** | Rare chez les US | ✅ vrai angle B2B/planners EU |
 
-**Le repositionnement à acter** : on arrête de se vendre comme « une appli de
-partage sans compte » (bataille perdue d'avance, gratuite chez les autres) et
-on se vend comme **la seule solution qui fabrique les souvenirs physiques du
-mariage — et capte la marge parce qu'elle possède l'atelier**. Le partage est
-le produit d'appel ; les objets sont le produit.
-
----
-
-## 4. Forces (réelles, défendables)
-
-1. **Production en propre (Printerkut)** — marge captée, zéro CapEx, et surtout
-   des **produits physiques que personne ne peut égaler** économiquement.
-2. **Le pipeline d'impression est construit et testé de bout en bout** —
-   catalogue, file atelier de qualité industrielle (transposée de Renka),
-   présentoirs, voie express. Face à des concurrents « landing page + Stripe »,
-   c'est une réalité d'ingénierie, pas une promesse de deck.
-3. **Le présentoir de table NFC + galeries par table** — concept neuf, à
-   l'économie unitaire saine (consommable **dimensionné par le nombre de
-   tables**, non photocopiable). Il transforme le meilleur canal d'acquisition
-   (le QR sur la table) en **produit obligatoire et récurrent**.
-4. **Le livre d'or imprimé, déjà rempli** — les mots privés aux mariés
-   collectés par l'app sont une **matière que personne d'autre ne collecte** :
-   un livre d'or arrivé plein, là où le marché (Cotton Bird 49,90 €) vend des
-   pages vierges.
-5. **Positionnement européen cohérent** — sans compte, RGPD, hébergement UE,
-   sans traceur : crédible face aux apps US pour le B2B (planners, écoles).
-6. **Équipe complète en sweat equity, capital-efficient, deck honnête, marque
-   INPI enregistrée.**
-
-## 5. Faiblesses & risques (à regarder en face)
-
-1. **Le partage est une commodité gratuite** — impossible de le monétiser seul ;
-   toute la thèse repose sur l'attache impression (attach rate à prouver).
-2. **Zéro traction à l'instant T** — 0 événement actif, données beta en partie
-   perdues, aucune preuve d'attach rate impression réelle.
-3. **Printerkut = fournisseur unique et informel** (société du frère, contrat
-   non formalisé) — c'est à la fois le moat **et** le premier drapeau rouge
-   investisseur : concentration + gouvernance. **À dérisquer avant de pitcher.**
-4. **Découverte nulle** — pas de SEO, pas de présence sociale, absents de la
-   vague « jetable numérique » qui fait la viralité 2026.
-5. **Opération de biens physiques = dur** — livraison, retours, SAV, qualité,
-   délais jour J : bien plus lourd qu'un SaaS. Le deck sous-estime ce coût.
-6. **Fragilité infra** (Supabase free dépassé), **sécurité MVP** (modèle
-   device-id, juste durci), **paiement pas branché** (Stripe absent → revenu
-   = 0 aujourd'hui), **pré-immatriculation**.
-
-## 6. Recommandations actionnables
-
-1. **Réécrire l'histoire** : le pitch mène avec Printerkut + objets physiques
-   (présentoirs, livre d'or, tirages), pas avec les fonctionnalités de partage.
-   « De la mémoire à l'objet », pas « une appli photo de plus ». → met à jour
-   deck §5 (marché) et §6 (concurrence).
-2. **Partage gratuit et généreux** ; monétiser sur impression + option Pro +
-   présentoirs. Ne jamais tenter de faire payer le QR de partage.
-3. **Surfer la vague « jetable numérique »** — ajouter un mode/esthétique
-   jetable comme hameçon marketing (faible effort, forte viralité) : c'est le
-   canal de découverte de 2026.
-4. **Formaliser Printerkut** (contrat d'appro exclusif / capital) — dérisque le
-   point qui est à la fois le moat et le principal risque investisseur.
-5. **Prouver l'économie unitaire sur UN vrai mariage** : présentoirs + tirages,
-   mesurer l'attach rate et le panier moyen. C'est LE chiffre que veulent les
-   investisseurs, et il valide toute la thèse. Avant toute levée.
-6. **SEO/contenu mariage FR + canal B2B planners** (angle RGPD/UE) — là où les
-   concurrents FR sont déjà installés.
-7. **Corriger les chiffres marché du deck** (6 Md$/7-8 % au lieu de 25 Md$) —
-   la crédibilité vient de la justesse, pas de la taille annoncée.
+**Le repositionnement à acter** : ni « une appli de partage » (bataille
+commoditisée) ni « une appli d'impression » (réducteur). **« La plateforme qui
+rassemble les photos de l'événement — et qui, seule, en fait des objets. »** Le
+partage/premium est la plateforme récurrente ; l'impression est la marge
+différenciée. Les deux au pitch, pas un seul.
 
 ---
 
-## 7. Sources
+## 5. Forces (réelles, défendables)
+
+**Moteur plateforme :**
+1. **Produit en prod, complet** — créer/partager/télécharger, offline+sync, mode
+   concours, éphémère+préservation. Horizontal sur tous les événements.
+2. **Premium récurrent monétisable** — revenu digital scalable à faible
+   opération, que le marché valide déjà (GuestPix, Fotify).
+3. **Positionnement européen** — sans compte, RGPD, hébergement UE, sans
+   traceur : crédible face aux apps US, surtout en B2B (planners, écoles).
+
+**Moteur impression :**
+4. **Production en propre (Printerkut)** — marge, zéro CapEx, produits physiques
+   inimitables. Pipeline **construit et testé**, pas promis.
+5. **Présentoir NFC par table + livre d'or déjà rempli** — des produits que le
+   marché ne peut pas fabriquer (personne d'autre ne collecte la matière).
+
+**Transverse :**
+6. Équipe complète en sweat equity, capital-efficient, deck honnête, **marque
+   INPI enregistrée**.
+
+## 6. Faiblesses & risques (à regarder en face)
+
+**Moteur plateforme :**
+1. **Le partage basique est gratuit chez les autres** — la valeur payante est
+   dans le premium (rétention/quotas/longévité), **qu'il faut exécuter**, et
+   dans l'impression.
+2. **UX de partage pas encore best-in-class** — pas d'appli native, pas de mur
+   live, absents de la vague « jetable » qui fait la viralité 2026.
+3. **Découverte nulle** — pas de SEO, pas de social ; les concurrents FR
+   (PhotoSharing.fr, BumFot) rankent déjà.
+4. **Le premium n'est pas branché** — Stripe absent : le revenu digital
+   récurrent n'existe pas encore, comme le revenu impression.
+
+**Moteur impression :**
+5. **Printerkut = fournisseur unique et informel** (société du frère, contrat
+   non formalisé) — moat **et** premier drapeau rouge investisseur.
+6. **Opération de biens physiques = dur** (livraison, SAV, qualité, jour J).
+
+**Transverse :**
+7. **Zéro traction à l'instant T** (0 actif, beta en partie perdue), **infra
+   fragile** (Supabase free dépassé), **sécurité MVP** (device-id, juste
+   durcie), **pré-immatriculation**.
+
+## 7. Recommandations actionnables
+
+**Sur la plateforme (ne pas négliger le cœur) :**
+1. **Investir l'UX de partage** — c'est le haut du tunnel ET la rétention. Viser
+   best-in-class (mur live, appli native à terme, esthétique « jetable » comme
+   hameçon viral faible-effort).
+2. **Brancher et exécuter le premium** (conservation/HD/quotas/multi-événements)
+   — revenu digital récurrent, indépendant de l'impression, que le marché
+   valide déjà. Même wagon Stripe que l'impression.
+3. **Ne pas enfermer le produit dans le mariage** — l'outil est horizontal ;
+   garder voyages/écoles/clubs dans la vision de croissance (le mariage = porte
+   d'entrée monétisation, pas plafond).
+4. **SEO/contenu FR + canal B2B planners** (angle RGPD/UE).
+
+**Sur l'impression (le moat) :**
+5. **Formaliser Printerkut** (contrat exclusif/capital) avant de pitcher.
+6. **Prouver l'attach rate impression sur UN vrai mariage** (panier moyen) — le
+   chiffre qui valide la combinaison des deux moteurs.
+
+**Transverse :**
+7. **Corriger les chiffres marché du deck** (~6 Md$/7-8 %, pas 25 Md$) et
+   présenter les **deux moteurs** à parts égales, pas seulement l'un.
+
+---
+
+## 8. Sources
 
 - [The 10 Best Wedding Photo Apps 2026 — POV](https://pov.camera/blog/the-10-best-wedding-photo-apps)
 - [GuestPix — Weddings Pricing](https://guestpix.com/weddings-pricing/)
@@ -177,7 +230,6 @@ le produit d'appel ; les objets sont le produit.
 - [Photo Sharing Market 2026 — The Business Research Company](https://www.thebusinessresearchcompany.com/report/photo-sharing-global-market-report)
 - Interne : `decisions-validees.md`, `deck-v2.md`, `strategie/idee-galeries-par-table.md`, `strategie/gamme-produits-impression.md`
 
-> **Note de fiabilité** : prix concurrents relevés en août 2026, susceptibles de
-> bouger ; le tarif exact de POP (Party of Pictures) et la nature réelle du
-> « print on demand » de Ceremony restent **à confirmer** avant de s'appuyer
-> dessus dans un pitch.
+> **Fiabilité** : prix concurrents relevés en août 2026, susceptibles de
+> bouger ; le tarif de POP (Party of Pictures) et la nature réelle du « print on
+> demand » de Ceremony restent **à confirmer** avant tout usage en pitch.
