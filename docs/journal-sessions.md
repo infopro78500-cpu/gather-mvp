@@ -4,6 +4,10 @@
 
 ---
 
+## Session 09/08/2026 — Cadrage du segment clubs & associations
+
+- **Cadrage pré-mâché du barreau n°2** (`strategie/segment-clubs-associations.md`) sur recherche fraîche (180 000 assos sportives, 18 M licenciés ; concurrents = WhatsApp + apps de gestion Spond/Heja/SportEasy où la photo est une annexe + le photographe de club qu'on absorbe). **La thèse : l'outil qui RAPPORTE au club au lieu de lui coûter** — la boutique photo du club (commission au club sur chaque commande famille, matière = tous les téléphones toute la saison), qui fait du club notre force de vente. Cinq mécaniques d'« incontournable », dont 4 déjà codées : galeries par équipe (= galeries par table, changer l'étiquette), concours photo (en prod), catalogue (plaques/posters/présentoirs), droit à l'image des mineurs (l'argument RGPD qui fait basculer les présidents). Vrai gap : commission (Stripe Connect) + multi-hôtes (= chantier comptes hôtes) + mode mineurs V2. Séquence : trancher le prix → LE club via l'atelier → équiper son prochain événement avec l'existant → mesurer. Décision de prix créée au cockpit ; roadmap NEXT + tâche pilote Notion enrichies. Analyse à valider, pas une décision.
+
 ## Session 09/08/2026 — Cockpit Notion synchronisé + reframe Printerkut
 
 - **Cockpit Notion mis à jour** (double écriture) : décisions actées (présentoir NFC, Option Pro mariage, sécurité jeton hôte), jalons faits (atelier branché, mariage codé, audits+deck), et **tâches manquantes de l'audit créées** (Stripe, rendu visuels Vercel, outillage NFC atelier, comptes hôtes, app native/mur live, pilote B2B club, SEO+jetable, B2B2C voyage). Existantes actualisées (sécurité, pilote mariage, deck). Message équipe rédigé (version longue mail + version WhatsApp) — envoi laissé à Nico.
