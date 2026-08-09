@@ -4,6 +4,11 @@
 
 ---
 
+## Session 09/08/2026 — Présentoirs : photo par table + migration sécurité appliquée
+
+- **Migration `20260809120000` appliquée par Nico** → vérifié en read-only : la clé anon prend un **401** sur `host_device_id`, `host_user_id`, `contest_enabled_by` et sur `select(*)`, tandis que les colonnes publiques répondent 200. La faille d'usurpation d'organisateur est **complètement fermée**.
+- **Option « une photo par table »** ajoutée au parcours présentoirs (idée Nico) : bascule « La même pour toutes » / « Une par table ». En mode par table, une grille Table 1..N où chaque case reçoit sa photo (les convives de la table), aperçu qui suit la table en focus ; **les tables laissées vides reprennent la première photo choisie**. Côté serveur : `photo` reste le repli obligatoire, `photo_<i>` surchargent leur table. Testé de bout en bout : commande 3 tables, photos rouge (T1) + bleue (T2) + T3 vide → visuels vérifiés rouge/bleu/**rouge (repli)**, prix du lot toujours porté par la 1re pièce.
+
 ## Session 09/08/2026 — Audit projet : fermeture de la fuite du jeton d'organisateur
 
 - **Faille trouvée et corrigée** : la clé anonyme Supabase pouvait lire `host_device_id` (le jeton qui prouve qu'on est l'organisateur) de n'importe quel coffre, et énumérer tous les coffres. Ce jeton étant rejouable vers les routes serveur, le lire suffisait à usurper l'organisateur — **lire les mots privés aux mariés**, supprimer des photos, activer Pro, commander des présentoirs. Les écritures, elles, étaient déjà bloquées par RLS (vérifié : PATCH anon = 0 ligne).

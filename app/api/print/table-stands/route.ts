@@ -145,14 +145,33 @@ export async function POST(req: NextRequest) {
     dueAt = parsed.toISOString();
   }
 
-  const photoFile = form.get("photo");
-  if (!(photoFile instanceof File) || photoFile.size === 0) {
+  // Deux modes (idée Nico 09/08) : soit la MÊME photo partout (`photo`
+  // seul), soit UNE PHOTO PAR TABLE (`photo_1`..`photo_N`, chacune
+  // optionnelle). `photo` est toujours requis : il sert de repli pour les
+  // tables laissées sans photo propre.
+  const validatePhoto = async (f: FormDataEntryValue | null): Promise<Buffer | null> => {
+    if (!(f instanceof File) || f.size === 0) return null;
+    if (f.size > MAX_PHOTO_BYTES || !f.type.startsWith("image/")) return null;
+    return Buffer.from(await f.arrayBuffer());
+  };
+  const defaultPhoto = await validatePhoto(form.get("photo"));
+  if (!defaultPhoto) {
     return NextResponse.json({ success: false, error: "MISSING_PHOTO" }, { status: 422 });
   }
-  if (photoFile.size > MAX_PHOTO_BYTES || !photoFile.type.startsWith("image/")) {
-    return NextResponse.json({ success: false, error: "INVALID_PHOTO" }, { status: 422 });
+  const perTable = new Map<number, Buffer>();
+  for (let i = 1; i <= tableCount; i++) {
+    const entry = form.get(`photo_${i}`);
+    if (entry instanceof File && entry.size > 0) {
+      const buf = await validatePhoto(entry);
+      if (!buf) {
+        return NextResponse.json(
+          { success: false, error: "INVALID_PHOTO", message: `Photo de la table ${i} invalide.` },
+          { status: 422 }
+        );
+      }
+      perTable.set(i, buf);
+    }
   }
-  const photo = Buffer.from(await photoFile.arrayBuffer());
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || req.nextUrl.origin;
   const orderRef = makeOrderRef();
@@ -177,7 +196,7 @@ export async function POST(req: NextRequest) {
       const artwork = await renderTableStandArtwork(
         variant.format,
         {
-          photo,
+          photo: perTable.get(i) ?? defaultPhoto,
           tableLabel,
           joinUrl,
           pin: event.pin,
