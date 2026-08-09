@@ -209,52 +209,67 @@ export async function renderTableStandArtwork(
   const widthPx = Math.round((format.widthCm / 2.54) * PRINT_DPI);
   const heightPx = Math.round((format.heightCm / 2.54) * PRINT_DPI);
 
-  const background = await sharp(input.photo, { failOn: "none" })
+  // Cadre blanc tout autour + FONDU : la photo occupe le haut dans le cadre,
+  // et se dissout progressivement vers le blanc — « Table N », le QR et la
+  // consigne posent sur du blanc pur (contraste de scan maximal), sans
+  // cartouche rapporté. Direction actée par Nico le 09/08.
+  const frame = Math.round(widthPx * 0.045);
+  const fadeEndY = Math.round(heightPx * 0.6);
+  const photoW = widthPx - frame * 2;
+  const photoH = fadeEndY - frame;
+  const photo = await sharp(input.photo, { failOn: "none" })
     .rotate()
-    .resize(widthPx, heightPx, { fit: "cover" })
+    .resize(photoW, photoH, { fit: "cover" })
     .toBuffer();
-
-  // Cartouche blanc en pied : ~46 % de la hauteur, marges 5 %.
-  const margin = Math.round(widthPx * 0.05);
-  const cardY = Math.round(heightPx * 0.5);
-  const cardH = heightPx - cardY - margin;
-  const cardW = widthPx - margin * 2;
-  const radius = Math.round(widthPx * 0.04);
 
   const tableSize = Math.round(widthPx * 0.11);
   const ctaSize = Math.round(widthPx * 0.042);
   const pinSize = Math.round(widthPx * 0.036);
-  // Le pied du cartouche doit respirer : le QR est dimensionné pour que la
-  // consigne et le PIN tiennent avec une marge, jamais collés au bord bas.
-  const reservedText =
-    tableSize * 1.4 + ctaSize * 2.5 + (input.pin ? pinSize * 1.9 : 0) + cardH * 0.1;
-  const qrSize = Math.round(Math.min(cardW * 0.52, cardH - reservedText));
-  const qrX = Math.round((widthPx - qrSize) / 2);
 
-  let cursor = cardY + Math.round(cardH * 0.06);
-  const table = fitLine(input.tableLabel, tableSize, cardW * 0.88, true);
-  cursor += table.size;
-  const tableY = cursor;
-  cursor += Math.round(table.size * 0.35);
-  const qrY = cursor;
-  cursor += qrSize + Math.round(ctaSize * 1.1);
-  const ctaY = cursor;
-  const pinY = ctaY + Math.round(ctaSize * 1.35);
+  const table = fitLine(input.tableLabel, tableSize, photoW * 0.88, true);
+  const tableY = fadeEndY + Math.round(table.size * 0.55);
+  const qrY = tableY + Math.round(table.size * 0.5);
+  // Le QR prend la place restante, jamais au détriment de la respiration du
+  // pied : consigne, PIN et cadre bas gardent leurs marges.
+  const bottomBudget =
+    heightPx - frame - (input.pin ? pinSize * 1.9 : pinSize * 0.5) - ctaSize * 2.3;
+  const qrSize = Math.round(Math.min(photoW * 0.5, bottomBudget - qrY));
+  const qrX = Math.round((widthPx - qrSize) / 2);
+  const ctaY = qrY + qrSize + Math.round(ctaSize * 1.2);
+  const pinY = ctaY + Math.round(pinSize * 1.45);
 
   const cta = input.callToAction
-    ? fitLine(input.callToAction, ctaSize, cardW * 0.9, false)
+    ? fitLine(input.callToAction, ctaSize, photoW * 0.9, false)
     : null;
 
   const overlay = `<svg xmlns="http://www.w3.org/2000/svg" width="${widthPx}" height="${heightPx}" viewBox="0 0 ${widthPx} ${heightPx}">
-  <rect x="${margin}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${radius}" fill="${PAPER}" fill-opacity="0.96"/>
+  <defs>
+    <linearGradient id="usg-fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${PAPER}" stop-opacity="0"/>
+      <stop offset="0.55" stop-color="${PAPER}" stop-opacity="0"/>
+      <stop offset="0.92" stop-color="${PAPER}" stop-opacity="0.96"/>
+      <stop offset="1" stop-color="${PAPER}" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+  <rect x="${frame}" y="${frame}" width="${photoW}" height="${photoH}" fill="url(#usg-fade)"/>
   <text x="${widthPx / 2}" y="${tableY}" font-family="Helvetica, Arial, sans-serif" font-size="${table.size}" font-weight="700" fill="${INK}" text-anchor="middle">${escapeXml(table.content)}</text>
   ${qrSvg(input.joinUrl, qrSize, qrX, qrY)}
   ${cta ? `<text x="${widthPx / 2}" y="${ctaY}" font-family="Helvetica, Arial, sans-serif" font-size="${cta.size}" font-weight="600" fill="${INK}" text-anchor="middle">${escapeXml(cta.content)}</text>` : ""}
   ${input.pin ? `<text x="${widthPx / 2}" y="${pinY}" font-family="Helvetica, Arial, sans-serif" font-size="${pinSize}" fill="${INK}" text-anchor="middle">ou code ${escapeXml(input.pin)}</text>` : ""}
 </svg>`;
 
-  return sharp(background)
-    .composite([{ input: Buffer.from(overlay), top: 0, left: 0 }])
+  return sharp({
+    create: {
+      width: widthPx,
+      height: heightPx,
+      channels: 3,
+      background: PAPER,
+    },
+  })
+    .composite([
+      { input: photo, top: frame, left: frame },
+      { input: Buffer.from(overlay), top: 0, left: 0 },
+    ])
     .png()
     .withMetadata({ density: PRINT_DPI })
     .toBuffer();
