@@ -4,6 +4,12 @@
 
 ---
 
+## Session 09/08/2026 — Le visuel du présentoir de table, validé par Nico
+
+- **Compositeur du présentoir construit** (`renderTableStandArtwork`) : la photo (mariés ou tablée) + « Table N » + QR encodant le lien de CETTE table (`…&table=…`, le même que portera la puce NFC) + consigne + PIN de secours, à 300 dpi aux formats fournisseur.
+- **Trois itérations de design avec Nico, sur sa vraie photo** : cartouche blanc → **fondu avec cadre blanc** (« Table N » et QR sur blanc pur) → **deux styles au choix avec petits réglages bornés** : « Fondu » (début du fondu réglable) et « Voile » (photo bord à bord, opacité du voile 40-95 %). Le fond blanc du QR reste opaque quel que soit le réglage — la scannabilité n'est pas négociable. Échantillons envoyés, **validés (« top »)**.
+- **Reste pour boucler la chaîne présentoirs** : le parcours de commande organisateur depuis la section Option Pro (choix de photo, style + curseur avec aperçu en direct, N tables → N visuels différents vers l'atelier) et **l'arithmétique du prix au lot** (N pièces distinctes, un seul prix de lot 5/10/15/20) — à câbler dans la route de commande avant d'ouvrir.
+
 ## Session 08/08/2026 — Voie express validée en réel + le présentoir passe en NFC
 
 - **Migration `20260807120000` appliquée** (Nico) → preflight 16/16 au vert.
