@@ -193,6 +193,17 @@ export async function renderGeneratedArtwork(
  * et le QR sur un cartouche blanc en pied. La puce NFC embarquée porte le
  * même lien ; le QR est la seconde porte, jamais l'inverse (décision 08/08).
  */
+export interface TableStandStyle {
+  /** « fondu » (défaut) : cadre blanc, la photo se dissout vers le blanc.
+   *  « voile » : photo plein cadre bord à bord, voile blanc translucide. */
+  style?: "fondu" | "voile";
+  /** Style « voile » : opacité du voile — 0,5 discret → 0,95 quasi opaque. */
+  veilOpacity?: number;
+  /** Style « fondu » : début du fondu, en fraction de la hauteur de la photo
+   *  (0,3 = fondu long et vaporeux, 0,75 = photo presque entière). */
+  fadeStart?: number;
+}
+
 export async function renderTableStandArtwork(
   format: PrintFormat,
   input: {
@@ -204,15 +215,78 @@ export async function renderTableStandArtwork(
     joinUrl: string;
     pin?: string | null;
     callToAction?: string | null;
-  }
+  },
+  styleOpts?: TableStandStyle
 ): Promise<Buffer> {
   const widthPx = Math.round((format.widthCm / 2.54) * PRINT_DPI);
   const heightPx = Math.round((format.heightCm / 2.54) * PRINT_DPI);
 
-  // Cadre blanc tout autour + FONDU : la photo occupe le haut dans le cadre,
-  // et se dissout progressivement vers le blanc — « Table N », le QR et la
-  // consigne posent sur du blanc pur (contraste de scan maximal), sans
-  // cartouche rapporté. Direction actée par Nico le 09/08.
+  // Deux styles au choix de l'organisateur (idée Nico 09/08), avec de petits
+  // réglages bornés — les valeurs arrivent du client, on les clampe toujours.
+  const style = styleOpts?.style === "voile" ? "voile" : "fondu";
+  const veilOpacity = Math.min(0.95, Math.max(0.4, styleOpts?.veilOpacity ?? 0.8));
+  const fadeStart = Math.min(0.75, Math.max(0.3, styleOpts?.fadeStart ?? 0.55));
+
+  const tableSize = Math.round(widthPx * 0.11);
+  const ctaSize = Math.round(widthPx * 0.042);
+  const pinSize = Math.round(widthPx * 0.036);
+
+  const text = (
+    content: string,
+    y: number,
+    size: number,
+    weight: string
+  ) =>
+    `<text x="${widthPx / 2}" y="${y}" font-family="Helvetica, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="${INK}" text-anchor="middle">${escapeXml(content)}</text>`;
+
+  if (style === "voile") {
+    // Photo bord à bord, voile blanc translucide arrondi en pied. Le QR garde
+    // son fond blanc OPAQUE (qrSvg) : la scannabilité ne se négocie pas.
+    const background = await sharp(input.photo, { failOn: "none" })
+      .rotate()
+      .resize(widthPx, heightPx, { fit: "cover" })
+      .toBuffer();
+
+    const margin = Math.round(widthPx * 0.05);
+    const cardY = Math.round(heightPx * 0.5);
+    const cardH = heightPx - cardY - margin;
+    const cardW = widthPx - margin * 2;
+    const radius = Math.round(widthPx * 0.04);
+
+    let cursor = cardY + Math.round(cardH * 0.05);
+    const table = fitLine(input.tableLabel, tableSize, cardW * 0.88, true);
+    cursor += table.size;
+    const tableY = cursor;
+    const qrY = tableY + Math.round(table.size * 0.4);
+    const bottomBudget =
+      cardY + cardH - Math.round(cardH * 0.04) -
+      (input.pin ? pinSize * 1.9 : pinSize * 0.4) - ctaSize * 2.3;
+    const qrSize = Math.round(Math.min(cardW * 0.52, bottomBudget - qrY));
+    const qrX = Math.round((widthPx - qrSize) / 2);
+    const ctaY = qrY + qrSize + Math.round(ctaSize * 1.2);
+    const pinY = ctaY + Math.round(pinSize * 1.45);
+    const cta = input.callToAction
+      ? fitLine(input.callToAction, ctaSize, cardW * 0.9, false)
+      : null;
+
+    const overlay = `<svg xmlns="http://www.w3.org/2000/svg" width="${widthPx}" height="${heightPx}" viewBox="0 0 ${widthPx} ${heightPx}">
+  <rect x="${margin}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${radius}" fill="${PAPER}" fill-opacity="${veilOpacity}"/>
+  ${text(table.content, tableY, table.size, "700")}
+  ${qrSvg(input.joinUrl, qrSize, qrX, qrY)}
+  ${cta ? text(cta.content, ctaY, cta.size, "600") : ""}
+  ${input.pin ? text(`ou code ${input.pin}`, pinY, pinSize, "400") : ""}
+</svg>`;
+
+    return sharp(background)
+      .composite([{ input: Buffer.from(overlay), top: 0, left: 0 }])
+      .png()
+      .withMetadata({ density: PRINT_DPI })
+      .toBuffer();
+  }
+
+  // Style « fondu » : cadre blanc tout autour, la photo occupe le haut et se
+  // dissout progressivement — « Table N », QR et consigne posent sur du
+  // blanc pur (contraste de scan maximal), sans cartouche rapporté.
   const frame = Math.round(widthPx * 0.045);
   const fadeEndY = Math.round(heightPx * 0.6);
   const photoW = widthPx - frame * 2;
@@ -221,10 +295,6 @@ export async function renderTableStandArtwork(
     .rotate()
     .resize(photoW, photoH, { fit: "cover" })
     .toBuffer();
-
-  const tableSize = Math.round(widthPx * 0.11);
-  const ctaSize = Math.round(widthPx * 0.042);
-  const pinSize = Math.round(widthPx * 0.036);
 
   const table = fitLine(input.tableLabel, tableSize, photoW * 0.88, true);
   const tableY = fadeEndY + Math.round(table.size * 0.55);
@@ -246,16 +316,16 @@ export async function renderTableStandArtwork(
   <defs>
     <linearGradient id="usg-fade" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="${PAPER}" stop-opacity="0"/>
-      <stop offset="0.55" stop-color="${PAPER}" stop-opacity="0"/>
+      <stop offset="${fadeStart}" stop-color="${PAPER}" stop-opacity="0"/>
       <stop offset="0.92" stop-color="${PAPER}" stop-opacity="0.96"/>
       <stop offset="1" stop-color="${PAPER}" stop-opacity="1"/>
     </linearGradient>
   </defs>
   <rect x="${frame}" y="${frame}" width="${photoW}" height="${photoH}" fill="url(#usg-fade)"/>
-  <text x="${widthPx / 2}" y="${tableY}" font-family="Helvetica, Arial, sans-serif" font-size="${table.size}" font-weight="700" fill="${INK}" text-anchor="middle">${escapeXml(table.content)}</text>
+  ${text(table.content, tableY, table.size, "700")}
   ${qrSvg(input.joinUrl, qrSize, qrX, qrY)}
-  ${cta ? `<text x="${widthPx / 2}" y="${ctaY}" font-family="Helvetica, Arial, sans-serif" font-size="${cta.size}" font-weight="600" fill="${INK}" text-anchor="middle">${escapeXml(cta.content)}</text>` : ""}
-  ${input.pin ? `<text x="${widthPx / 2}" y="${pinY}" font-family="Helvetica, Arial, sans-serif" font-size="${pinSize}" fill="${INK}" text-anchor="middle">ou code ${escapeXml(input.pin)}</text>` : ""}
+  ${cta ? text(cta.content, ctaY, cta.size, "600") : ""}
+  ${input.pin ? text(`ou code ${input.pin}`, pinY, pinSize, "400") : ""}
 </svg>`;
 
   return sharp({
