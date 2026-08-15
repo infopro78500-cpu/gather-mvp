@@ -139,6 +139,57 @@ club, le revenu vient des commandes.**
 
 ---
 
+### 5.1 Combien ça rapporte — le calcul (hypothèses à valider au pilote)
+
+**Les hypothèses, toutes ajustables (c'est le pilote qui les mesure) :**
+- **Club-type : 200 familles** (un club amateur moyen, toutes équipes confondues).
+- **Panier moyen** d'une famille qui commande sur la saison : **25 €** (2-3 tirages
+  + un objet : plaque, poster d'équipe).
+- **Commission au club : 12 %** du panier.
+- **Notre marge nette ≈ 50 % du CA** après matière (~35 %), commission (12 %) et
+  frais (~3 %) — l'atelier du frère = zéro CapEx, coût = matière + consommables.
+- **L'attach rate (part des familles qui commandent) = LE seul vrai inconnu** → 3 scénarios.
+
+**Sur une saison, club de 200 familles :**
+
+| Scénario | Familles qui commandent | CA boutique | Le club touche | On encaisse (marge) |
+|---|--:|--:|--:|--:|
+| Prudent (15 %) | 30 | 750 € | 90 € | ~375 € |
+| **Base (30 %)** | **60** | **1 500 €** | **180 €** | **~750 €** |
+| Optimiste (50 %, panier 30 €) | 100 | 3 000 € | 360 € | ~1 500 € |
+
+**+ bonus calendrier de fin de saison** (one-shot) : ~40 % des familles achètent le
+calendrier du club à 15 € → **1 200 € de CA → ~145 € pour le club, ~600 € de marge
+pour nous** — et il se met en page tout seul avec les photos de la saison.
+
+**Notre edge caché : le colis groupé.** Toutes les commandes d'un club partent dans
+la même fenêtre de production et le même envoi — le forfait d'accroche et de port
+s'amortit (c'est déjà la logique de remise volume + lot par matière, codée). Le
+club est le cas d'usage idéal de cet avantage structurel.
+
+**La lecture :**
+- **Côté club** : 90 à 360 €/saison (+ calendrier) **sans qu'un bénévole ne lève le
+  petit doigt** — là où le photographe impose d'organiser une journée. Modeste, mais
+  c'est de l'argent qui n'existait pas.
+- **Côté nous** : ~375 à 1 500 € de marge par club et par saison, **récurrent**. Au
+  canal chaud de l'atelier — disons **20 clubs en base** — ça fait **~15 000 € de
+  marge/saison** + les calendriers, pour trois présentoirs et une mise en place par club.
+- **Point d'équilibre bas** : dès une dizaine de familles, le coffre est rentable pour
+  tout le monde. Aucun volume critique à atteindre avant de gagner.
+
+**Le pitch chiffré au président (une phrase) :**
+> « Vous ne payez rien. Vos familles récupèrent enfin toutes les photos de la saison
+> et commandent leurs tirages quand elles veulent ; le club touche une commission sur
+> chaque commande — de l'ordre de **150 à 400 € sur la saison, calendrier compris** —
+> sans aucun travail pour vos bénévoles. »
+
+> ⚠️ **Honnêteté** : ces montants reposent sur l'attach rate, qu'on n'a jamais mesuré
+> en libre-service. Le photographe de club prouve qu'une partie des familles paie
+> pour la photo ; reste à voir si, sur toute la saison, c'est 15, 30 ou 50 %. Un club,
+> un trimestre — et ces trois colonnes deviennent une seule, réelle.
+
+---
+
 ## 6. Ce qui existe déjà vs ce qui manque (vérité code)
 
 **✅ Réutilisable tel quel** : coffres QR/PIN sans compte · offline · galeries
