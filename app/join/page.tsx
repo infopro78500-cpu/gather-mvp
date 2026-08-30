@@ -36,11 +36,14 @@ function JoinPageInner() {
 
     setLoading(true);
 
-    const { data, error: supabaseError } = await supabase
-      .from("events")
-      .select("id")
-      .eq("pin", trimmed)
-      .maybeSingle();
+    // Résolution via la fonction SECURITY DEFINER : la table `events` n'est plus
+    // lisible en direct par la clé anon (audit 30/08 — sinon un `select` sans
+    // filtre exposait le PIN de tous les coffres). Un appel = un coffre.
+    const { data: matches, error: supabaseError } = await supabase.rpc(
+      "get_public_event",
+      { p_pin: trimmed }
+    );
+    const data = matches?.[0] ?? null;
 
     if (supabaseError || !data) {
       setError("Aucun coffre trouvé pour ce code. Vérifie le PIN.");

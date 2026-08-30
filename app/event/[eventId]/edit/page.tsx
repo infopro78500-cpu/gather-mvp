@@ -72,13 +72,14 @@ export default function EditEventPage() {
         return;
       }
 
-      const { data, error: fetchError } = await supabase
-        .from("events")
-        .select(
-          "id, name, pin, expires_at, lifetime_days, contest_enabled, contest_enabled_at, contest_ends_at, pro_enabled_at, table_count"
-        )
-        .eq("id", eventId)
-        .maybeSingle<EventData>();
+      // Lecture via la fonction SECURITY DEFINER (par id) : la table `events`
+      // n'est plus lisible en direct par la clé anon (audit 30/08). La fonction
+      // ne renvoie que les colonnes publiques, jamais les jetons hôtes.
+      const { data: matches, error: fetchError } = await supabase.rpc(
+        "get_public_event",
+        { p_id: eventId }
+      );
+      const data = (matches?.[0] ?? null) as EventData | null;
 
       if (fetchError) {
         console.error("Erreur lors de la récupération de l'événement", fetchError);

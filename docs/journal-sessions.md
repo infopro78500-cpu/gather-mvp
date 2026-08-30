@@ -4,6 +4,12 @@
 
 ---
 
+## Session 30/08/2026 — Audit & fix : énumération des coffres (policy `events` en `using(true)`)
+
+- **Faille trouvée et corrigée** (dans la foulée du Security Advisor). Le dernier warning « RLS Policy Always True » sur `public.events` cachait une vraie fuite : la policy SELECT « Allow public to select events » était en `using (true)` pour anon/authenticated. La clé anon étant **publique** (dans le JS du site), `GET /rest/v1/events?select=id,name,pin` **sans filtre** renvoyait le nom + le PIN de **tous** les coffres → galerie de n'importe quel mariage accessible. Le `.eq("pin", …)` du client n'était qu'un filtre applicatif. La migration `20260809` avait caché les jetons hôtes mais pas fermé l'énumération (le `pin` restait lisible). Confirmé par `pg_policies` (SELECT `using=true`, rôles `{anon,authenticated}`).
+- **Correctif — résolution par fonction, plus par table.** Fonction `public.get_public_event(p_pin, p_id)` en `SECURITY DEFINER` (`search_path=''`, `stable`, colonnes publiques uniquement, `limit 1`) : un appel = un coffre, plus de dump en masse. Les 3 lectures client basculées sur `supabase.rpc(...)` : `join/page.tsx`, `events/[pin]/page.tsx` (par pin), `event/[eventId]/edit/page.tsx` (par id). Vérifié que le create-flow ne relit pas la ligne (`page.tsx:65`) et que les autres `from("events")` sont soit l'INSERT, soit le service role admin.
+- **Deux migrations pour éviter la coupure** : `20260830140000` (crée la fonction — additif, sans risque, ancien + nouveau code marchent) ; `20260830150000` (drop la policy SELECT — **à appliquer APRÈS déploiement** du code). `npm run check:release` **vert**. Décision tracée (`journal-decisions.md`) + à porter au cockpit (Branche sécurité, Qui = Arnaud). Résiduel connu au backlog : rate-limit anti-brute-force du PIN (espace 1 M, un appel à la fois).
+
 ## Session 30/08/2026 — Correction des 2 erreurs du Security Advisor Supabase
 
 - **2 erreurs Supabase corrigées** (signalées par Nico via screenshot du Security Advisor), toutes deux héritées de la migration `20250325120000` qui a reconstruit `analytics_events` sans réactiver la RLS : (1) **RLS désactivée sur `public.analytics_events`**, (2) **vue `public.event_kpi_engagement` en SECURITY DEFINER** exposée aux rôles publics (contrairement aux vues `product_kpi_*` déjà révoquées).

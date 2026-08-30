@@ -338,16 +338,15 @@ const pin = params.pin;
     }
 
     const fetchEvent = async () => {
-      const { data, error: eventError } = await supabase
-        .from("events")
-        // Colonnes publiques uniquement : plus jamais host_device_id /
-        // host_user_id côté client (audit 09/08 — la migration column-revoke
-        // les rend même illisibles via l'API REST anon).
-        .select(
-          "id, name, pin, is_closed, expires_at, lifetime_days, contest_enabled, contest_enabled_at, contest_ends_at, pro_enabled_at, table_count"
-        )
-        .eq("pin", pin)
-        .maybeSingle<EventData>();
+      // Résolution via la fonction SECURITY DEFINER : la table `events` n'est plus
+      // lisible en direct par la clé anon (audit 30/08 — sinon un `select` sans
+      // filtre exposait le PIN de tous les coffres). Elle ne renvoie qu'une ligne
+      // et seulement les colonnes publiques (jamais host_device_id / host_user_id).
+      const { data: matches, error: eventError } = await supabase.rpc(
+        "get_public_event",
+        { p_pin: pin }
+      );
+      const data = (matches?.[0] ?? null) as EventData | null;
 
       if (eventError) {
         console.error(eventError);
