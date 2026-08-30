@@ -4,6 +4,13 @@
 
 ---
 
+## Session 30/08/2026 — Correction des 2 erreurs du Security Advisor Supabase
+
+- **2 erreurs Supabase corrigées** (signalées par Nico via screenshot du Security Advisor), toutes deux héritées de la migration `20250325120000` qui a reconstruit `analytics_events` sans réactiver la RLS : (1) **RLS désactivée sur `public.analytics_events`**, (2) **vue `public.event_kpi_engagement` en SECURITY DEFINER** exposée aux rôles publics (contrairement aux vues `product_kpi_*` déjà révoquées).
+- **Piège identifié** : les coffres sont créés côté client avec la clé **anon** (`app/page.tsx:55`), donc les triggers analytics s'exécutent sous le rôle `anon` — réactiver la RLS bêtement aurait cassé la création de coffre. Les lectures analytics, elles, passent toutes par le **service role** (`app/lib/analyticsProduct.ts`), qui bypasse la RLS.
+- **Correctif** (migration `20260830120000_fix_security_advisor_rls_and_definer_view.sql`) : les 6 triggers `analytics_log_*` passés en `SECURITY DEFINER` + `search_path=''` (ils écrivent en tant que `postgres`, RLS bypassée) ; RLS activée sur `analytics_events` + `revoke all` anon/authenticated (deny-all, service role bypasse) ; `event_kpi_engagement` passée en `security_invoker=on` + révoquée des rôles publics.
+- **Appliqué par Nico** dans le SQL Editor Supabase (« Success. No rows returned », screenshot confirmé). Restent 36 warnings + 7 suggestions non bloquants (autre chantier). Aucune décision structurante, simple correctif de sécurité (chantier n°1).
+
 ## Session 09/08/2026 — Cadrage du segment clubs & associations
 
 - **Cadrage pré-mâché du barreau n°2** (`strategie/segment-clubs-associations.md`) sur recherche fraîche (180 000 assos sportives, 18 M licenciés ; concurrents = WhatsApp + apps de gestion Spond/Heja/SportEasy où la photo est une annexe + le photographe de club qu'on absorbe). **La thèse : l'outil qui RAPPORTE au club au lieu de lui coûter** — la boutique photo du club (commission au club sur chaque commande famille, matière = tous les téléphones toute la saison), qui fait du club notre force de vente. Cinq mécaniques d'« incontournable », dont 4 déjà codées : galeries par équipe (= galeries par table, changer l'étiquette), concours photo (en prod), catalogue (plaques/posters/présentoirs), droit à l'image des mineurs (l'argument RGPD qui fait basculer les présidents). Vrai gap : commission (Stripe Connect) + multi-hôtes (= chantier comptes hôtes) + mode mineurs V2. Séquence : trancher le prix → LE club via l'atelier → équiper son prochain événement avec l'existant → mesurer. Décision de prix créée au cockpit ; roadmap NEXT + tâche pilote Notion enrichies. Analyse à valider, pas une décision.
