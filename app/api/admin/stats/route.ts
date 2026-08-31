@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { getAdminContestStats } from "@/lib/adminStats";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
 
 export async function GET() {
-  const supabase = getSupabaseClient();
+  const supabase = getSupabaseAdminClient();
 
   if (!supabase) {
     console.error("[Supabase] Client not available for admin stats route.");
