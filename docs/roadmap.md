@@ -8,9 +8,9 @@ Format : **NOW** (cycle en cours) / **NEXT** (prochain) / **LATER** (plus tard) 
 
 ## 🔵 NOW — cycle du 04/08/2026 : « brancher la marque, cadrer l'équipe »
 
-- [ ] **[Marque — Nico]** Brancher `usegather.app` en domaine principal sur Vercel (l'ancien redirige, les QR imprimés survivent) + vérifier la boîte `contact@usegather.app`
+- [ ] **[Infra — Nico]** 🔴 **Réattacher les domaines Vercel** — vérifié cassé le 31/08 : `usegather.app` ne répond plus (connexion reset) et `gather-mvp.vercel.app` (QR imprimés) renvoie 404 ; l'app ne tourne que sur `gather-mvp-3tfb.vercel.app`. Le restore de juillet a détaché les domaines. Runbook : `docs/infra-stabilisation-post-restore.md §1`. + vérifier la boîte `contact@usegather.app`
 - [ ] **[Marque — Nico]** Nouveau logo : le PNG affiche encore « GATHER » — lockup use+**gather** recommandé
-- [ ] **[Tech — Nico/Arnaud]** Committer le renommage Usegather (branche `chore/nettoyage-remise-a-niveau`)
+- [x] **[Tech — Nico/Arnaud]** Committer le renommage Usegather — branche `chore/nettoyage-remise-a-niveau` **mergée sur `main`** le 31/08 (fast-forward)
 - [ ] **[Pilotage — Nico]** Partager le cockpit Notion aux 4 associés + installer les rituels (matin 2 min, dimanche 10 min, point équipe hebdo 15 min)
 - [ ] **[Pilotage — équipe]** Choisir les 3 KPI du cockpit + objectif 90 jours
 - [ ] **[Structure — Jérem]** RDV Luxembourg : éligibilité Fit4Start, structure FR-LU, substance (`strategie/briefing-luxembourg.md`)
@@ -23,7 +23,7 @@ Format : **NOW** (cycle en cours) / **NEXT** (prochain) / **LATER** (plus tard) 
 
 - [ ] **[Vente — Corentin]** **Pilote B2B club/association** — cadrage complet fait le 09/08 (`strategie/segment-clubs-associations.md`) : la boutique photo du club (commission au club = on absorbe le modèle du photographe de club), galeries par équipe (= galeries par table, déjà codées), droit à l'image des mineurs comme argument de bascule, concours photo déjà en prod. Séquence : trancher le modèle de prix (décision Notion) → LE club via le canal chaud de l'atelier → équiper son prochain événement avec l'existant → mesurer participation + attach-rate. **Ne rien construire avant le pilote.**
 - [ ] **[Structure]** Trancher l'immatriculation (LU vs FR) → créer la société + pacte d'associés avec vesting + **cession de la marque INPI à la société** + caler les termes compta/production avec l'atelier (simple structuration — l'accès aux machines est illimité et sans contrainte, ce n'est pas un risque)
-- [ ] **[Tech]** Supabase offre payante (prérequis relance — leçon incident juillet)
+- [ ] **[Infra — Jérem/Nico]** 🟠 **Supabase plan Pro** — « grace period is over » constatée le 31/08 (plan gratuit) : risque de coupure de service quand un quota est atteint. Décision déjà actée (`decisions §5`), reste à exécuter. Runbook : `docs/infra-stabilisation-post-restore.md §2`
 - [ ] **[Produit]** V1 « lançable » : comptes hôtes, intégration impression Printerkut, paiement, sécurité par événement
 - [ ] **[Marketing — Corentin]** Handles `@usegather` + docs/deck passés en Usegather + relance early access
 - [ ] **[Finance — Jérem]** Dossiers leviers FR en parallèle : prêt d'honneur, French Tech
