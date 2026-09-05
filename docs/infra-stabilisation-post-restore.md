@@ -6,9 +6,11 @@ Le restore de l'incident de juillet (projet gratuit mis en pause) a recréé les
 
 ---
 
-## 1. 🔴 Domaines détachés — l'app n'est joignable que sur l'alias interne
+## 1. ✅ RÉSOLU (31/08) — Domaines détachés → réattachés + canonique `usegather.app`
 
-**Constat (requêtes HTTP réelles, 31/08) :**
+> **Réglé le 31/08** en session guidée avec Nico. DNS OVH basculé vers Vercel (enregistrements `A` sur `@` et `www` : `213.186.33.5` → **`216.198.79.1`**, sans toucher aux MX/SPF/DKIM de l'email). Les 4 domaines rattachés au projet `gather-mvp-3tfb`, **`usegather.app` mis en canonique** (Production), et `www.usegather.app` + `gather-mvp.vercel.app` (QR imprimés) + `gather-mvp-3tfb.vercel.app` passés en **308 → `usegather.app`**. Chaîne vérifiée de bout en bout : `gather-mvp.vercel.app/events/<pin>` → `usegather.app/events/<pin>` (200, SSL valide, PIN préservé). Le constat initial est conservé ci-dessous pour mémoire.
+
+**Constat initial (requêtes HTTP réelles, 31/08 — résolu depuis) :**
 
 | URL | Statut | Interprétation |
 |---|---|---|

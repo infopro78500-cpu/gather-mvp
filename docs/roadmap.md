@@ -8,7 +8,7 @@ Format : **NOW** (cycle en cours) / **NEXT** (prochain) / **LATER** (plus tard) 
 
 ## 🔵 NOW — cycle du 04/08/2026 : « brancher la marque, cadrer l'équipe »
 
-- [ ] **[Infra — Nico]** 🔴 **Réattacher les domaines Vercel** — vérifié cassé le 31/08 : `usegather.app` ne répond plus (connexion reset) et `gather-mvp.vercel.app` (QR imprimés) renvoie 404 ; l'app ne tourne que sur `gather-mvp-3tfb.vercel.app`. Le restore de juillet a détaché les domaines. Runbook : `docs/infra-stabilisation-post-restore.md §1`. + vérifier la boîte `contact@usegather.app`
+- [x] **[Infra — Nico]** **Domaines Vercel réattachés** le 31/08 : DNS OVH → Vercel, `usegather.app` canonique (Production), `www` + `gather-mvp.vercel.app` (QR) + `gather-mvp-3tfb` en 308 dessus. Chaîne vérifiée de bout en bout (`docs/infra-stabilisation-post-restore.md §1`). Reste à vérifier : la boîte `contact@usegather.app` (email non touché, mais à tester)
 - [ ] **[Marque — Nico]** Nouveau logo : le PNG affiche encore « GATHER » — lockup use+**gather** recommandé
 - [x] **[Tech — Nico/Arnaud]** Committer le renommage Usegather — branche `chore/nettoyage-remise-a-niveau` **mergée sur `main`** le 31/08 (fast-forward)
 - [ ] **[Pilotage — Nico]** Partager le cockpit Notion aux 4 associés + installer les rituels (matin 2 min, dimanche 10 min, point équipe hebdo 15 min)
