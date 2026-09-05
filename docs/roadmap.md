@@ -8,6 +8,8 @@ Format : **NOW** (cycle en cours) / **NEXT** (prochain) / **LATER** (plus tard) 
 
 ## 🔵 NOW — cycle du 04/08/2026 : « brancher la marque, cadrer l'équipe »
 
+- [ ] **[Tech — chantier lancé 31/08]** **Comptes hôtes (auth organisateur)** — socle V1. Décision : progressif + magic link, `host_user_id` = autorité, device en fallback. Plan par phases : `strategie/chantier-comptes-hotes.md`. Phase 0 (socle session) en cours.
+
 - [x] **[Infra — Nico]** **Domaines Vercel réattachés** le 31/08 : DNS OVH → Vercel, `usegather.app` canonique (Production), `www` + `gather-mvp.vercel.app` (QR) + `gather-mvp-3tfb` en 308 dessus. Chaîne vérifiée de bout en bout (`docs/infra-stabilisation-post-restore.md §1`). Reste à vérifier : la boîte `contact@usegather.app` (email non touché, mais à tester)
 - [ ] **[Marque — Nico]** Nouveau logo : le PNG affiche encore « GATHER » — lockup use+**gather** recommandé
 - [x] **[Tech — Nico/Arnaud]** Committer le renommage Usegather — branche `chore/nettoyage-remise-a-niveau` **mergée sur `main`** le 31/08 (fast-forward)
