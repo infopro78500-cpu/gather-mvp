@@ -47,6 +47,18 @@ order by schemaname, tablename, cmd;
 
 Selon les résultats, je prépare les migrations ciblées (drop/scope des policies fautives). `photos`/`members` : verrouillables en deny-all sans risque (l'app ne les lit jamais). `storage.objects` : à scoper, pas à supprimer.
 
+## Résultat du diagnostic `pg_policies` (31/08) + correctif storage
+
+La requête a été lancée. Verdicts définitifs :
+
+- **`events`** — ne reste que l'INSERT `check(true)` (création de coffre sans compte = voulu). SELECT droppé. 🟢 **propre**.
+- **`photos` / `members`** — **aucune policy** + RLS activée (le Security Advisor ne les a jamais signalés « RLS Disabled », seul `analytics_events` l'était) = **deny-all pour anon**. L'app ne les lit jamais en direct. 🟢 **verrouillés** (finding #1 clos).
+- **`storage.objects` LECTURE** — policy « Public read » **scopée `bucket_id='event-photos'`** → buckets privés `private-notes`/`print-files` **non lisibles** publiquement. 🟢 (finding #3 = fausse alerte, correctement scopé).
+- **`storage.objects` UPLOAD** — 🔴 **finding réel** : 3 policies INSERT, dont **2 en `check(true)`** (`Public Upload 1io9m69_0`, `Public Upload 13itpk1_0`) → anon pouvait déposer dans **n'importe quel bucket** (dont les privés). ➡️ **corrigé** : migration `20260830170000` les supprime ; l'upload invité (client anon → event-photos) reste couvert par la policy scopée `Public upload 1rdror8_0`. Vérifié : les buckets privés ne sont écrits qu'en service role.
+- **`vercel_web_metrics_daily`** — SELECT restreint à `auth.role()='authenticated'` (rôle inutilisé par l'app, tout est anon) → 🟡 inoffensif.
+
+**Bilan** : après application de `20260830170000`, tous les `using(true)`/`check(true)` atteignables par anon sont fermés (events, photo_likes, storage upload). Reste seulement du 🟡 cosmétique (rôle `authenticated` inutilisé). **Audit RLS clos.**
+
 ## Leçon de session
 
 Le fix `events` a introduit une régression (#5) parce que des **routes serveur lisaient `events` en clé anon** — invisible sans cartographier tous les lecteurs d'une table avant de toucher sa RLS. Règle pour la suite : **avant de modifier la RLS d'une table, lister tous ses lecteurs (client anon ET routes serveur) via `grep from("<table>")`.**
