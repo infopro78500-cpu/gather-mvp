@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
+import { getServerUserId } from "@/lib/supabase/serverAuthClient";
+import { isEventHost } from "@/lib/hostAuth";
 
 type ContestSettingsBody = {
   deviceId?: string;
@@ -35,7 +37,7 @@ export async function PATCH(
 
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, host_device_id, contest_enabled_at")
+    .select("id, host_device_id, host_user_id, contest_enabled_at")
     .eq("id", eventId)
     .maybeSingle();
 
@@ -43,7 +45,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Évènement introuvable." }, { status: 404 });
   }
 
-  if (event.host_device_id !== deviceId) {
+  const userId = await getServerUserId();
+  if (!isEventHost(event, deviceId, userId)) {
     return NextResponse.json(
       { error: "Seul l'organisateur peut modifier cet évènement." },
       { status: 403 }

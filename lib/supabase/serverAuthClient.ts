@@ -40,3 +40,14 @@ export async function getServerAuthClient(): Promise<SupabaseClient | null> {
     },
   });
 }
+
+// Id de l'utilisateur connecté (ou null). Valide la session côté serveur via getUser().
+// Utilisé par les routes host-gated pour reconnaître l'hôte par son compte.
+export async function getServerUserId(): Promise<string | null> {
+  const supabase = await getServerAuthClient();
+  if (!supabase) return null;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}

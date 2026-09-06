@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
 import { canDeletePhoto, getUploaderDeviceId } from "@/lib/photoPermissions";
+import { getServerUserId } from "@/lib/supabase/serverAuthClient";
+import { isEventHost } from "@/lib/hostAuth";
 
 const BUCKET_NAME = "event-photos";
 
@@ -44,7 +46,7 @@ export async function POST(
 
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, host_device_id")
+    .select("id, host_device_id, host_user_id")
     .eq("id", eventId)
     .maybeSingle();
 
@@ -52,7 +54,8 @@ export async function POST(
     return NextResponse.json({ error: "Évènement introuvable." }, { status: 404 });
   }
 
-  const isHost = event.host_device_id === deviceId;
+  const userId = await getServerUserId();
+  const isHost = isEventHost(event, deviceId, userId);
   const eventPrefix = `${eventId}/`;
 
   const allowedPaths = requestedPaths.filter((path) => {

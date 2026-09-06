@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
+import { getServerUserId } from "@/lib/supabase/serverAuthClient";
+import { isEventHost } from "@/lib/hostAuth";
 import { tableStandLot, getVariant } from "@/lib/print/catalog";
 import {
   renderTableStandArtwork,
@@ -78,13 +80,14 @@ export async function POST(req: NextRequest) {
   // Commande d'organisateur : vérifiée serveur, option Pro exigée.
   const { data: event } = await supabase
     .from("events")
-    .select("id, name, pin, host_device_id, pro_enabled_at")
+    .select("id, name, pin, host_device_id, host_user_id, pro_enabled_at")
     .eq("id", eventId)
     .maybeSingle();
   if (!event) {
     return NextResponse.json({ success: false, error: "NOT_FOUND" }, { status: 404 });
   }
-  if (event.host_device_id !== deviceId) {
+  const userId = await getServerUserId();
+  if (!isEventHost(event, deviceId, userId)) {
     return NextResponse.json({ success: false, error: "FORBIDDEN" }, { status: 403 });
   }
   if (!event.pro_enabled_at) {

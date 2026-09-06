@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
+import { getServerUserId } from "@/lib/supabase/serverAuthClient";
+import { isEventHost } from "@/lib/hostAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,11 +31,12 @@ export async function POST(
   const deviceId = typeof body.deviceId === "string" ? body.deviceId.slice(0, 80) : null;
   if (!deviceId) return NextResponse.json({ isHost: false });
 
+  const userId = await getServerUserId();
   const { data } = await supabase
     .from("events")
-    .select("host_device_id")
+    .select("host_device_id, host_user_id")
     .eq("id", eventId)
     .maybeSingle();
-  const isHost = Boolean(data && data.host_device_id === deviceId);
+  const isHost = isEventHost(data, deviceId, userId);
   return NextResponse.json({ isHost });
 }

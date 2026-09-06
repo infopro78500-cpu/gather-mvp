@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
+import { getServerUserId } from "@/lib/supabase/serverAuthClient";
+import { isEventHost } from "@/lib/hostAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,12 +23,13 @@ async function loadEvent(eventId: string) {
   if (!supabase) return { supabase: null, event: null };
   const { data } = await supabase
     .from("events")
-    .select("id, host_device_id, pro_enabled_at, table_count, expires_at")
+    .select("id, host_device_id, host_user_id, pro_enabled_at, table_count, expires_at")
     .eq("id", eventId)
     .maybeSingle();
   return { supabase, event: data as {
     id: string;
     host_device_id: string | null;
+    host_user_id: string | null;
     pro_enabled_at: string | null;
     table_count: number | null;
     expires_at: string | null;
@@ -100,7 +103,8 @@ export async function POST(
 
   // --- Gestes hôte : vérification serveur sur host_device_id.
   const deviceId = clean(body.deviceId, 80);
-  if (!deviceId || event.host_device_id !== deviceId) {
+  const userId = await getServerUserId();
+  if (!isEventHost(event, deviceId, userId)) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 

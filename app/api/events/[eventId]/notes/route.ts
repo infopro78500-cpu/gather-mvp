@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabaseAdminClient";
+import { getServerUserId } from "@/lib/supabase/serverAuthClient";
+import { isEventHost } from "@/lib/hostAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +28,7 @@ async function loadEvent(eventId: string) {
   if (!supabase) return { supabase: null, event: null };
   const { data } = await supabase
     .from("events")
-    .select("id, name, host_device_id, pro_enabled_at, expires_at")
+    .select("id, name, host_device_id, host_user_id, pro_enabled_at, expires_at")
     .eq("id", eventId)
     .maybeSingle();
   return {
@@ -35,6 +37,7 @@ async function loadEvent(eventId: string) {
       id: string;
       name: string | null;
       host_device_id: string | null;
+      host_user_id: string | null;
       pro_enabled_at: string | null;
       expires_at: string | null;
     } | null,
@@ -126,7 +129,8 @@ export async function GET(
   if (!supabase) return NextResponse.json({ error: "SUPABASE" }, { status: 503 });
   if (!event) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   const deviceId = req.nextUrl.searchParams.get("deviceId");
-  if (!deviceId || event.host_device_id !== deviceId) {
+  const userId = await getServerUserId();
+  if (!isEventHost(event, deviceId, userId)) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
@@ -181,7 +185,8 @@ export async function DELETE(
   } catch {
     return NextResponse.json({ error: "BAD_REQUEST" }, { status: 400 });
   }
-  if (!body.deviceId || event.host_device_id !== body.deviceId) {
+  const userId = await getServerUserId();
+  if (!isEventHost(event, body.deviceId ?? null, userId)) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
   if (!body.noteId) {
