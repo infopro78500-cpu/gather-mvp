@@ -4,8 +4,10 @@ import { useState, FormEvent } from "react";
 import { getDeviceId } from "@/lib/deviceId";
 import { calculateExpiresAt } from "@/lib/eventLifetimes";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { getBrowserAuthClient } from "@/lib/supabase/browserAuthClient";
 import { generatePin, isPinCollisionError } from "@/lib/pin";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function CreateEventPage() {
   const [name, setName] = useState("");
@@ -33,18 +35,19 @@ export default function CreateEventPage() {
     try {
       const deviceId = await getDeviceId();
 
-      // --- Récupération optionnelle de l'utilisateur (anonyme autorisé) ---
+      // --- Rattachement au compte si l'organisateur est connecté (session cookie) ---
+      // On lit la session via le client auth SSR (cookies), pas le client data anon.
       let userId: string | null = null;
       try {
-        const { data: authInfo } = await supabase.auth.getUser();
-        userId = authInfo?.user?.id ?? null;
+        const authClient = getBrowserAuthClient();
+        if (authClient) {
+          const { data: authInfo } = await authClient.auth.getUser();
+          userId = authInfo?.user?.id ?? null;
+        }
       } catch (authError) {
-        console.warn(
-          "Aucune session Supabase, création d'évènement anonyme.",
-          authError
-        );
+        console.warn("Pas de session organisateur, création sans compte.", authError);
       }
-      // IMPORTANT : on NE bloque PAS si userId est null
+      // IMPORTANT : on NE bloque PAS si userId est null (création sans compte reste la norme)
 
       const { expiresAt } = calculateExpiresAt(lifetimeDays);
 
@@ -86,7 +89,13 @@ export default function CreateEventPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white px-4">
+    <main className="relative min-h-screen flex items-center justify-center bg-slate-950 text-white px-4">
+      <Link
+        href="/compte"
+        className="absolute top-4 right-4 text-xs text-slate-400 hover:text-teal-300"
+      >
+        Mon compte
+      </Link>
       <div className="w-full max-w-3xl rounded-3xl bg-slate-900/80 border border-slate-800 p-6 md:p-8 shadow-xl flex flex-col md:flex-row gap-8">
         {/* Bloc gauche : branding / pitch */}
         <div className="flex-1 flex flex-col justify-between gap-4">
