@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 
 import ImageUploader from "@/app/components/ImageUploader";
 import TableStandOrder from "@/app/components/wedding/TableStandOrder";
+import ClaimCoffreBanner from "@/app/components/ClaimCoffreBanner";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { EventData } from "@/types/event";
 import { getExpirationInfo } from "@/lib/eventLifetimes";
@@ -205,6 +206,14 @@ export default function EditEventPage() {
             éviter les doublons.
         </p>
       </header>
+
+      {event && (
+        <ClaimCoffreBanner
+          eventId={event.id}
+          deviceId={deviceId}
+          isHost={isHost}
+        />
+      )}
 
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1.2fr]">
         <div className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg shadow-slate-950/30">

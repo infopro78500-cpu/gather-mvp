@@ -30,6 +30,8 @@ Une route `POST /api/events/[id]/claim` (session requise) qui, si l'appelant pro
 
 ## 5. Plan par phases
 
+> **Avancement au 31/08** : Phases 0, 1 et 2 **faites** (socle session + login magic link + dashboard « Mes coffres » + rattachement à la création + bascule des 7 gates en double-identité + route/UI de claim). Reste **Phase 3 (mobile)** + le rafraîchissement de session en middleware (Phase 0.5, différé).
+
 - **Phase 0 — Socle session** : `@supabase/ssr`, helpers client/serveur, route de callback OTP (`/auth/confirm`), `/login` re-câblé (redirect + message), rafraîchissement de session fusionné dans `proxy.ts` sans casser le Basic auth admin. Un bouton « Me connecter / Mon compte » minimal.
 - **Phase 1 — Compte & tableau de bord** : page « Mes coffres » (liste des events où `host_user_id = auth.uid()`), déconnexion. Rattachement à la création (si session active → `host_user_id` posé direct).
 - **Phase 2 — Rattachement & bascule d'autorité** : flux « réclamer ce coffre » sur la page de gestion ; les 7 gates deviennent double-identité (`auth.uid()` OU `deviceId`) ; migration douce des coffres device→compte.
