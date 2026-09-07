@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["REMPLACER_TEAM_ID.com.usegather.app"],
+        "components": [
+          { "/": "/auth/*", "comment": "Callback du magic link / auth organisateur" }
+        ]
+      }
+    ]
+  }
+}

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { ToastProvider } from "@/app/components/ui/ToastProvider";
 import { ServiceWorkerRegistration } from "@/app/components/ServiceWorkerRegistration";
+import { MobileDeepLinkHandler } from "@/app/components/MobileDeepLinkHandler";
 import { SiteFooter } from "@/app/components/SiteFooter";
 import "./globals.css";
 
@@ -41,6 +42,7 @@ export default function RootLayout({
         <ToastProvider>{children}</ToastProvider>
         <SiteFooter />
         <ServiceWorkerRegistration />
+        <MobileDeepLinkHandler />
         <Analytics />
       </body>
     </html>

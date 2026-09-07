@@ -46,6 +46,28 @@ Une route `POST /api/events/[id]/claim` (session requise) qui, si l'appelant pro
 | Mobile | **Web d'abord**, deep-link en Phase 3 | Le flux web débloque la V1 ; les App Links sont un chantier natif à part |
 | Coffres existants | **Rattachables** (claim depuis le même appareil) | Personne n'est enfermé dehors ; pas de big-bang |
 
+## 8. Phase 3 — Mobile (runbook)
+
+**Décision d'architecture (31/08)** : l'app Next a des routes serveur → **pas d'export statique** possible. L'app native charge donc le **site live** (`capacitor.config.ts` → `server.url = https://usegather.app`) : une coque autour de `usegather.app`. L'auth marche alors nativement (même origine), et les **App Links / Universal Links** font ouvrir l'app par le magic link.
+
+**Fait côté code (déployable, web non impacté)** :
+- `capacitor.config.ts` : `server.url = https://usegather.app`, `androidScheme = https`.
+- `@capacitor/app@^6` installé ; composant `MobileDeepLinkHandler` (monté dans `layout.tsx`) : sur `appUrlOpen`, route vers le chemin `/auth/…` interne (no-op sur le web).
+- `AndroidManifest.xml` : intent-filter App Links (`autoVerify`, `https://usegather.app/auth…`).
+- `public/.well-known/assetlinks.json` (Android) + `public/.well-known/apple-app-site-association` (iOS), servis sur `usegather.app` ; header `Content-Type: application/json` pour l'AASA (`next.config.ts`).
+- `www/index.html` placeholder (pour que `cap sync` ait un webDir).
+
+**À faire par toi (build natif — je ne peux ni produire les valeurs ni tester d'ici)** :
+1. **Android — empreinte SHA256** : `keytool -list -v -keystore <ta clé>` (ou onglet App signing de la Play Console). La coller dans `public/.well-known/assetlinks.json` (remplacer `REMPLACER_PAR_EMPREINTE_SHA256…`). Empreintes debug ET release à mettre pendant les tests.
+2. **iOS — Team ID** : depuis ton compte Apple Developer. La coller dans `public/.well-known/apple-app-site-association` (`REMPLACER_TEAM_ID`).
+3. **Projet iOS** : `npx cap add ios` (le projet est incomplet), puis dans Xcode → cible App → Signing & Capabilities → **Associated Domains** → `applinks:usegather.app`.
+4. **Sync + build** : redéployer d'abord (pour publier les `.well-known`), puis `npx cap sync`, ouvrir Android Studio / Xcode, builder sur un appareil.
+5. **Vérifier** : `curl https://usegather.app/.well-known/assetlinks.json` et `…/apple-app-site-association` (200 + JSON) ; installer l'app ; se déconnecter ; demander un magic link ; **le clic doit ouvrir l'app** (pas le navigateur) et te connecter.
+
+**Supabase** : les Redirect URLs incluent déjà `https://usegather.app/**` (fait le 31/08) — rien à changer.
+
+**Point de vigilance store** : `server.url` charge du code distant → Apple peut regarder la « minimum functionality » (§4.2). L'app a des features natives réelles (caméra, partage, capture hors-ligne) — acceptable, mais à garder en tête pour la revue.
+
 ## 7. Points de vigilance
 
 - **`gather_device_id` / `gather_voter_id` / `gather-upload-queue`** : jamais renommer (efface identité/votes/file d'upload).

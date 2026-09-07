@@ -22,6 +22,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- App Links : le magic link https://usegather.app/auth/... ouvre l'app.
+                 Requiert .well-known/assetlinks.json (avec l'empreinte SHA256 de la
+                 clé de signature) servi sur usegather.app. Cf. runbook §mobile. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="usegather.app"
+                    android:pathPrefix="/auth" />
+            </intent-filter>
+
         </activity>
 
         <provider
