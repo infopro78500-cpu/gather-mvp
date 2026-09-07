@@ -4,6 +4,20 @@
 
 ---
 
+## Session 07/09/2026 — Tableau électrique : le cockpit devient la saisie, le graphe devient le calcul
+
+- **Point de départ** : Nico veut « un vrai topo visuel » puis « 10 fois mieux » — l'artefact **Tableau électrique Usegather** (Cytoscape, 54 maillons / 65 câbles, propagation en point fixe) : https://claude.ai/code/artifact/8a2e0960-62b8-4751-8762-9085d6ba0e8f
+- **Idées brutes de Nico** triées par 3 agents : (1) rentrer les prérequis pour passer une étape en vert, (2) états non commencé / à faire / en cours / fait, (3) liens vers conversations, documents et traces.
+- **Bug de fond trouvé par le tri** : `wait` écrasait `hot`. **8 chantiers en cours** (`printcash`, `procash`, `earlyaccess`, `presentoirs`, `chaine`, `contratpk`, `deeplink`, `segmariage`) s'affichaient en gris « en attente » — de l'énergie dépensée qui paraissait dormante. Corrigé par un **6ᵉ état** (`stalled` = en chantier mais bloqué) sans toucher à la propagation : l'état d'affichage se dérive du couple (progression, alimenté). Compteur d'alarme dédié.
+- **Modèle unifié** : 3 états de progression (alignés sur le vocabulaire Notion : Pas commencé / En cours / Terminé) × une dimension **horizon** orthogonale (Maintenant / Ce mois / Plus tard / Acquis, dérivée de la Priorité Notion). Filtres d'horizon dans la barre d'outils. **Conditions de fermeture** (≤ 6 par maillon) qui *pilotent* le statut au lieu de vivre à côté ; règle anti-doublon : *une condition ne nomme jamais un autre maillon — si elle en nomme un, c'est un câble*.
+- **Découverte produite par cette règle** : la 1ʳᵉ condition de `stripe` (« entité + IBAN au KYC ») pointait vers `société`, donc le conseil affiché en une du tableau (« plus fort levier prêt : Stripe ») était potentiellement faux. **Nico a tranché** : il a un statut auto-entrepreneur → pas de dépendance, Stripe reste actionnable (`journal-decisions.md`, 07/09).
+- **Traces cartographiées** (agent sur les 40 docs) : chaque maillon porte sa ligne cockpit + ses documents de référence. **Trous décisionnels identifiés** : `stripe`, `accesevt`, `pacte`, `kpi` n'ont **aucune entrée** au journal des décisions ; `zip`, `stack`, `offline` n'ont aucune trace du tout.
+- **Dérive Notion ↔ réalité constatée et corrigée** : comptes hôtes (Pas commencé/Plus tard → **En cours**/Cette semaine, alors que les Phases 0→3 sont codées et déployées), énumération des coffres (En cours → **Terminé**), domaine principal (Pas commencé → **Terminé**). Une ligne Supabase Pro **en double** (branches 2 et 7) marquée, non supprimée (choix de Nico).
+- **Cockpit outillé** (décision au `journal-decisions.md`) : 3 propriétés ajoutées à la base Tâches — `Prérequis` ↔ `Alimente` (relation vers elle-même), `Liens`, `Maillon` ; **31 lignes câblées** (Maillon + Liens, dont 9 avec leurs prérequis) ; vue **🔌 Chaîne de dépendances**. Le tableau et le cockpit se pointent l'un l'autre.
+- **Écarté après analyse** : rendre l'artefact éditable par les associés via une capacité de persistance (droit d'écriture réservé aux membres de l'organisation Claude + seconde source de vérité). Retenu à la place : brouillon `localStorage` **étiqueté comme tel**, avec un bouton « Copier pour Claude » qui sort le patch — la republication fait toujours foi et un brouillon périmé est signalé, jamais écrasé en silence.
+- **Non vérifié** : le rendu visuel de l'artefact (le panneau navigateur n'ouvre pas claude.ai). Le tiroir a beaucoup changé.
+- **Bloquant non levé, côté Nico** : « Partager ce cockpit à Arnaud, Jérem & Corentin » (🔥 Aujourd'hui) est toujours à *Pas commencé*.
+
 ## Session 31/08/2026 — Session autonome : stabilisation infra + sweep sécurité RLS
 
 - **Cadrage** : Nico confie une grosse session en autonomie sur les points essentiels. Orientation roadmap + décisions actées → focus sur le **technique/sécurité** (le produit/marque reste gated par Nico). Merge du renommage Usegather **fait** (branche `chore/nettoyage-remise-a-niveau` → `main` en fast-forward, cf. déploiement du fix `events`).
